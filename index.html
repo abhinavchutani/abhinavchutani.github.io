@@ -1,0 +1,2072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abhinav Chutani — Polymath</title>
+  <script>
+    // Anti-flash: apply saved theme before first paint
+    (function(){
+      try {
+        var t = localStorage.getItem('theme');
+        if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+      } catch(e) {}
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;500;700;800;900&family=Playfair+Display:ital,wght@0,400;0,900;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    /* ─── THEME TOKENS ─── */
+    :root {
+      --bg:      #ffffff;
+      --fg:      #111111;
+      --surf:    #ffffff;
+      --surf-h:  #f0f0f0;
+      --muted:   rgba(17,17,17,0.38);
+      --dim:     rgba(17,17,17,0.10);
+      --row-bg:  #ffffff;   /* solid — required for domino stacking to work */
+    }
+    [data-theme="dark"] {
+      --bg:      #0d0d0d;
+      --fg:      #ededed;
+      --surf:    #1c1c1c;
+      --surf-h:  #2a2a2a;
+      --muted:   rgba(237,237,237,0.38);
+      --dim:     rgba(237,237,237,0.10);
+      --row-bg:  #0d0d0d;   /* solid dark */
+    }
+
+    body {
+      overflow-x: hidden; overscroll-behavior: none;
+      background: var(--bg); color: var(--fg);
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+      cursor: none;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ─── LOADING SCREEN ─── */
+    #loader {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg); overflow: hidden;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 0.65s ease;
+    }
+    #loader.loader--out { opacity: 0; pointer-events: none; }
+    #loader.loader--hiding .loader-content { opacity: 0; transition: opacity 0.3s ease; }
+
+    /* particle canvas behind everything in loader */
+    #loader-canvas {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* ─── CURSOR AURA ─── */
+    #aura {
+      position: fixed; z-index: 1;
+      width: 860px; height: 860px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(249,184,192,0.26) 0%, rgba(249,184,192,0.08) 40%, transparent 68%);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      will-change: left, top;
+      left: 50%; top: 50%;
+    }
+
+    .loader-content { position: relative; z-index: 1; text-align: center; }
+    .loader-name {
+      font-size: clamp(36px, 7vw, 100px); font-weight: 800;
+      letter-spacing: -0.04em; text-transform: uppercase; color: var(--fg);
+      opacity: 0; animation: ltIn 0.9s cubic-bezier(0.34,1.3,0.64,1) 0.2s forwards;
+    }
+    .loader-sub {
+      font-size: clamp(9px, 1.2vw, 16px); font-weight: 500;
+      letter-spacing: 0.35em; text-transform: uppercase; color: var(--fg);
+      opacity: 0; animation: lsIn 0.6s ease 0.85s forwards; margin-top: 4px;
+    }
+    @keyframes ltIn { from{opacity:0;transform:translateY(24px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes lsIn { from{opacity:0;transform:translateY(6px)} to{opacity:0.5;transform:translateY(0)} }
+
+    /* Progress bar */
+    .loader-progress-wrap {
+      position: relative; z-index: 1;
+      width: clamp(200px, 28vw, 360px);
+      margin-top: 32px;
+      opacity: 0; animation: lsIn 0.5s ease 1.1s forwards;
+    }
+    .loader-progress-track {
+      width: 100%; height: 2px;
+      background: var(--dim); border-radius: 2px; overflow: hidden;
+    }
+    .loader-progress-fill {
+      height: 100%; background: var(--fg); border-radius: 2px;
+      width: 0%;
+      animation: progressFill 2s cubic-bezier(0.4,0,0.2,1) 1.2s forwards;
+    }
+    @keyframes progressFill {
+      0% { width: 0%; }
+      55% { width: 68%; }
+      85% { width: 90%; }
+      100% { width: 100%; }
+    }
+    .loader-progress-label {
+      display: flex; justify-content: space-between;
+      margin-top: 8px; font-size: 10px; letter-spacing: 0.12em;
+      color: var(--muted); text-transform: uppercase;
+    }
+    #loader-pct { font-variant-numeric: tabular-nums; }
+
+    /* The bar that slides up to become nav */
+    #loader-bar-morph {
+      position: absolute;
+      bottom: 38%; left: 50%;
+      transform: translateX(-50%);
+      width: clamp(200px, 28vw, 360px);
+      height: 2px;
+      background: var(--fg);
+      border-radius: 2px;
+      z-index: 2;
+      opacity: 0;
+      transition: none;
+    }
+    #loader-bar-morph.morph-active {
+      transition: all 0.75s cubic-bezier(0.77, 0, 0.175, 1);
+      opacity: 1;
+      bottom: calc(100% - 52px);
+      left: 0;
+      transform: translateX(0);
+      width: 100%;
+      border-radius: 0;
+    }
+
+    /* ─── CUSTOM CURSOR ─── */
+    #cursor-ring {
+      position: fixed; width: 38px; height: 38px;
+      border: 1.5px solid var(--fg); border-radius: 50%;
+      pointer-events: none; z-index: 8000; left: 0; top: 0;
+      transform: translate(-50%,-50%);
+      transition: width .3s ease, height .3s ease, border-color .3s, background .3s;
+      mix-blend-mode: difference;
+    }
+    #cursor-dot {
+      position: fixed; width: 5px; height: 5px; background: var(--fg); border-radius: 50%;
+      pointer-events: none; z-index: 8001; left: 0; top: 0;
+      transform: translate(-50%,-50%);
+    }
+    body.c-hover #cursor-ring { width: 64px; height: 64px; background: var(--dim); }
+
+    /* ─── HEADER ─── */
+    .site-header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 28px; height: 60px;
+      opacity: 0; transform: translateY(-10px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      background: transparent;
+    }
+    .site-header.visible { opacity: 1; transform: translateY(0); }
+
+    .logo-btn {
+      position: relative; z-index: 1;
+      background: #f9b8c0; border: 1.5px solid #111; border-radius: 100px;
+      padding: 9px 22px; font-size: 15px; font-weight: 400; letter-spacing: 0.06em;
+      text-decoration: none; color: #111; cursor: none;
+      transition: transform 0.45s cubic-bezier(0.34,1.3,0.64,1), background 0.3s, border-color 0.3s, color 0.3s;
+    }
+    .logo-btn:hover { transform: scale(1.06) rotate(-1.5deg); }
+    [data-theme="dark"] .logo-btn {
+      background: var(--surf); border-color: var(--fg); color: var(--fg);
+    }
+
+    .nav { display: flex; gap: 10px; align-items: center; position: relative; z-index: 1; }
+
+    .nav-pill {
+      border: 1.5px solid var(--fg); border-radius: 100px;
+      padding: 11px 30px; font-size: 17px; font-weight: 400; letter-spacing: 0.05em;
+      background: var(--surf); text-decoration: none; color: var(--fg); cursor: none;
+      transition: background 0.15s ease, border-color 0.3s, color 0.3s;
+    }
+    .nav-pill:hover { background: var(--surf-h); }
+
+    /* ─── THEME TOGGLE ─── */
+    #theme-toggle {
+      padding: 11px 18px; font-size: 16px; letter-spacing: 0; cursor: none;
+      border: none; background: var(--surf);
+    }
+    #theme-toggle:hover { background: var(--surf-h); }
+
+    /* ─── SKILL MODAL OVERLAY ─── */
+    #skill-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.28s linear;
+    }
+    #skill-overlay.active { opacity: 1; pointer-events: all; }
+
+    /* Two-layer bg: dim fades in via opacity, blur is always applied but
+       the blurred layer fades from opacity:0 → 1. Far more reliable than
+       animating blur value itself (which jitters in many browsers). */
+    #skill-overlay-bg {
+      position: absolute; inset: 0;
+    }
+    #skill-overlay-dim {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.38);
+      opacity: 0;
+      transition: opacity 0.42s ease;
+    }
+    #skill-overlay-blur {
+      position: absolute; inset: 0;
+      backdrop-filter: blur(16px) saturate(1.2);
+      -webkit-backdrop-filter: blur(16px) saturate(1.2);
+      opacity: 0;
+      transition: opacity 0.48s ease;
+    }
+    #skill-overlay.active #skill-overlay-dim,
+    #skill-overlay.active #skill-overlay-blur { opacity: 1; }
+
+    #skill-modal {
+      position: relative; z-index: 1;
+      width: 90%; max-width: 1000px; max-height: 90vh;
+      border: 2px solid var(--fg); border-radius: 20px;
+      background: var(--modal-bg, #fff);
+      overflow-y: auto;
+      opacity: 0;
+      transition: opacity 0.28s linear;
+      --fg:    #111111;
+      --muted: rgba(17,17,17,0.38);
+      --dim:   rgba(17,17,17,0.10);
+      color: #111;
+    }
+    #skill-modal.modal-open { opacity: 1; }
+
+    #skill-modal-header {
+      padding: 36px 40px 24px;
+      border-bottom: 1.5px solid var(--dim);
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 24px;
+    }
+    #skill-modal-eyebrow {
+      font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px;
+    }
+    #skill-modal-title {
+      font-size: clamp(40px, 6vw, 96px); font-weight: 800;
+      letter-spacing: -0.04em; line-height: 0.88; text-transform: uppercase;
+    }
+    #skill-close {
+      flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
+      border: 1.5px solid var(--fg); background: transparent; color: var(--fg); cursor: none;
+      font-size: 16px; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, transform 0.3s cubic-bezier(0.34,1.3,0.64,1);
+    }
+    #skill-close:hover { background: var(--dim); transform: rotate(90deg); }
+
+    #skill-modal-body {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 640px) { #skill-modal-body { grid-template-columns: 1fr; } }
+
+    #skill-modal-col-1 { padding: 32px 40px; border-right: 1.5px solid var(--dim); }
+    #skill-modal-col-2 { padding: 32px 40px; }
+
+    .modal-section-label {
+      font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px; margin-top: 28px;
+    }
+    .modal-section-label:first-child { margin-top: 0; }
+
+    #skill-modal-done, #skill-modal-feel {
+      font-size: clamp(14px,1.1vw,17px); line-height: 1.7; color: var(--fg); font-weight: 400;
+    }
+
+    /* Skill level bar */
+    #skill-modal-level-wrap { margin-top: 24px; }
+    #skill-modal-level-label {
+      font-size: 9px; letter-spacing: 0.4em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+    }
+    #skill-modal-level-track {
+      height: 6px; background: var(--dim); border-radius: 6px; overflow: hidden;
+    }
+    #skill-modal-level-fill {
+      height: 100%; background: var(--fg); border-radius: 6px; width: 0%;
+      transition: width 0.9s cubic-bezier(0.34,1.3,0.64,1) 0.3s;
+    }
+    #skill-modal-level-pct {
+      margin-top: 8px; font-size: 11px; letter-spacing: 0.2em; color: var(--muted);
+    }
+    .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .modal-tag {
+      border: 1.5px solid var(--dim); border-radius: 100px;
+      padding: 4px 14px; font-size: 11px; color: var(--fg);
+    }
+
+    /* ─── SKILLS LIST ─── */
+    .projects-list { margin-top: 60px; border-top: 1.5px solid var(--fg); overflow: visible; }
+
+    /* ── GREETING SECTION ── */
+    .greeting-section {
+      position: relative;
+      min-height: 34vh;
+      background: var(--bg);
+      border-bottom: 1.5px solid var(--fg);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .greeting-meta {
+      display: flex; align-items: center; gap: 10px;
+      padding: 18px 26px 0;
+      font-size: 10px; letter-spacing: 0.32em; text-transform: uppercase;
+      color: var(--muted);
+      position: relative; z-index: 2;
+    }
+    .gsep { opacity: 0.4; }
+    .greeting-stage {
+      flex: 1;
+      position: relative;
+      min-height: 22vh;
+      pointer-events: none;
+    }
+    .gw {
+      position: absolute;
+      color: var(--fg);
+      line-height: 1;
+      font-family: 'Inter', system-ui, sans-serif;
+      white-space: nowrap;
+      transition: color 0.3s;
+    }
+    .gpl { font-family: 'Playfair Display', Georgia, serif; }
+    .g-hello {
+      font-size: clamp(64px, 12vw, 188px);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      left: 3%;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 1;
+    }
+    .g-ghost {
+      font-size: clamp(80px, 19vw, 300px);
+      font-weight: 900;
+      letter-spacing: -0.06em;
+      left: -1%;
+      top: -15%;
+      opacity: 0.045;
+      pointer-events: none;
+      user-select: none;
+      line-height: 1;
+    }
+    .greeting-tagline {
+      padding: 10px 26px;
+      font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--muted);
+      position: relative; z-index: 2;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       DOMINO STACK
+       ───────────────────────────────────────────────────────
+       Each row overlaps the one below by OVERLAP px.
+       DOM order: later rows paint on top (no explicit z-index needed).
+       Hover: translateY(-OVERLAP) rises the row into the one above.
+       NO z-index change on hover → row below naturally stays on top of
+       the risen row's bottom edge. Clean. No flash.
+    ═══════════════════════════════════════════════════════ */
+
+    .project-row {
+      position: relative;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 26px;
+      margin-bottom: -28px;
+      text-decoration: none; color: var(--fg);
+      background: var(--row-bg); /* solid — covers row above's overflow */
+      opacity: 0; transform: translateY(16px);
+      overflow: visible;
+      transition:
+        opacity          0.5s ease,
+        transform        0.38s cubic-bezier(0.4,0,0.2,1),
+        background-color 0.22s cubic-bezier(0.4,0,0.2,1);
+    }
+    .project-row:last-of-type { margin-bottom: 0; }
+    .project-row.in-view { opacity: 1; transform: translateY(0); }
+
+    /* Border at TOP of each row — since each row paints on top of the one
+       above it (DOM order), the ::before of row N is always visible over
+       row N-1's background. This solves the domino-stacking border problem. */
+    .project-row::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1.5px;
+      background: var(--fg);
+      z-index: 10;
+    }
+    /* Bottom border only on last row */
+    .project-row:last-of-type::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1.5px;
+      background: var(--fg);
+      z-index: 10;
+    }
+
+    /* ── DOMINO RISE on hover ──
+       NO z-index: row below (later in DOM) naturally paints over the
+       risen row's bottom portion. Row above gets more covered. Perfect. */
+    .project-row.in-view:hover {
+      transform: translateY(-28px);
+      background-color: var(--hover-bg, #fce5df);
+    }
+
+    .row-content {
+      display: flex; align-items: center; justify-content: flex-start;
+      position: relative; z-index: 2;
+      flex: 1; min-width: 0;
+    }
+
+    .project-title {
+      font-size: clamp(36px, 8.2vw, 124px);
+      font-weight: 400; letter-spacing: -0.024em; line-height: 0.84;
+      text-transform: uppercase; white-space: nowrap; flex-shrink: 0;
+      transition: letter-spacing 0.22s cubic-bezier(0.4,0,0.2,1);
+    }
+    .project-row:hover .project-title { letter-spacing: -0.014em; }
+
+    /* Badge: simple pill, no connector line */
+    .badge {
+      flex-shrink: 0; border: 1.5px solid var(--fg); border-radius: 100px;
+      padding: 6px 18px; font-size: clamp(9px,0.85vw,13px);
+      font-weight: 400; white-space: nowrap;
+      background: transparent; color: var(--fg); position: relative; z-index: 3;
+      margin-left: 24px;
+      transition: background 0.18s ease;
+    }
+    .project-row:hover .badge {
+      background: var(--dim);
+    }
+    /* remove old connector line pseudo-element */
+    .project-row .badge::before { display: none; }
+
+    /* ─── ILLUSTRATION ─── */
+    .illus {
+      position: absolute; left: auto; right: auto; bottom: 0;
+      height: 155%; width: auto;
+      pointer-events: none; z-index: 10;
+      opacity: 0; transform: translateY(120%);
+      transform-origin: bottom center;
+    }
+    .illus--in  { animation: illusRise 0.9s cubic-bezier(0.34,1.22,0.64,1) forwards; }
+    .illus--float { opacity: 1; transform: translateY(0); animation: illusFloat 3.6s ease-in-out infinite; }
+    .illus--out { animation: illusLeave 0.38s ease-in forwards; }
+
+    @keyframes illusRise {
+      0%  { opacity: 0; transform: translateY(120%); }
+      18% { opacity: 1; }
+      100%{ opacity: 1; transform: translateY(0); }
+    }
+    @keyframes illusFloat {
+      0%,100% { transform: translateY(0px); }
+      50%     { transform: translateY(-9px); }
+    }
+    @keyframes illusLeave {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(90%); }
+    }
+
+    /* ─── FOOTER STRIP ─── */
+    .footer-strip {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 22px; font-size: 10px; letter-spacing: 0.07em;
+      border-bottom: 1.5px solid var(--fg);
+      background: var(--bg); color: var(--fg); position: relative; z-index: 10;
+    }
+    .footer-strip a { color: inherit; text-decoration: none; }
+    .footer-strip a:hover { text-decoration: underline; }
+
+    /* ─── RESPONSIVE — TABLET ─── */
+    @media (max-width: 1100px) {
+      .project-title { font-size: clamp(28px, 6.5vw, 100px); }
+      .illus { height: 130%; }
+    }
+
+    /* ─── RESPONSIVE — MOBILE ─── */
+    @media (max-width: 680px) {
+      /* Touch: restore cursor, hide custom cursor + aura */
+      body { cursor: auto; }
+      #cursor-ring, #cursor-dot, #aura { display: none; }
+
+      /* Header */
+      .site-header { padding: 10px 14px; height: 54px; }
+      .logo-btn { font-size: 11px; padding: 7px 13px; letter-spacing: 0.04em; }
+      .nav { gap: 6px; }
+      .nav-pill { font-size: 12px; padding: 8px 14px; letter-spacing: 0.03em; }
+
+      /* Skills list */
+      .projects-list { margin-top: 54px; }
+      .greeting-section { min-height: 22vh; }
+      .g-hello { font-size: clamp(52px, 14vw, 100px); }
+      .g-ghost { display: none; }
+      /* Hide smaller greeting words on mobile to avoid clutter */
+      .greeting-stage .gw:not(.g-hello):not(.gpl) { opacity: 0.3; }
+      .project-row { padding: 3px 14px; margin-bottom: -14px; overflow: visible; }
+      .project-row.in-view:hover { transform: translateY(-14px); }
+      .project-title { font-size: clamp(28px, 9.5vw, 72px); white-space: nowrap; }
+      .illus { display: none; }
+      .badge { font-size: 9px; padding: 4px 10px; margin-left: 10px; letter-spacing: 0.04em; }
+
+      /* Skill modal */
+      #skill-modal { width: 96%; max-height: 86vh; border-radius: 14px; }
+      #skill-modal-header { padding: 22px 18px 14px; gap: 10px; }
+      #skill-modal-title { font-size: clamp(28px, 11vw, 60px); }
+      #skill-modal-col-1 { border-right: none; border-bottom: 1.5px solid var(--dim); }
+      #skill-modal-col-1, #skill-modal-col-2 { padding: 20px 18px; }
+
+      /* Footer */
+      .footer-strip { flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 14px; font-size: 9px; }
+    }
+
+    /* ─── RESPONSIVE — SMALL MOBILE ─── */
+    @media (max-width: 400px) {
+      .nav-pill:last-child { display: none; } /* hide Contact pill at very small widths */
+      .project-title { font-size: clamp(24px, 10vw, 60px); }
+    }
+
+  </style>
+</head>
+<body>
+
+<!-- ── LOADER ─── -->
+<div id="loader">
+  <canvas id="loader-canvas"></canvas>
+  <div class="loader-content">
+    <div class="loader-name">ABHINAV CHUTANI</div>
+    <div class="loader-sub">POLYMATH · INNOVATOR · CREATOR</div>
+    <div class="loader-progress-wrap">
+      <div class="loader-progress-track">
+        <div class="loader-progress-fill" id="loader-fill"></div>
+      </div>
+      <div class="loader-progress-label">
+        <span>LOADING</span>
+        <span id="loader-pct">0%</span>
+      </div>
+    </div>
+  </div>
+  <div id="loader-bar-morph"></div>
+</div>
+
+<!-- ── CURSOR AURA ─── -->
+<div id="aura"></div>
+
+<!-- ── CURSOR ─── -->
+<div id="cursor-ring"></div>
+<div id="cursor-dot"></div>
+
+<!-- ── HEADER ─── -->
+<header class="site-header" id="site-header">
+  <a href="about.html" class="logo-btn">ABHINAV CHUTANI</a>
+  <nav class="nav">
+    <a href="about.html" class="nav-pill">ABOUT ME</a>
+    <a href="about.html" class="nav-pill">CONTACT</a>
+    <button id="theme-toggle" class="nav-pill" aria-label="Toggle theme">☾</button>
+  </nav>
+</header>
+
+<!-- ── SKILLS LIST ──────────────────────────────────────── -->
+<div class="projects-list">
+
+  <!-- ── GREETING SECTION ── -->
+  <div class="greeting-section">
+    <div class="greeting-meta">
+      <span>ABHINAV CHUTANI</span>
+      <span class="gsep">·</span>
+      <span>20 DISCIPLINES</span>
+      <span class="gsep">·</span>
+      <span>2026</span>
+    </div>
+
+    <div class="greeting-stage" aria-hidden="true">
+      <!-- Ghost name — very faint backdrop -->
+      <span class="gw g-ghost">ABHINAV</span>
+
+      <!-- Primary: HELLO dominant -->
+      <span class="gw g-hello">HELLO</span>
+
+      <!-- Supporting cast — varied languages, fonts, sizes, rotations -->
+      <span class="gw" style="font-size:clamp(18px,2.8vw,44px);font-weight:100;left:28%;top:7%;opacity:0.42;letter-spacing:0.06em">Ciao</span>
+
+      <span class="gw gpl" style="font-size:clamp(24px,4vw,62px);font-style:italic;font-weight:400;left:5%;bottom:14%;opacity:0.78">Bonjour</span>
+
+      <span class="gw" style="font-size:clamp(20px,3.2vw,52px);font-weight:300;left:55%;top:9%;opacity:0.52">नमस्ते</span>
+
+      <span class="gw" style="font-size:clamp(26px,4.6vw,72px);font-weight:900;right:7%;top:44%;opacity:0.88;letter-spacing:-0.03em">HOLA</span>
+
+      <!-- Vertical Japanese -->
+      <span class="gw" style="font-size:clamp(14px,2vw,32px);font-weight:300;writing-mode:vertical-rl;right:2%;top:4%;opacity:0.44;line-height:1.2">こんにちは</span>
+
+      <span class="gw" style="font-size:clamp(12px,1.8vw,28px);font-weight:300;left:63%;top:56%;opacity:0.36">안녕하세요</span>
+
+      <span class="gw" style="font-size:clamp(18px,2.8vw,46px);font-weight:400;left:39%;bottom:13%;opacity:0.56;direction:rtl">مرحبا</span>
+
+      <span class="gw" style="font-size:clamp(11px,1.5vw,24px);font-weight:500;left:22%;bottom:20%;opacity:0.36;letter-spacing:0.03em">Guten Tag</span>
+
+      <span class="gw gpl" style="font-size:clamp(14px,2.2vw,35px);font-style:italic;right:13%;bottom:16%;opacity:0.50">Olá</span>
+
+      <!-- Rotated sideways — Merhaba (Turkish) -->
+      <span class="gw" style="font-size:clamp(12px,1.6vw,26px);font-weight:400;left:1%;top:48%;opacity:0.32;transform:rotate(-90deg);transform-origin:left center">Merhaba</span>
+
+      <!-- Tiny filler words -->
+      <span class="gw" style="font-size:clamp(9px,1.1vw,17px);font-weight:300;right:30%;top:7%;opacity:0.26;letter-spacing:0.04em">Salut</span>
+
+      <span class="gw" style="font-size:clamp(9px,1vw,16px);font-weight:100;letter-spacing:0.22em;left:45%;top:42%;opacity:0.22">NAMASTE</span>
+
+      <span class="gw" style="font-size:clamp(10px,1.2vw,19px);font-weight:300;right:22%;bottom:8%;opacity:0.28;letter-spacing:0.02em">Konnichiwa</span>
+    </div>
+
+    <div class="greeting-tagline">Selected Disciplines</div>
+  </div>
+
+  <!-- 1. VIOLIN -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">STRINGS</span>
+      <span class="badge">Grade 6 ISOM · The Piano Man, Delhi</span>
+    </div>
+    <svg class="illus" viewBox="0 0 140 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Violin body -->
+      <ellipse cx="70" cy="148" rx="36" ry="46" fill="#C8860A" stroke="#111" stroke-width="2.5"/>
+      <ellipse cx="70" cy="110" rx="26" ry="30" fill="#C8860A" stroke="#111" stroke-width="2.5"/>
+      <ellipse cx="70" cy="78" rx="30" ry="24" fill="#C8860A" stroke="#111" stroke-width="2.5"/>
+      <!-- Waist -->
+      <rect x="54" y="108" width="32" height="16" fill="#C8860A"/>
+      <path d="M54 108 Q44 116 54 124" stroke="#111" stroke-width="2" fill="none"/>
+      <path d="M86 108 Q96 116 86 124" stroke="#111" stroke-width="2" fill="none"/>
+      <!-- F holes -->
+      <path d="M60 130 Q57 137 60 144" stroke="#111" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M80 130 Q83 137 80 144" stroke="#111" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- Strings -->
+      <line x1="67" y1="58" x2="67" y2="185" stroke="#111" stroke-width="0.8"/>
+      <line x1="70" y1="58" x2="70" y2="185" stroke="#111" stroke-width="0.8"/>
+      <line x1="73" y1="58" x2="73" y2="185" stroke="#111" stroke-width="0.8"/>
+      <!-- Scroll (top) -->
+      <path d="M70 54 Q62 40 65 28 Q68 18 76 22 Q82 26 78 36 Q74 42 70 54Z" fill="#9E6400" stroke="#111" stroke-width="2"/>
+      <!-- Cute face on body -->
+      <circle cx="63" cy="148" r="7" fill="#111"/>
+      <circle cx="77" cy="148" r="7" fill="#111"/>
+      <circle cx="65" cy="145" r="2.5" fill="#fff"/>
+      <circle cx="79" cy="145" r="2.5" fill="#fff"/>
+      <path d="M62 160 Q70 170 78 160" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Music notes -->
+      <text x="100" y="80" font-size="18" fill="#C8860A" opacity="0.8">♪</text>
+      <text x="108" y="110" font-size="14" fill="#C8860A" opacity="0.6">♫</text>
+      <text x="15" y="90" font-size="16" fill="#C8860A" opacity="0.7">♩</text>
+    </svg>
+  </a>
+
+  <!-- 2. CODING & PYTHON -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">SYNTAX</span>
+      <span class="badge">Self-Taught · Python · Algorithmic Logic</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Laptop base -->
+      <rect x="12" y="95" width="136" height="82" rx="10" fill="#2D3748" stroke="#111" stroke-width="2.5"/>
+      <rect x="5" y="170" width="150" height="12" rx="6" fill="#1A202C" stroke="#111" stroke-width="2"/>
+      <!-- Screen -->
+      <rect x="22" y="102" width="116" height="62" rx="5" fill="#111"/>
+      <!-- Code lines -->
+      <rect x="32" y="111" width="55" height="4" rx="2" fill="#63B3ED"/>
+      <rect x="32" y="120" width="35" height="4" rx="2" fill="#68D391"/>
+      <rect x="40" y="129" width="48" height="4" rx="2" fill="#FBD38D"/>
+      <rect x="40" y="138" width="30" height="4" rx="2" fill="#FC8181"/>
+      <rect x="32" y="147" width="42" height="4" rx="2" fill="#B794F4"/>
+      <!-- Cursor blink -->
+      <rect x="76" y="147" width="3" height="7" rx="1" fill="#fff" opacity="0.8"/>
+      <!-- Python logo hint -->
+      <circle cx="108" cy="125" r="16" fill="#306998" stroke="#111" stroke-width="1.5"/>
+      <circle cx="108" cy="125" r="10" fill="#FFD43B"/>
+      <circle cx="108" cy="125" r="5" fill="#306998"/>
+      <!-- Cute face on lid -->
+      <rect x="22" y="45" width="116" height="50" rx="8" fill="#4A5568" stroke="#111" stroke-width="2.5"/>
+      <rect x="28" y="50" width="104" height="39" rx="5" fill="#2D3748"/>
+      <circle cx="64" cy="68" r="8" fill="#63B3ED"/>
+      <circle cx="96" cy="68" r="8" fill="#63B3ED"/>
+      <circle cx="67" cy="65" r="2.5" fill="#fff"/>
+      <circle cx="99" cy="65" r="2.5" fill="#fff"/>
+      <path d="M62 79 Q80 89 98 79" stroke="#63B3ED" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Hinge -->
+      <line x1="12" y1="95" x2="148" y2="95" stroke="#111" stroke-width="2"/>
+    </svg>
+  </a>
+
+  <!-- 3. INNOVATION & PROJECTS -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">INNOVATION</span>
+      <span class="badge">Presented to PM of India · Pariksha Pe Charcha</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Rocket body -->
+      <path d="M80 20 Q100 40 105 100 L80 115 L55 100 Q60 40 80 20Z" fill="#A855F7" stroke="#111" stroke-width="2.5"/>
+      <!-- Rocket nose -->
+      <path d="M80 20 Q70 10 80 5 Q90 10 80 20Z" fill="#7C3AED" stroke="#111" stroke-width="2"/>
+      <!-- Window -->
+      <circle cx="80" cy="70" r="16" fill="#fff" stroke="#111" stroke-width="2"/>
+      <circle cx="80" cy="70" r="11" fill="#C4B5FD"/>
+      <!-- Face in window -->
+      <circle cx="75" cy="67" r="5" fill="#111"/>
+      <circle cx="85" cy="67" r="5" fill="#111"/>
+      <circle cx="76" cy="65" r="1.5" fill="#fff"/>
+      <circle cx="86" cy="65" r="1.5" fill="#fff"/>
+      <path d="M74 74 Q80 79 86 74" stroke="#111" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- Fins -->
+      <path d="M55 100 L38 125 L60 115Z" fill="#7C3AED" stroke="#111" stroke-width="2"/>
+      <path d="M105 100 L122 125 L100 115Z" fill="#7C3AED" stroke="#111" stroke-width="2"/>
+      <!-- Exhaust -->
+      <path d="M65 115 Q70 130 62 148 Q72 138 80 148 Q88 138 98 148 Q90 130 95 115" fill="#FF8C42" stroke="#111" stroke-width="1.5"/>
+      <path d="M70 148 Q75 162 68 175 Q76 165 80 175 Q84 165 92 175 Q85 162 90 148" fill="#FFE04A" stroke="#111" stroke-width="1.5"/>
+      <!-- Stars -->
+      <circle cx="25" cy="50" r="3" fill="#FFD700"/>
+      <circle cx="135" cy="35" r="2" fill="#FFD700"/>
+      <circle cx="20" cy="80" r="2" fill="#FFD700"/>
+      <circle cx="140" cy="70" r="3" fill="#FFD700"/>
+      <circle cx="30" cy="120" r="2" fill="#A855F7"/>
+    </svg>
+  </a>
+
+  <!-- 4. LEADERSHIP -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">ARCHON</span>
+      <span class="badge">Head Boy 2025–26 · 3,500 Students</span>
+    </div>
+    <svg class="illus" viewBox="0 0 150 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Body -->
+      <ellipse cx="75" cy="158" rx="52" ry="45" fill="#F59E0B" stroke="#111" stroke-width="2.5"/>
+      <!-- Head -->
+      <circle cx="75" cy="100" r="50" fill="#F59E0B" stroke="#111" stroke-width="2.5"/>
+      <!-- Crown -->
+      <path d="M32 65 L44 82 L58 52 L75 70 L92 52 L106 82 L118 65 L118 88 L32 88 Z" fill="#FFD700" stroke="#111" stroke-width="2.5"/>
+      <circle cx="58" cy="55" r="6" fill="#EF4444" stroke="#111" stroke-width="1.5"/>
+      <circle cx="75" cy="50" r="7" fill="#3B82F6" stroke="#111" stroke-width="1.5"/>
+      <circle cx="92" cy="55" r="6" fill="#10B981" stroke="#111" stroke-width="1.5"/>
+      <!-- Eyes -->
+      <circle cx="62" cy="98" r="10" fill="#111"/>
+      <circle cx="88" cy="98" r="10" fill="#111"/>
+      <circle cx="65" cy="95" r="3.5" fill="#fff"/>
+      <circle cx="91" cy="95" r="3.5" fill="#fff"/>
+      <!-- Smile -->
+      <path d="M62 114 Q75 127 88 114" stroke="#111" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- Belly badge -->
+      <ellipse cx="75" cy="162" rx="30" ry="26" fill="#FDE68A" stroke="#111" stroke-width="2"/>
+      <path d="M66 155 L75 148 L84 155 L81 165 L69 165 Z" fill="#FFD700" stroke="#111" stroke-width="1.5"/>
+      <!-- Arms -->
+      <ellipse cx="20" cy="148" rx="14" ry="9" fill="#F59E0B" stroke="#111" stroke-width="2.5" transform="rotate(-30 20 148)"/>
+      <ellipse cx="130" cy="148" rx="14" ry="9" fill="#F59E0B" stroke="#111" stroke-width="2.5" transform="rotate(30 130 148)"/>
+    </svg>
+  </a>
+
+  <!-- 5. ECONOMICS -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">ECONOMICS</span>
+      <span class="badge">Yale Certified · Financial Markets</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Chart board -->
+      <rect x="15" y="50" width="130" height="90" rx="10" fill="#F0FDF4" stroke="#111" stroke-width="2.5"/>
+      <!-- Grid lines -->
+      <line x1="25" y1="120" x2="135" y2="120" stroke="#d1d5db" stroke-width="1"/>
+      <line x1="25" y1="105" x2="135" y2="105" stroke="#d1d5db" stroke-width="1"/>
+      <line x1="25" y1="90" x2="135" y2="90" stroke="#d1d5db" stroke-width="1"/>
+      <line x1="25" y1="75" x2="135" y2="75" stroke="#d1d5db" stroke-width="1"/>
+      <!-- Chart line (upward trend!) -->
+      <polyline points="30,118 50,110 65,102 80,88 95,80 110,70 130,60" stroke="#10B981" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Chart fill -->
+      <polygon points="30,118 50,110 65,102 80,88 95,80 110,70 130,60 130,120 30,120" fill="#10B981" opacity="0.15"/>
+      <!-- Axis -->
+      <line x1="25" y1="58" x2="25" y2="125" stroke="#111" stroke-width="2"/>
+      <line x1="25" y1="125" x2="138" y2="125" stroke="#111" stroke-width="2"/>
+      <!-- Cute face character below chart -->
+      <circle cx="80" cy="172" r="22" fill="#10B981" stroke="#111" stroke-width="2.5"/>
+      <circle cx="73" cy="169" r="6" fill="#111"/>
+      <circle cx="87" cy="169" r="6" fill="#111"/>
+      <circle cx="75" cy="167" r="2" fill="#fff"/>
+      <circle cx="89" cy="167" r="2" fill="#fff"/>
+      <path d="M72 178 Q80 186 88 178" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Dollar signs floating -->
+      <text x="125" y="48" font-size="16" fill="#10B981">$</text>
+      <text x="10" y="60" font-size="13" fill="#10B981">$</text>
+      <!-- Arrow up -->
+      <path d="M128 20 L128 50 M120 28 L128 20 L136 28" stroke="#10B981" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+
+  <!-- 6. ROBOTICS -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">ROBOTICS</span>
+      <span class="badge">FLL World #8 · Detroit 2019</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Robot body -->
+      <rect x="30" y="95" width="100" height="80" rx="12" fill="#64748B" stroke="#111" stroke-width="2.5"/>
+      <!-- Robot head -->
+      <rect x="38" y="42" width="84" height="58" rx="10" fill="#94A3B8" stroke="#111" stroke-width="2.5"/>
+      <!-- Antenna -->
+      <line x1="80" y1="42" x2="80" y2="22" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="80" cy="17" r="9" fill="#EF4444" stroke="#111" stroke-width="2.5"/>
+      <!-- Eyes (LED style) -->
+      <rect x="50" y="54" width="22" height="16" rx="4" fill="#111"/>
+      <rect x="88" y="54" width="22" height="16" rx="4" fill="#111"/>
+      <rect x="54" y="57" width="14" height="10" rx="2" fill="#00E676"/>
+      <rect x="92" y="57" width="14" height="10" rx="2" fill="#00E676"/>
+      <!-- Mouth panel -->
+      <rect x="55" y="78" width="50" height="14" rx="4" fill="#111"/>
+      <rect x="59" y="81" width="8" height="8" rx="1" fill="#FF6B35"/>
+      <rect x="71" y="81" width="8" height="8" rx="1" fill="#FFD700"/>
+      <rect x="83" y="81" width="8" height="8" rx="1" fill="#00E676"/>
+      <rect x="95" y="81" width="8" height="8" rx="1" fill="#40C4FF"/>
+      <!-- Body panel -->
+      <circle cx="65" cy="128" r="16" fill="#475569" stroke="#111" stroke-width="1.5"/>
+      <circle cx="65" cy="128" r="10" fill="#334155"/>
+      <circle cx="65" cy="128" r="5" fill="#00E676"/>
+      <rect x="90" y="115" width="28" height="18" rx="5" fill="#475569" stroke="#111" stroke-width="1.5"/>
+      <line x1="96" y1="124" x2="112" y2="124" stroke="#00E676" stroke-width="2"/>
+      <!-- Arms -->
+      <rect x="5" y="100" width="28" height="14" rx="7" fill="#64748B" stroke="#111" stroke-width="2.5"/>
+      <circle cx="8" cy="107" r="6" fill="#94A3B8" stroke="#111" stroke-width="1.5"/>
+      <rect x="127" y="100" width="28" height="14" rx="7" fill="#64748B" stroke="#111" stroke-width="2.5"/>
+      <circle cx="147" cy="107" r="6" fill="#94A3B8" stroke="#111" stroke-width="1.5"/>
+      <!-- Legs/treads -->
+      <rect x="38" y="168" width="35" height="28" rx="8" fill="#475569" stroke="#111" stroke-width="2"/>
+      <rect x="87" y="168" width="35" height="28" rx="8" fill="#475569" stroke="#111" stroke-width="2"/>
+    </svg>
+  </a>
+
+  <!-- 7. PUBLIC SPEAKING -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">RHETORICA</span>
+      <span class="badge">High Commendation MUN · Stage</span>
+    </div>
+    <svg class="illus" viewBox="0 0 140 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Podium -->
+      <rect x="38" y="155" width="64" height="50" rx="5" fill="#374151" stroke="#111" stroke-width="2.5"/>
+      <rect x="28" y="148" width="84" height="12" rx="4" fill="#4B5563" stroke="#111" stroke-width="2"/>
+      <!-- Microphone stand -->
+      <line x1="70" y1="148" x2="70" y2="108" stroke="#111" stroke-width="4" stroke-linecap="round"/>
+      <line x1="55" y1="148" x2="85" y2="148" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+      <!-- Mic head -->
+      <ellipse cx="70" cy="92" rx="16" ry="20" fill="#1F2937" stroke="#111" stroke-width="2.5"/>
+      <ellipse cx="70" cy="92" rx="10" ry="14" fill="#374151"/>
+      <!-- Sound waves -->
+      <path d="M96 80 Q104 92 96 104" stroke="#EF4444" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+      <path d="M106 72 Q118 92 106 112" stroke="#EF4444" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <path d="M44 80 Q36 92 44 104" stroke="#EF4444" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+      <path d="M34 72 Q22 92 34 112" stroke="#EF4444" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <!-- Speaker face -->
+      <circle cx="70" cy="42" r="32" fill="#FBBF24" stroke="#111" stroke-width="2.5"/>
+      <circle cx="60" cy="38" r="8" fill="#111"/>
+      <circle cx="80" cy="38" r="8" fill="#111"/>
+      <circle cx="62" cy="35" r="2.5" fill="#fff"/>
+      <circle cx="82" cy="35" r="2.5" fill="#fff"/>
+      <path d="M59 52 Q70 62 81 52" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Blush -->
+      <circle cx="50" cy="47" r="7" fill="#FCA5A5" opacity="0.6"/>
+      <circle cx="90" cy="47" r="7" fill="#FCA5A5" opacity="0.6"/>
+    </svg>
+  </a>
+
+  <!-- 8. GYM & FITNESS -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">ASKESIS</span>
+      <span class="badge">Daily Discipline · Strength Training</span>
+    </div>
+    <svg class="illus" viewBox="0 0 180 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Dumbbell bar -->
+      <rect x="30" y="96" width="120" height="10" rx="5" fill="#374151" stroke="#111" stroke-width="2"/>
+      <!-- Left weights -->
+      <rect x="14" y="78" width="22" height="46" rx="6" fill="#1F2937" stroke="#111" stroke-width="2.5"/>
+      <rect x="8" y="84" width="10" height="34" rx="4" fill="#374151" stroke="#111" stroke-width="2"/>
+      <!-- Right weights -->
+      <rect x="144" y="78" width="22" height="46" rx="6" fill="#1F2937" stroke="#111" stroke-width="2.5"/>
+      <rect x="162" y="84" width="10" height="34" rx="4" fill="#374151" stroke="#111" stroke-width="2"/>
+      <!-- Cute figure lifting -->
+      <!-- Body -->
+      <ellipse cx="90" cy="168" rx="28" ry="22" fill="#EF4444" stroke="#111" stroke-width="2.5"/>
+      <!-- Head -->
+      <circle cx="90" cy="136" r="24" fill="#FBBF24" stroke="#111" stroke-width="2.5"/>
+      <!-- Sweatband -->
+      <rect x="67" y="120" width="46" height="8" rx="4" fill="#EF4444" stroke="#111" stroke-width="1.5"/>
+      <!-- Eyes - straining hard -->
+      <path d="M80 132 Q84 128 88 132" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M92 132 Q96 128 100 132" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Determined mouth -->
+      <path d="M82 143 Q90 138 98 143" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Arms up holding bar -->
+      <path d="M64 155 Q46 140 36 102" stroke="#FBBF24" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path d="M116 155 Q134 140 144 102" stroke="#FBBF24" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <!-- Sweat drops -->
+      <ellipse cx="60" cy="120" rx="4" ry="6" fill="#60A5FA" opacity="0.7"/>
+      <ellipse cx="120" cy="116" rx="3" ry="5" fill="#60A5FA" opacity="0.7"/>
+      <!-- Stars of effort -->
+      <text x="18" y="60" font-size="16">💪</text>
+    </svg>
+  </a>
+
+  <!-- 9. READING -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">BIBLIOPHILIA</span>
+      <span class="badge">Philosophy · Finance · 50+ Books</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Book stack -->
+      <!-- Bottom book -->
+      <rect x="18" y="155" width="124" height="22" rx="5" fill="#3B82F6" stroke="#111" stroke-width="2.5"/>
+      <rect x="18" y="155" width="14" height="22" rx="5" fill="#1D4ED8" stroke="#111" stroke-width="2"/>
+      <line x1="35" y1="161" x2="35" y2="171" stroke="#fff" stroke-width="1" opacity="0.5"/>
+      <!-- Middle book -->
+      <rect x="24" y="133" width="112" height="26" rx="5" fill="#F59E0B" stroke="#111" stroke-width="2.5"/>
+      <rect x="24" y="133" width="14" height="26" rx="5" fill="#D97706" stroke="#111" stroke-width="2"/>
+      <!-- Top book (open) -->
+      <rect x="30" y="105" width="100" height="32" rx="6" fill="#FEF3C7" stroke="#111" stroke-width="2.5"/>
+      <line x1="80" y1="106" x2="80" y2="136" stroke="#111" stroke-width="2"/>
+      <!-- Text lines in open book -->
+      <line x1="38" y1="113" x2="74" y2="113" stroke="#d1d5db" stroke-width="1.5"/>
+      <line x1="38" y1="120" x2="74" y2="120" stroke="#d1d5db" stroke-width="1.5"/>
+      <line x1="38" y1="127" x2="68" y2="127" stroke="#d1d5db" stroke-width="1.5"/>
+      <line x1="86" y1="113" x2="122" y2="113" stroke="#d1d5db" stroke-width="1.5"/>
+      <line x1="86" y1="120" x2="122" y2="120" stroke="#d1d5db" stroke-width="1.5"/>
+      <line x1="86" y1="127" x2="116" y2="127" stroke="#d1d5db" stroke-width="1.5"/>
+      <!-- Cute reading character sitting on books -->
+      <circle cx="80" cy="75" r="30" fill="#FBBF24" stroke="#111" stroke-width="2.5"/>
+      <circle cx="70" cy="71" r="8" fill="#111"/>
+      <circle cx="90" cy="71" r="8" fill="#111"/>
+      <circle cx="72" cy="68" r="2.5" fill="#fff"/>
+      <circle cx="92" cy="68" r="2.5" fill="#fff"/>
+      <path d="M70 84 Q80 93 90 84" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Glasses -->
+      <rect x="60" y="65" width="18" height="12" rx="6" fill="none" stroke="#111" stroke-width="2"/>
+      <rect x="82" y="65" width="18" height="12" rx="6" fill="none" stroke="#111" stroke-width="2"/>
+      <line x1="78" y1="71" x2="82" y2="71" stroke="#111" stroke-width="2"/>
+      <!-- Bookmark -->
+      <rect x="108" y="100" width="8" height="20" rx="2" fill="#EF4444" stroke="#111" stroke-width="1.5"/>
+      <path d="M108 120 L112 115 L116 120" fill="#EF4444" stroke="#111" stroke-width="1"/>
+    </svg>
+  </a>
+
+  <!-- 10. JOURNALING -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">EPHEMERIS</span>
+      <span class="badge">Daily Reflection · Journaling · Creative Writing</span>
+    </div>
+    <svg class="illus" viewBox="0 0 150 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Notebook -->
+      <rect x="25" y="60" width="100" height="130" rx="8" fill="#F0FDF4" stroke="#111" stroke-width="2.5"/>
+      <!-- Spine -->
+      <rect x="25" y="60" width="16" height="130" rx="8" fill="#6BCB77" stroke="#111" stroke-width="2.5"/>
+      <!-- Spiral rings -->
+      <circle cx="33" cy="82" r="5" fill="none" stroke="#111" stroke-width="2"/>
+      <circle cx="33" cy="100" r="5" fill="none" stroke="#111" stroke-width="2"/>
+      <circle cx="33" cy="118" r="5" fill="none" stroke="#111" stroke-width="2"/>
+      <circle cx="33" cy="136" r="5" fill="none" stroke="#111" stroke-width="2"/>
+      <circle cx="33" cy="154" r="5" fill="none" stroke="#111" stroke-width="2"/>
+      <circle cx="33" cy="172" r="5" fill="none" stroke="#111" stroke-width="2"/>
+      <!-- Ruled lines -->
+      <line x1="48" y1="85" x2="115" y2="85" stroke="#BBF7D0" stroke-width="2"/>
+      <line x1="48" y1="97" x2="115" y2="97" stroke="#BBF7D0" stroke-width="2"/>
+      <line x1="48" y1="109" x2="115" y2="109" stroke="#BBF7D0" stroke-width="2"/>
+      <line x1="48" y1="121" x2="115" y2="121" stroke="#BBF7D0" stroke-width="2"/>
+      <line x1="48" y1="133" x2="115" y2="133" stroke="#BBF7D0" stroke-width="2"/>
+      <!-- Handwriting-style curves -->
+      <path d="M52 88 Q65 85 75 90 Q85 95 95 88" stroke="#374151" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M52 100 Q70 96 85 102" stroke="#374151" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M52 112 Q60 108 72 115 Q80 119 90 112" stroke="#374151" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- Pen character -->
+      <rect x="95" y="30" width="14" height="55" rx="5" fill="#374151" stroke="#111" stroke-width="2"/>
+      <polygon points="95,85 102,100 109,85" fill="#F59E0B" stroke="#111" stroke-width="1.5"/>
+      <line x1="102" y1="100" x2="102" y2="106" stroke="#111" stroke-width="2"/>
+      <rect x="95" y="30" width="14" height="12" rx="5" fill="#6BCB77" stroke="#111" stroke-width="2"/>
+      <!-- Face on pen body -->
+      <circle cx="99" cy="52" r="4" fill="#fff"/>
+      <circle cx="107" cy="52" r="4" fill="#fff"/>
+      <circle cx="100" cy="51" r="1.5" fill="#111"/>
+      <circle cx="108" cy="51" r="1.5" fill="#111"/>
+      <path d="M98 58 Q102 62 107 58" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </svg>
+  </a>
+
+  <!-- 11. GRAPHIC DESIGN -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">AESTHETICA</span>
+      <span class="badge">Photoshop · Brand Identity · UI/UX</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Palette -->
+      <ellipse cx="80" cy="140" rx="65" ry="55" fill="#FFF" stroke="#111" stroke-width="2.5"/>
+      <ellipse cx="80" cy="140" rx="55" ry="45" fill="#F8F9FA"/>
+      <!-- Thumb hole -->
+      <ellipse cx="55" cy="165" rx="16" ry="20" fill="#fff" stroke="#111" stroke-width="2.5"/>
+      <!-- Color blobs on palette -->
+      <circle cx="50" cy="120" r="14" fill="#EF4444" stroke="#111" stroke-width="1.5"/>
+      <circle cx="78" cy="108" r="14" fill="#3B82F6" stroke="#111" stroke-width="1.5"/>
+      <circle cx="108" cy="115" r="14" fill="#10B981" stroke="#111" stroke-width="1.5"/>
+      <circle cx="118" cy="145" r="14" fill="#F59E0B" stroke="#111" stroke-width="1.5"/>
+      <circle cx="48" cy="148" r="12" fill="#8B5CF6" stroke="#111" stroke-width="1.5"/>
+      <circle cx="80" cy="150" r="12" fill="#EC4899" stroke="#111" stroke-width="1.5"/>
+      <!-- Paintbrush -->
+      <rect x="108" y="48" width="10" height="60" rx="5" fill="#92400E" stroke="#111" stroke-width="2"/>
+      <ellipse cx="113" cy="48" rx="7" ry="9" fill="#374151" stroke="#111" stroke-width="2"/>
+      <path d="M107 108 L113 125 L119 108" fill="#EC4899" stroke="#111" stroke-width="1.5"/>
+      <!-- Cute designer face -->
+      <circle cx="80" cy="56" r="34" fill="#FBBF24" stroke="#111" stroke-width="2.5"/>
+      <!-- Beret -->
+      <ellipse cx="80" cy="30" rx="28" ry="12" fill="#EC4899" stroke="#111" stroke-width="2"/>
+      <ellipse cx="80" cy="28" rx="14" ry="7" fill="#BE185D" stroke="#111" stroke-width="1.5"/>
+      <circle cx="90" cy="22" r="5" fill="#EC4899" stroke="#111" stroke-width="1.5"/>
+      <!-- Eyes -->
+      <circle cx="70" cy="54" r="8" fill="#111"/>
+      <circle cx="90" cy="54" r="8" fill="#111"/>
+      <circle cx="72" cy="51" r="2.5" fill="#fff"/>
+      <circle cx="92" cy="51" r="2.5" fill="#fff"/>
+      <path d="M70 66 Q80 75 90 66" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+  </a>
+
+  <!-- 12. DRUMS -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">RHYTHMOS</span>
+      <span class="badge">Rhythm & Percussion · Self-Taught</span>
+    </div>
+    <svg class="illus" viewBox="0 0 180 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Bass drum -->
+      <ellipse cx="90" cy="155" rx="58" ry="42" fill="#DC2626" stroke="#111" stroke-width="2.5"/>
+      <ellipse cx="90" cy="155" rx="44" ry="30" fill="#B91C1C"/>
+      <ellipse cx="90" cy="155" rx="28" ry="18" fill="#991B1B"/>
+      <!-- Bass drum head face -->
+      <circle cx="82" cy="152" r="7" fill="#fff"/>
+      <circle cx="98" cy="152" r="7" fill="#fff"/>
+      <circle cx="83" cy="150" r="2.5" fill="#111"/>
+      <circle cx="99" cy="150" r="2.5" fill="#111"/>
+      <path d="M80 162 Q90 170 100 162" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Snare drum -->
+      <ellipse cx="42" cy="115" rx="28" ry="18" fill="#F59E0B" stroke="#111" stroke-width="2"/>
+      <rect x="14" y="115" width="56" height="14" rx="0" fill="#D97706" stroke="#111" stroke-width="2"/>
+      <ellipse cx="42" cy="129" rx="28" ry="8" fill="#F59E0B" stroke="#111" stroke-width="2"/>
+      <!-- Snare wires -->
+      <line x1="18" y1="127" x2="66" y2="127" stroke="#111" stroke-width="1" opacity="0.5"/>
+      <line x1="18" y1="124" x2="66" y2="124" stroke="#111" stroke-width="1" opacity="0.5"/>
+      <!-- Hi-hat -->
+      <ellipse cx="145" cy="90" rx="22" ry="6" fill="#FFD700" stroke="#111" stroke-width="2"/>
+      <ellipse cx="145" cy="84" rx="22" ry="6" fill="#FCD34D" stroke="#111" stroke-width="2"/>
+      <line x1="145" y1="90" x2="145" y2="160" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+      <!-- Tom tom -->
+      <ellipse cx="138" cy="115" rx="22" ry="14" fill="#7C3AED" stroke="#111" stroke-width="2"/>
+      <rect x="116" y="115" width="44" height="12" rx="0" fill="#6D28D9" stroke="#111" stroke-width="2"/>
+      <ellipse cx="138" cy="127" rx="22" ry="6" fill="#7C3AED" stroke="#111" stroke-width="2"/>
+      <!-- Drumsticks -->
+      <line x1="28" y1="60" x2="52" y2="112" stroke="#92400E" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="26" cy="56" r="8" fill="#6B2D0F" stroke="#111" stroke-width="2"/>
+      <line x1="130" y1="55" x2="108" y2="108" stroke="#92400E" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="132" cy="51" r="8" fill="#6B2D0F" stroke="#111" stroke-width="2"/>
+      <!-- Vibration lines -->
+      <path d="M14 105 Q20 100 26 105 Q32 110 38 105" stroke="#F59E0B" stroke-width="1.5" fill="none" opacity="0.7"/>
+      <path d="M142 75 Q148 70 154 75 Q160 80 166 75" stroke="#FFD700" stroke-width="1.5" fill="none" opacity="0.7"/>
+    </svg>
+  </a>
+
+  <!-- 13. WRITING A BOOK -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">CODEX</span>
+      <span class="badge">Work In Progress · Author · Writing a Book</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Typewriter body -->
+      <rect x="18" y="100" width="124" height="80" rx="10" fill="#374151" stroke="#111" stroke-width="2.5"/>
+      <!-- Paper -->
+      <rect x="42" y="68" width="76" height="50" rx="4" fill="#FEF9C3" stroke="#111" stroke-width="2"/>
+      <!-- Paper lines -->
+      <line x1="52" y1="82" x2="108" y2="82" stroke="#FDE68A" stroke-width="1.5"/>
+      <line x1="52" y1="90" x2="108" y2="90" stroke="#FDE68A" stroke-width="1.5"/>
+      <line x1="52" y1="98" x2="90" y2="98" stroke="#FDE68A" stroke-width="1.5"/>
+      <!-- Typewriter roller -->
+      <rect x="30" y="95" width="100" height="12" rx="6" fill="#1F2937" stroke="#111" stroke-width="2"/>
+      <!-- Keys panel -->
+      <rect x="28" y="120" width="104" height="50" rx="8" fill="#4B5563" stroke="#111" stroke-width="2"/>
+      <!-- Key rows -->
+      <rect x="34" y="127" width="12" height="10" rx="3" fill="#6B7280" stroke="#111" stroke-width="1"/>
+      <rect x="50" y="127" width="12" height="10" rx="3" fill="#6B7280" stroke="#111" stroke-width="1"/>
+      <rect x="66" y="127" width="12" height="10" rx="3" fill="#6B7280" stroke="#111" stroke-width="1"/>
+      <rect x="82" y="127" width="12" height="10" rx="3" fill="#F59E0B" stroke="#111" stroke-width="1"/>
+      <rect x="98" y="127" width="12" height="10" rx="3" fill="#6B7280" stroke="#111" stroke-width="1"/>
+      <rect x="114" y="127" width="12" height="10" rx="3" fill="#6B7280" stroke="#111" stroke-width="1"/>
+      <rect x="38" y="141" width="12" height="10" rx="3" fill="#6B7280" stroke="#111" stroke-width="1"/>
+      <rect x="54" y="141" width="12" height="10" rx="3" fill="#6B7280" stroke="#111" stroke-width="1"/>
+      <rect x="70" y="141" width="12" height="10" rx="3" fill="#EF4444" stroke="#111" stroke-width="1"/>
+      <rect x="86" y="141" width="12" height="10" rx="3" fill="#6B7280" stroke="#111" stroke-width="1"/>
+      <rect x="102" y="141" width="12" height="10" rx="3" fill="#6B7280" stroke="#111" stroke-width="1"/>
+      <!-- Space bar -->
+      <rect x="50" y="155" width="60" height="10" rx="4" fill="#9CA3AF" stroke="#111" stroke-width="1.5"/>
+      <!-- Cute character at typewriter -->
+      <circle cx="80" cy="42" r="24" fill="#FBBF24" stroke="#111" stroke-width="2.5"/>
+      <circle cx="73" cy="39" r="6" fill="#111"/>
+      <circle cx="87" cy="39" r="6" fill="#111"/>
+      <circle cx="74" cy="37" r="2" fill="#fff"/>
+      <circle cx="88" cy="37" r="2" fill="#fff"/>
+      <path d="M72 50 Q80 57 88 50" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Thinking bubble -->
+      <circle cx="110" cy="22" r="3" fill="#fff" stroke="#111" stroke-width="1.5" opacity="0.8"/>
+      <circle cx="120" cy="16" r="4" fill="#fff" stroke="#111" stroke-width="1.5" opacity="0.8"/>
+      <circle cx="132" cy="12" r="7" fill="#fff" stroke="#111" stroke-width="1.5"/>
+      <text x="127" y="15" font-size="8" fill="#111">?!</text>
+    </svg>
+  </a>
+
+  <!-- 14. PHILOSOPHY -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">SOPHIA</span>
+      <span class="badge">Stoics · Systems Thinking · Philosophy</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Lightbulb -->
+      <path d="M80 25 Q110 25 118 58 Q124 80 110 100 Q104 114 100 125 L60 125 Q56 114 50 100 Q36 80 42 58 Q50 25 80 25Z" fill="#FDE68A" stroke="#111" stroke-width="2.5"/>
+      <!-- Glow -->
+      <path d="M80 35 Q104 36 110 62 Q114 78 104 96 L56 96 Q46 78 50 62 Q56 36 80 35Z" fill="#FEF08A" opacity="0.6"/>
+      <!-- Base of bulb -->
+      <rect x="62" y="125" width="36" height="10" rx="3" fill="#9CA3AF" stroke="#111" stroke-width="2"/>
+      <rect x="66" y="135" width="28" height="8" rx="3" fill="#6B7280" stroke="#111" stroke-width="2"/>
+      <rect x="62" y="143" width="36" height="8" rx="3" fill="#9CA3AF" stroke="#111" stroke-width="2"/>
+      <!-- Filament/face inside bulb -->
+      <circle cx="72" cy="72" r="9" fill="#111"/>
+      <circle cx="88" cy="72" r="9" fill="#111"/>
+      <circle cx="74" cy="69" r="3" fill="#FEF9C3"/>
+      <circle cx="90" cy="69" r="3" fill="#FEF9C3"/>
+      <path d="M70 85 Q80 95 90 85" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Shine lines -->
+      <line x1="118" y1="42" x2="132" y2="32" stroke="#FCD34D" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="124" y1="60" x2="140" y2="58" stroke="#FCD34D" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="42" y1="42" x2="28" y2="32" stroke="#FCD34D" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="36" y1="60" x2="20" y2="58" stroke="#FCD34D" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="80" y1="15" x2="80" y2="2" stroke="#FCD34D" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Greek Sigma / phi symbol on body-->
+      <text x="68" y="165" font-size="28" fill="#6366F1" font-weight="bold" opacity="0.8">φ</text>
+      <!-- Quote marks -->
+      <text x="12" y="88" font-size="32" fill="#FDE68A" opacity="0.6">"</text>
+      <text x="128" y="115" font-size="32" fill="#FDE68A" opacity="0.6">"</text>
+    </svg>
+  </a>
+
+  <!-- 16. ART & ILLUSTRATION -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">EIDOLON</span>
+      <span class="badge">Visual Thinking · Art & Illustration · Sketchbooks</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Canvas on easel -->
+      <line x1="80" y1="145" x2="50" y2="195" stroke="#92400E" stroke-width="4" stroke-linecap="round"/>
+      <line x1="80" y1="145" x2="110" y2="195" stroke="#92400E" stroke-width="4" stroke-linecap="round"/>
+      <line x1="60" y1="178" x2="100" y2="178" stroke="#92400E" stroke-width="3" stroke-linecap="round"/>
+      <!-- Canvas frame -->
+      <rect x="28" y="48" width="104" height="100" rx="4" fill="#FEF9C3" stroke="#111" stroke-width="3"/>
+      <rect x="18" y="40" width="124" height="12" rx="4" fill="#92400E" stroke="#111" stroke-width="2"/>
+      <rect x="18" y="144" width="124" height="8" rx="4" fill="#92400E" stroke="#111" stroke-width="2"/>
+      <!-- Painting on canvas — mini landscape -->
+      <rect x="28" y="98" width="104" height="50" rx="0" fill="#87CEEB"/>
+      <ellipse cx="60" cy="98" rx="28" ry="24" fill="#10B981"/>
+      <ellipse cx="100" cy="98" rx="22" ry="18" fill="#059669"/>
+      <ellipse cx="80" cy="100" rx="18" ry="16" fill="#34D399"/>
+      <!-- Sun on canvas -->
+      <circle cx="100" cy="68" r="14" fill="#FCD34D" stroke="#F59E0B" stroke-width="1.5"/>
+      <!-- Cute painter character -->
+      <circle cx="80" cy="22" r="18" fill="#FBBF24" stroke="#111" stroke-width="2.5"/>
+      <!-- Beret -->
+      <ellipse cx="80" cy="10" rx="16" ry="7" fill="#EF4444" stroke="#111" stroke-width="2"/>
+      <circle cx="84" cy="6" r="3" fill="#DC2626" stroke="#111" stroke-width="1.5"/>
+      <!-- Eyes -->
+      <circle cx="74" cy="21" r="5" fill="#111"/>
+      <circle cx="86" cy="21" r="5" fill="#111"/>
+      <circle cx="75" cy="19" r="1.5" fill="#fff"/>
+      <circle cx="87" cy="19" r="1.5" fill="#fff"/>
+      <path d="M73 29 Q80 35 87 29" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Paint brush in hand -->
+      <line x1="105" y1="38" x2="125" y2="55" stroke="#92400E" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="128" cy="58" rx="6" ry="4" fill="#EC4899" stroke="#111" stroke-width="1.5"/>
+      <!-- Paint splashes -->
+      <circle cx="22" cy="75" r="5" fill="#EF4444" opacity="0.8"/>
+      <circle cx="18" cy="90" r="3" fill="#3B82F6" opacity="0.8"/>
+      <circle cx="138" cy="80" r="4" fill="#10B981" opacity="0.8"/>
+      <circle cx="142" cy="65" r="3" fill="#F59E0B" opacity="0.8"/>
+    </svg>
+  </a>
+
+  <!-- 17. EVENT PLANNING -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">SYMPOSIUM</span>
+      <span class="badge">Scifest · Melange · ACON · 2,000+ Attendees</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Party character -->
+      <ellipse cx="80" cy="158" rx="50" ry="42" fill="#F59E0B" stroke="#111" stroke-width="2.5"/>
+      <circle cx="80" cy="110" r="45" fill="#F59E0B" stroke="#111" stroke-width="2.5"/>
+      <!-- Party hat -->
+      <path d="M80 45 L56 88 L104 88 Z" fill="#EC4899" stroke="#111" stroke-width="2.5"/>
+      <path d="M80 45 L64 78 L96 78 Z" fill="#BE185D" opacity="0.5"/>
+      <circle cx="80" cy="43" r="6" fill="#FCD34D" stroke="#111" stroke-width="2"/>
+      <!-- Hat stripes -->
+      <line x1="68" y1="80" x2="80" y2="48" stroke="#fff" stroke-width="1.5" opacity="0.5"/>
+      <line x1="92" y1="80" x2="80" y2="48" stroke="#fff" stroke-width="1.5" opacity="0.5"/>
+      <!-- Eyes happy -->
+      <path d="M65 106 Q70 100 75 106" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M85 106 Q90 100 95 106" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Big smile -->
+      <path d="M63 122 Q80 140 97 122" stroke="#111" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- Confetti -->
+      <rect x="20" y="40" width="8" height="12" rx="2" fill="#EF4444" transform="rotate(20 20 40)"/>
+      <rect x="130" y="30" width="7" height="10" rx="2" fill="#3B82F6" transform="rotate(-25 130 30)"/>
+      <rect x="10" y="70" width="6" height="9" rx="2" fill="#10B981" transform="rotate(35 10 70)"/>
+      <rect x="140" y="60" width="8" height="11" rx="2" fill="#F59E0B" transform="rotate(-15 140 60)"/>
+      <rect x="25" y="100" width="6" height="8" rx="2" fill="#8B5CF6" transform="rotate(10 25 100)"/>
+      <rect x="138" y="95" width="7" height="10" rx="2" fill="#EC4899" transform="rotate(-30 138 95)"/>
+      <circle cx="15" cy="55" r="4" fill="#FCD34D"/>
+      <circle cx="145" cy="50" r="3" fill="#EF4444"/>
+      <circle cx="12" cy="85" r="3" fill="#3B82F6"/>
+      <circle cx="148" cy="80" r="4" fill="#10B981"/>
+      <!-- Streamers -->
+      <path d="M30 30 Q45 55 35 80" stroke="#EC4899" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M130 25 Q115 50 125 75" stroke="#3B82F6" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Belly badge -->
+      <ellipse cx="80" cy="162" rx="28" ry="22" fill="#FDE68A" stroke="#111" stroke-width="2"/>
+      <text x="66" y="168" font-size="18">🎉</text>
+    </svg>
+  </a>
+
+  <!-- 18. CAD & PROTOTYPING -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">TECHNE</span>
+      <span class="badge">3DExperience · Rapid Prototyping · CAD</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- 3D isometric cube -->
+      <!-- Top face -->
+      <polygon points="80,40 128,65 80,90 32,65" fill="#E0E7FF" stroke="#111" stroke-width="2.5"/>
+      <!-- Left face -->
+      <polygon points="32,65 80,90 80,145 32,120" fill="#6366F1" stroke="#111" stroke-width="2.5"/>
+      <!-- Right face -->
+      <polygon points="128,65 80,90 80,145 128,120" fill="#818CF8" stroke="#111" stroke-width="2.5"/>
+      <!-- Cube interior lines (wireframe feel) -->
+      <line x1="80" y1="90" x2="80" y2="65" stroke="#111" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+      <line x1="80" y1="65" x2="55" y2="52" stroke="#111" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+      <line x1="80" y1="65" x2="105" y2="52" stroke="#111" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+      <!-- Face on cube top -->
+      <circle cx="72" cy="62" r="7" fill="#4F46E5"/>
+      <circle cx="88" cy="62" r="7" fill="#4F46E5"/>
+      <circle cx="73" cy="60" r="2" fill="#fff"/>
+      <circle cx="89" cy="60" r="2" fill="#fff"/>
+      <path d="M70 70 Q80 78 90 70" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Measurement arrows -->
+      <line x1="32" y1="130" x2="32" y2="150" stroke="#6366F1" stroke-width="2" stroke-linecap="round"/>
+      <line x1="80" y1="155" x2="80" y2="175" stroke="#6366F1" stroke-width="2" stroke-linecap="round"/>
+      <!-- Ruler -->
+      <rect x="30" y="168" width="100" height="14" rx="3" fill="#FDE68A" stroke="#111" stroke-width="2"/>
+      <line x1="42" y1="168" x2="42" y2="178" stroke="#111" stroke-width="1.5"/>
+      <line x1="54" y1="168" x2="54" y2="175" stroke="#111" stroke-width="1.5"/>
+      <line x1="66" y1="168" x2="66" y2="178" stroke="#111" stroke-width="1.5"/>
+      <line x1="78" y1="168" x2="78" y2="175" stroke="#111" stroke-width="1.5"/>
+      <line x1="90" y1="168" x2="90" y2="178" stroke="#111" stroke-width="1.5"/>
+      <line x1="102" y1="168" x2="102" y2="175" stroke="#111" stroke-width="1.5"/>
+      <line x1="114" y1="168" x2="114" y2="178" stroke="#111" stroke-width="1.5"/>
+      <!-- Gear -->
+      <circle cx="130" cy="40" r="18" fill="#94A3B8" stroke="#111" stroke-width="2"/>
+      <circle cx="130" cy="40" r="10" fill="#64748B" stroke="#111" stroke-width="2"/>
+      <circle cx="130" cy="40" r="4" fill="#111"/>
+      <rect x="126" y="18" width="8" height="8" rx="2" fill="#94A3B8" stroke="#111" stroke-width="1.5"/>
+      <rect x="126" y="54" width="8" height="8" rx="2" fill="#94A3B8" stroke="#111" stroke-width="1.5"/>
+      <rect x="108" y="36" width="8" height="8" rx="2" fill="#94A3B8" stroke="#111" stroke-width="1.5"/>
+      <rect x="144" y="36" width="8" height="8" rx="2" fill="#94A3B8" stroke="#111" stroke-width="1.5"/>
+    </svg>
+  </a>
+
+  <!-- 19. WEB & APP DESIGN -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">WEB & APP DESIGN</span>
+      <span class="badge">Frontend · UI/UX · Figma</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Browser frame -->
+      <rect x="10" y="45" width="140" height="100" rx="10" fill="#F8FAFC" stroke="#111" stroke-width="2.5"/>
+      <!-- Browser bar -->
+      <rect x="10" y="45" width="140" height="24" rx="10" fill="#E2E8F0" stroke="#111" stroke-width="2.5"/>
+      <rect x="10" y="56" width="140" height="13" rx="0" fill="#E2E8F0"/>
+      <!-- Browser dots -->
+      <circle cx="26" cy="57" r="5" fill="#EF4444"/>
+      <circle cx="40" cy="57" r="5" fill="#F59E0B"/>
+      <circle cx="54" cy="57" r="5" fill="#10B981"/>
+      <!-- URL bar -->
+      <rect x="68" y="51" width="70" height="12" rx="6" fill="#fff" stroke="#CBD5E1" stroke-width="1.5"/>
+      <!-- Page content mockup -->
+      <rect x="20" y="78" width="120" height="10" rx="3" fill="#6366F1" opacity="0.7"/>
+      <rect x="20" y="94" width="80" height="7" rx="2" fill="#94A3B8"/>
+      <rect x="20" y="106" width="60" height="7" rx="2" fill="#94A3B8"/>
+      <!-- Cards -->
+      <rect x="20" y="120" width="36" height="16" rx="4" fill="#BFDBFE" stroke="#111" stroke-width="1.5"/>
+      <rect x="62" y="120" width="36" height="16" rx="4" fill="#BBF7D0" stroke="#111" stroke-width="1.5"/>
+      <rect x="104" y="120" width="36" height="16" rx="4" fill="#FDE68A" stroke="#111" stroke-width="1.5"/>
+      <!-- Cute designer face looking at screen -->
+      <circle cx="80" cy="28" r="20" fill="#FBBF24" stroke="#111" stroke-width="2.5"/>
+      <circle cx="73" cy="26" r="5" fill="#111"/>
+      <circle cx="87" cy="26" r="5" fill="#111"/>
+      <circle cx="74" cy="24" r="1.5" fill="#fff"/>
+      <circle cx="88" cy="24" r="1.5" fill="#fff"/>
+      <path d="M72 34 Q80 40 88 34" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Mouse -->
+      <rect x="110" y="148" width="24" height="35" rx="12" fill="#E2E8F0" stroke="#111" stroke-width="2"/>
+      <line x1="122" y1="148" x2="122" y2="168" stroke="#111" stroke-width="1.5"/>
+      <ellipse cx="122" cy="155" rx="5" ry="3" fill="#CBD5E1"/>
+      <!-- Cursor -->
+      <path d="M25" y1="155" L30 175 L36 163 L44 175" stroke="#6366F1" stroke-width="2" fill="none"/>
+      <path d="M25 155 L30 175 L33 164 L44 173 L25 155" fill="#6366F1" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>
+  </a>
+
+  <!-- 20. ORBITAL GUARDIAN / SPACE -->
+  <a href="#" class="project-row">
+    <div class="row-content">
+      <span class="project-title">ORBITAL GUARDIAN</span>
+      <span class="badge">Space Debris · Solo Project · 2024</span>
+    </div>
+    <svg class="illus" viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Planet Earth -->
+      <circle cx="80" cy="120" r="60" fill="#1E40AF" stroke="#111" stroke-width="2.5"/>
+      <!-- Land masses -->
+      <ellipse cx="65" cy="100" rx="22" ry="18" fill="#16A34A" stroke="#111" stroke-width="1.5"/>
+      <ellipse cx="98" cy="115" rx="16" ry="22" fill="#16A34A" stroke="#111" stroke-width="1.5"/>
+      <ellipse cx="62" cy="130" rx="14" ry="10" fill="#16A34A" stroke="#111" stroke-width="1.5"/>
+      <!-- Atmosphere glow -->
+      <circle cx="80" cy="120" r="65" fill="none" stroke="#60A5FA" stroke-width="4" opacity="0.3"/>
+      <!-- Orbit ring -->
+      <ellipse cx="80" cy="120" rx="90" ry="30" fill="none" stroke="#111" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <!-- Satellite on orbit -->
+      <rect x="130" y="86" width="20" height="12" rx="4" fill="#94A3B8" stroke="#111" stroke-width="2"/>
+      <rect x="118" y="90" width="14" height="4" rx="2" fill="#FCD34D" stroke="#111" stroke-width="1.5"/>
+      <rect x="148" y="90" width="14" height="4" rx="2" fill="#FCD34D" stroke="#111" stroke-width="1.5"/>
+      <circle cx="140" cy="92" r="3" fill="#60A5FA"/>
+      <!-- Debris pieces being caught -->
+      <polygon points="20,60 28,50 35,62 24,68" fill="#6B7280" stroke="#111" stroke-width="1.5"/>
+      <polygon points="15,95 22,88 28,97 18,102" fill="#9CA3AF" stroke="#111" stroke-width="1.5"/>
+      <!-- Net/catcher -->
+      <path d="M38 72 Q30 80 38 92" stroke="#F59E0B" stroke-width="2" fill="none"/>
+      <path d="M38 72 Q50 68 54 78 Q50 88 38 92" fill="#FDE68A" stroke="#F59E0B" stroke-width="1.5" opacity="0.6"/>
+      <!-- Face on Earth -->
+      <circle cx="72" cy="118" r="8" fill="#fff" opacity="0.9"/>
+      <circle cx="88" cy="118" r="8" fill="#fff" opacity="0.9"/>
+      <circle cx="73" cy="116" r="3" fill="#111"/>
+      <circle cx="89" cy="116" r="3" fill="#111"/>
+      <path d="M70 130 Q80 138 90 130" stroke="#111" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Stars -->
+      <circle cx="18" cy="30" r="2" fill="#FCD34D"/>
+      <circle cx="140" cy="20" r="3" fill="#FCD34D"/>
+      <circle cx="155" cy="45" r="2" fill="#fff"/>
+      <circle cx="8" cy="150" r="2" fill="#fff"/>
+      <circle cx="152" cy="165" r="2" fill="#FCD34D"/>
+    </svg>
+  </a>
+
+</div>
+
+<!-- ── SKILL MODAL OVERLAY ─── -->
+<div id="skill-overlay" aria-modal="true" role="dialog">
+  <div id="skill-overlay-bg">
+    <div id="skill-overlay-blur"></div>
+    <div id="skill-overlay-dim"></div>
+  </div>
+  <div id="skill-modal">
+    <div id="skill-modal-header">
+      <div>
+        <div id="skill-modal-eyebrow"></div>
+        <div id="skill-modal-title"></div>
+      </div>
+      <button id="skill-close" aria-label="Close">✕</button>
+    </div>
+    <div id="skill-modal-body">
+      <div id="skill-modal-col-1">
+        <div class="modal-section-label">WHAT I'VE DONE</div>
+        <p id="skill-modal-done"></p>
+        <div class="modal-section-label">HOW I FEEL ABOUT IT</div>
+        <p id="skill-modal-feel"></p>
+      </div>
+      <div id="skill-modal-col-2">
+        <div class="modal-section-label">SKILL LEVEL</div>
+        <div id="skill-modal-level-wrap">
+          <div id="skill-modal-level-track">
+            <div id="skill-modal-level-fill"></div>
+          </div>
+          <div id="skill-modal-level-pct"></div>
+        </div>
+        <div class="modal-section-label" style="margin-top:24px">TAGS</div>
+        <div id="skill-modal-tags" class="modal-tags"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ─── -->
+<div class="footer-strip">
+  <span>ABHINAV CHUTANI © 2026</span>
+  <span><a href="about.html">ABOUT</a> &nbsp;|&nbsp; <a href="mailto:abhinavchutani3@gmail.com">abhinavchutani3@gmail.com</a> &nbsp;|&nbsp; <a href="#">LINKEDIN</a></span>
+</div>
+
+<script>
+  /* =========================================================
+     SKILL MODAL DATA
+  ========================================================= */
+  const SKILL_DATA = [
+    {
+      title: 'STRINGS',
+      badge: 'Grade 6 ISOM · The Piano Man, Delhi',
+      modalBg: '#FDE8EE',
+      level: 78, levelLabel: 'Grade 6 · ISOM Certified',
+      done: 'Started formal violin training at age 8 at The Piano Man, New Delhi. Progressed methodically through ISOM grades, reaching Grade 6. Performed in school concerts, recitals, and cultural events. Now balancing classical technique with personal expression.',
+      feel: 'Violin is my meditation. When everything else demands noise, the bow demands silence — demands presence. It taught me patience, precision, and that mastery is a posture, not a destination.',
+      tags: ['Grade 6 ISOM', '8+ Years', 'Classical', 'The Piano Man', 'Performance']
+    },
+    {
+      title: 'SYNTAX',
+      badge: 'Self-Taught · Algorithmic Logic',
+      modalBg: '#BBF7D0',
+      level: 72, levelLabel: 'Intermediate — Advancing',
+      done: 'Taught myself Python from scratch through online resources and building real projects. Developed Orbital Guardian — a solo project about space debris — using algorithmic logic and data processing. Also explored web development, automation scripts, and data visualisation.',
+      feel: 'Code is the closest thing I\'ve found to thinking with superpowers. When I write a function that works, it\'s not just a program — it\'s a formalised idea. That feeling never gets old. I think of Python as the language of clarity.',
+      tags: ['Self-Taught', 'Python', 'Orbital Guardian', 'Algorithms', 'Web Dev', 'Automation']
+    },
+    {
+      title: 'INNOVATION',
+      badge: 'Presented to PM of India · Pariksha Pe Charcha',
+      modalBg: '#DDD6FE',
+      level: 88, levelLabel: 'Advanced — Recognition at Highest Level',
+      done: 'Designed and presented an innovation at Pariksha Pe Charcha — directly to the Prime Minister of India. Built Orbital Guardian, a space debris tracking and mitigation concept, solo at age 16. Created and led multiple innovation projects at school-level and beyond.',
+      feel: 'Innovation isn\'t about inventing the wheel — it\'s about seeing what\'s broken and refusing to accept it. Every project I build starts with a problem that bothers me. The PM presentation taught me that age is not a prerequisite for impact.',
+      tags: ['PM of India', 'Pariksha Pe Charcha', 'Orbital Guardian', 'Space Tech', 'Solo Projects']
+    },
+    {
+      title: 'ARCHON',
+      badge: 'Head Boy 2025–26 · 3,500 Students',
+      modalBg: '#FEF08A',
+      level: 92, levelLabel: 'Head Boy · School-Wide Authority',
+      done: 'Elected Head Boy of DAV Public School, responsible for a student body of 3,500. Led school assemblies, represented students in administrative decisions, organised inter-house events, and served as the bridge between student body and faculty. Mentored younger students and managed a prefect team.',
+      feel: 'Leadership isn\'t a title — it\'s a weight you choose to carry. The moment I realised I could change someone\'s day through a decision I made, everything shifted. Real leadership is invisible when it\'s working: people thrive, not because you pushed, but because you made space.',
+      tags: ['Head Boy 2025–26', '3,500 Students', 'DAV Public School', 'Prefect Team', 'Assemblies', 'Mentorship']
+    },
+    {
+      title: 'ECONOMICS',
+      badge: 'Yale Certified · Financial Markets',
+      modalBg: '#A7F3D0',
+      level: 75, levelLabel: 'Yale Certified — Deep Interest',
+      done: 'Completed Yale University\'s Financial Markets course (Robert Shiller), earning certification. Independently studied macroeconomics, behavioural economics, and financial systems. Pursuing Economics as my primary university subject, aiming for PPE or Economics at top global institutions.',
+      feel: 'Economics is the study of why people do what they do — and what happens when millions of people do it simultaneously. It\'s less about money and more about incentives, systems, and human irrationality. I am drawn to it because it explains almost everything.',
+      tags: ['Yale Certified', 'Robert Shiller', 'Financial Markets', 'Macro', 'Behavioural Econ', 'University Prep']
+    },
+    {
+      title: 'ROBOTICS',
+      badge: 'FLL World #8 · Detroit 2019',
+      modalBg: '#BFDBFE',
+      level: 82, levelLabel: 'World Top-10 · FLL Champion',
+      done: 'Represented India at the FIRST Lego League World Festival in Detroit, finishing 8th globally. Led the team\'s robot design and strategy, developing autonomous programs and engineering solutions under strict competition constraints. The team competed across regional and national qualifiers before reaching the world stage.',
+      feel: 'Detroit 2019 changed something in me. Standing in that arena, 8th in the world, I understood that the scale of your ambition is entirely your choice. Robotics taught me that the gap between a vision and a working machine is just iteration.',
+      tags: ['FLL World #8', 'Detroit 2019', 'FIRST Lego League', 'Autonomous Programming', 'Team Lead', 'India Rep']
+    },
+    {
+      title: 'RHETORICA',
+      badge: 'High Commendation MUN · Stage',
+      modalBg: '#FECACA',
+      level: 80, levelLabel: 'High Commendation · MUN & Stage',
+      done: 'Earned High Commendation at Model United Nations. Delivered speeches at school assemblies addressing 3,500+ people. Presented projects to the Prime Minister of India. Hosted and anchored major school events including Scifest, Melange, and ACON.',
+      feel: 'The room changes when you speak with conviction. I used to be terrified of silence — now I use it deliberately. Public speaking taught me that clarity of thought and the courage to express it are the same muscle.',
+      tags: ['High Commendation', 'MUN', 'Assembly Speeches', 'Event Host', 'PM Presentation', '3500+ Audience']
+    },
+    {
+      title: 'ASKESIS',
+      badge: 'Daily Discipline · Strength Training',
+      modalBg: '#F3F4F6',
+      level: 70, levelLabel: 'Consistent — Building Strength',
+      done: 'Training at the gym daily as part of a deliberate discipline practice. Focus on compound movements, progressive overload, and strength development. The gym became a non-negotiable part of my morning routine.',
+      feel: 'The gym is the one place where honesty is absolute. You either lift the weight or you don\'t. No persuasion. No charm. No shortcuts. That clarity is addictive — and it bleeds into everything else.',
+      tags: ['Daily Training', 'Strength', 'Compound Lifts', 'Progressive Overload', 'Discipline']
+    },
+    {
+      title: 'BIBLIOPHILIA',
+      badge: 'Philosophy · Finance · 50+ Books',
+      modalBg: '#FDE68A',
+      level: 85, levelLabel: '50+ Books · Across Disciplines',
+      done: 'Read 50+ books across philosophy, finance, economics, history, and fiction. Key reads include Meditations (Marcus Aurelius), The Psychology of Money, Sapiens, Poor Charlie\'s Almanack, and works by Nassim Taleb. Reading is a daily habit.',
+      feel: 'Books are conversations with the best minds across time. There\'s something almost violent about a great book — it rewires how you see. I read to disagree, to question, and occasionally to find exactly what I didn\'t know I needed.',
+      tags: ['50+ Books', 'Philosophy', 'Finance', 'Stoics', 'History', 'Economics', 'Daily Habit']
+    },
+    {
+      title: 'EPHEMERIS',
+      badge: 'Daily Reflection · Creative Writing',
+      modalBg: '#BBF7D0',
+      level: 76, levelLabel: 'Daily Practice',
+      done: 'Journal daily — a mix of structured reflection (goals, gratitude, lessons) and free-form creative writing. Also use journaling as a thinking tool: writing out complex ideas, problems, and plans to clarify them.',
+      feel: 'Writing to yourself is the most honest conversation you\'ll have. Journaling caught me lying to myself and called it out. It\'s where I process, where I plan, and where I find the threads of what I actually believe.',
+      tags: ['Daily', 'Reflection', 'Creative Writing', 'Thinking Tool', 'Gratitude']
+    },
+    {
+      title: 'AESTHETICA',
+      badge: 'Photoshop · Brand Identity · UI/UX',
+      modalBg: '#FBCFE8',
+      level: 74, levelLabel: 'Intermediate — Multiple Tools',
+      done: 'Proficient in Adobe Photoshop, Figma, and Canva. Designed posters, event materials, social media assets, and brand identities for school events including Scifest, Melange, and ACON. Also building UI/UX projects as part of web development work.',
+      feel: 'Design is the argument that a thing is worth paying attention to. A great design doesn\'t shout — it convinces. I\'m drawn to the precision of it: every pixel either earns its place or it doesn\'t.',
+      tags: ['Photoshop', 'Figma', 'Brand Identity', 'UI/UX', 'Event Design', 'Canva']
+    },
+    {
+      title: 'RHYTHMOS',
+      badge: 'Rhythm & Percussion · Self-Taught',
+      modalBg: '#FDE68A',
+      level: 65, levelLabel: 'Self-Taught — Intermediate',
+      done: 'Self-taught drummer, learning primarily through YouTube, music theory, and playing along to tracks. Can hold grooves, play fills, and play in multiple styles. Not formally trained, but rhythmically strong from violin background.',
+      feel: 'Drums are freedom. Violin taught me precision — drums taught me to let go of it. The paradox is that the best drumming is both completely controlled and completely uninhibited at the same time.',
+      tags: ['Self-Taught', 'Rhythm', 'Percussion', 'Multi-Style', 'Groove']
+    },
+    {
+      title: 'CODEX',
+      badge: 'Work In Progress · Author',
+      modalBg: '#FEF9C3',
+      level: 40, levelLabel: 'Work In Progress',
+      done: 'Currently writing a non-fiction book. The project is in progress — structuring chapters, researching, and drafting. The subject involves the intersection of ideas, ambition, and what it means to build a life deliberately at a young age.',
+      feel: 'Writing a book is the long game. Every other project gives fast feedback — the book gives none. It\'s taught me to work for the work itself, not the response. I want to leave something that says: this is what I thought, at 18, at the edge of everything.',
+      tags: ['Non-Fiction', 'WIP', 'Author', 'Long-Form Writing', '2026']
+    },
+    {
+      title: 'SOPHIA',
+      badge: 'Stoics · Systems Thinking',
+      modalBg: '#C7D2FE',
+      level: 80, levelLabel: 'Deep Practice — Stoic Framework',
+      done: 'Extensively studied Stoic philosophy (Marcus Aurelius, Epictetus, Seneca), systems thinking, and epistemology. Apply philosophical frameworks daily — journaling, decision-making, and understanding human behaviour. Also exploring Eastern philosophy and existentialism.',
+      feel: 'Philosophy is the operating system underneath everything I do. It doesn\'t tell me what to think — it tells me how to think. The Stoics gave me something rare: a framework that works equally well in triumph and in disaster.',
+      tags: ['Stoics', 'Marcus Aurelius', 'Systems Thinking', 'Epistemology', 'Daily Practice']
+    },
+    {
+      title: 'EIDOLON',
+      badge: 'Visual Thinking · Sketchbooks',
+      modalBg: '#FFEDD5',
+      level: 62, levelLabel: 'Personal Practice',
+      done: 'Maintains sketchbooks for visual thinking — using illustration as a tool for ideation, not just aesthetics. Sketches characters, diagrams, interface concepts, and spontaneous designs. Art is a private practice, separate from graphic design work.',
+      feel: 'Drawing is thinking at the speed of a pencil. When language is too slow or too narrow, I draw. It\'s the most honest medium — you can\'t hide in a sketch the way you can in a sentence.',
+      tags: ['Sketchbooks', 'Visual Thinking', 'Ideation', 'Character Design', 'Personal']
+    },
+    {
+      title: 'SYMPOSIUM',
+      badge: 'Scifest · Melange · ACON · 2,000+ Attendees',
+      modalBg: '#FEF9C3',
+      level: 85, levelLabel: 'Large-Scale Event Lead',
+      done: 'Organised and hosted Scifest, Melange, and ACON — major school events each drawing 2,000+ attendees. Responsible for concept design, logistics, sponsorships, anchoring, and post-event review. Coordinated large teams and managed competing priorities under pressure.',
+      feel: 'An event is a living thing. You can plan every detail and it still breathes on its own. I love the controlled chaos of it — the 10-second check before walking on stage, the crowd\'s first reaction, the moment a room of 2,000 people becomes one thing.',
+      tags: ['Scifest', 'Melange', 'ACON', '2000+ Attendees', 'Logistics', 'Host & Anchor']
+    },
+    {
+      title: 'TECHNE',
+      badge: '3DExperience · Rapid Prototyping',
+      modalBg: '#E0F2FE',
+      level: 68, levelLabel: 'Intermediate — 3DExperience',
+      done: 'Trained in Dassault Systèmes 3DExperience (CATIA-based) for CAD modelling. Used for FLL robotics component design and personal engineering projects. Interested in the gap between digital model and physical object — the translation problem.',
+      feel: 'CAD is where ideas become non-negotiable. You can\'t wish a design into working. The software shows you exactly where your thinking breaks down, and that feedback is brutal and perfect.',
+      tags: ['3DExperience', 'CATIA', 'Rapid Prototyping', 'FLL Robotics', 'Engineering']
+    },
+    {
+      title: 'WEB & APP DESIGN',
+      badge: 'Frontend · UI/UX · Figma',
+      modalBg: '#ECFDF5',
+      level: 78, levelLabel: 'Frontend — HTML/CSS/JS/Tailwind',
+      done: 'Building websites and apps using HTML, CSS, JavaScript, and Tailwind CSS. This very portfolio is hand-coded. Proficient in Figma for UI design and prototyping. Interested in the intersection of design thinking and technical implementation.',
+      feel: 'Web design is the most democratic creative medium that exists. A website is a thought that anyone on Earth can access. Building something that works, that breathes, that feels right — and then shipping it — is a feeling I chase constantly.',
+      tags: ['HTML/CSS/JS', 'Tailwind', 'Figma', 'UI/UX', 'Frontend', 'This Portfolio']
+    },
+    {
+      title: 'ORBITAL GUARDIAN',
+      badge: 'Space Debris · Solo Project · 2024',
+      modalBg: '#F0FEFF',
+      level: 80, levelLabel: 'Solo Project — Complete',
+      done: 'Designed Orbital Guardian as a solo project in 2024 — a concept for tracking and mitigating space debris in low Earth orbit. Combined Python programming, physics-based modelling, and design thinking. Presented the concept at school innovation forums and beyond.',
+      feel: 'The problem of space debris is one of the most quietly urgent crises humanity faces. We\'re filling our orbit with trash and calling it progress. Orbital Guardian started as curiosity and became conviction — if not us, who? If not now, when?',
+      tags: ['Space Debris', 'Solo Project', '2024', 'Python', 'Physics Modelling', 'Innovation']
+    }
+  ];
+
+  /* =========================================================
+     HOVER COLORS per row (light + dark variants)
+  ========================================================= */
+  const ROW_COLORS = [
+    '#FDE8EE','#BBF7D0','#DDD6FE','#FEF08A','#A7F3D0',
+    '#BFDBFE','#FECACA','#F3F4F6','#FDE68A','#BBF7D0',
+    '#FBCFE8','#FDE68A','#FEF9C3','#C7D2FE',
+    '#FFEDD5','#FEF9C3','#E0F2FE','#ECFDF5','#F0FEFF'
+  ];
+  const ROW_COLORS_DARK = [
+    '#3d1020','#0a2e1a','#221650','#312800','#0a2818',
+    '#0a1a34','#320808','#232323','#302200','#0a2e1a',
+    '#340d22','#302200','#252300','#141a42',
+    '#281508','#252300','#081a2a','#081c14','#081a22'
+  ];
+
+  function applyRowColors() {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const colors = dark ? ROW_COLORS_DARK : ROW_COLORS;
+    document.querySelectorAll('.project-row').forEach((row, i) => {
+      if (colors[i]) row.style.setProperty('--hover-bg', colors[i]);
+    });
+  }
+  applyRowColors();
+
+  /* =========================================================
+     DARK / LIGHT THEME TOGGLE
+  ========================================================= */
+  const themeToggle = document.getElementById('theme-toggle');
+
+  function setTheme(dark) {
+    if (dark) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      themeToggle.textContent = '○';
+      try { localStorage.setItem('theme', 'dark'); } catch(e) {}
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      themeToggle.textContent = '☾';
+      try { localStorage.setItem('theme', 'light'); } catch(e) {}
+    }
+    applyRowColors();
+  }
+
+  // Init toggle icon to match current theme
+  if (document.documentElement.getAttribute('data-theme') === 'dark') {
+    themeToggle.textContent = '○';
+  }
+
+  themeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    setTheme(!isDark);
+  });
+
+  /* =========================================================
+     LOADER PARTICLE NETWORK
+  ========================================================= */
+  (function initLoaderParticles() {
+    const canvas = document.getElementById('loader-canvas');
+    const ctx    = canvas.getContext('2d');
+    const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+
+    let W, H, particles, animId;
+    const COUNT = 55;
+    const LINK_DIST = 160;
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    function mkParticle() {
+      return {
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.45,
+        vy: (Math.random() - 0.5) * 0.45,
+        r: Math.random() * 1.6 + 0.8,
+        // each particle slowly pulses opacity
+        phase: Math.random() * Math.PI * 2
+      };
+    }
+
+    particles = Array.from({ length: COUNT }, mkParticle);
+
+    function draw(ts) {
+      animId = requestAnimationFrame(draw);
+      ctx.clearRect(0, 0, W, H);
+
+      const dark  = isDark();
+      const baseR = dark ? 237 : 17;
+      const baseG = dark ? 237 : 17;
+      const baseB = dark ? 237 : 17;
+
+      const t = ts * 0.001;
+
+      // update
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = W;
+        if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H;
+        if (p.y > H) p.y = 0;
+      }
+
+      // draw connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const a = particles[i], b = particles[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < LINK_DIST) {
+            const alpha = (1 - dist / LINK_DIST) * 0.12;
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(${baseR},${baseG},${baseB},${alpha})`;
+            ctx.lineWidth = 0.6;
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // draw dots
+      for (const p of particles) {
+        const pulse = 0.5 + 0.5 * Math.sin(t * 1.2 + p.phase);
+        const alpha = 0.12 + 0.14 * pulse;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${baseR},${baseG},${baseB},${alpha})`;
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    draw(0);
+
+    // Stop when loader is gone
+    const observer = new MutationObserver(() => {
+      if (document.getElementById('loader').style.display === 'none') {
+        cancelAnimationFrame(animId);
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.getElementById('loader'), { attributes: true, attributeFilter: ['style'] });
+  })();
+
+  /* =========================================================
+     LOADING SCREEN — progress counter + morph to nav
+  ========================================================= */
+  window.addEventListener('load', () => {
+    positionIllustrations(); // re-run after fonts loaded for accurate badge widths
+    const loader = document.getElementById('loader');
+    const fill   = document.getElementById('loader-fill');
+    const pct    = document.getElementById('loader-pct');
+    const morph  = document.getElementById('loader-bar-morph');
+    const navBar = document.getElementById('site-header');
+
+    // Animate percentage counter
+    let current = 0;
+    const target = 100;
+    const duration = 3100; // ms — matches CSS animation + slight buffer
+    const startTime = performance.now();
+
+    function updatePct(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      current = Math.round(eased * target);
+      pct.textContent = current + '%';
+      if (progress < 1) requestAnimationFrame(updatePct);
+    }
+    requestAnimationFrame(updatePct);
+
+    // After fill completes, morph bar to nav then reveal
+    setTimeout(() => {
+      // Phase 1: hide blobs + text
+      loader.classList.add('loader--hiding');
+
+      // Phase 2: show morph bar and animate up
+      setTimeout(() => {
+        morph.style.opacity = '1';
+        morph.classList.add('morph-active');
+
+        // Phase 3: fade out loader, show nav
+        setTimeout(() => {
+          loader.classList.add('loader--out');
+          navBar.classList.add('visible');
+          setTimeout(() => { loader.style.display = 'none'; }, 600);
+        }, 700);
+      }, 320);
+    }, 3200);
+  });
+
+  /* =========================================================
+     CUSTOM CURSOR + AURA
+  ========================================================= */
+  const ring = document.getElementById('cursor-ring');
+  const dot  = document.getElementById('cursor-dot');
+  const aura = document.getElementById('aura');
+
+  // Only run on devices that have a real pointer (not touch-only)
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+    let rx = mx, ry = my;
+    let ax = mx, ay = my;
+
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+    (function raf() {
+      // Cursor ring: fast follow
+      rx += (mx - rx) * 0.11;
+      ry += (my - ry) * 0.11;
+      ring.style.left = rx + 'px';
+      ring.style.top  = ry + 'px';
+      dot.style.left  = mx + 'px';
+      dot.style.top   = my + 'px';
+      // Aura: very slow dreamy lag
+      ax += (mx - ax) * 0.038;
+      ay += (my - ay) * 0.038;
+      aura.style.left = ax + 'px';
+      aura.style.top  = ay + 'px';
+      requestAnimationFrame(raf);
+    })();
+  } else {
+    // Touch device — hide cursor elements
+    ring.style.display = 'none';
+    dot.style.display  = 'none';
+    aura.style.display = 'none';
+  }
+
+  document.querySelectorAll('a, button, .project-row').forEach(el => {
+    el.addEventListener('mouseenter', () => document.body.classList.add('c-hover'));
+    el.addEventListener('mouseleave', () => document.body.classList.remove('c-hover'));
+  });
+
+  /* =========================================================
+     SCROLL REVEAL + INITIAL STAGGER
+     First-load rows (visible in viewport after loader) cascade in
+     with 55ms stagger. Scroll-reveal rows come in with a lighter
+     20ms stagger (they're entering one by one already).
+  ========================================================= */
+  let initialRevealDone = false;
+
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const row = entry.target;
+      const idx = parseInt(row.dataset.revealIdx || 0);
+      // Use longer stagger on initial page load batch; lighter on scroll
+      const stagger = initialRevealDone ? 30 : idx * 55;
+      setTimeout(() => row.classList.add('in-view'), stagger);
+      revealObserver.unobserve(row);
+    });
+  }, { threshold: 0.02 });
+
+  document.querySelectorAll('.project-row').forEach((row, i) => {
+    row.dataset.revealIdx = i;
+    revealObserver.observe(row);
+  });
+
+  // After loader exits, trigger the initial batch and mark done
+  setTimeout(() => { initialRevealDone = true; }, 4500);
+
+  /* =========================================================
+     ILLUSTRATION POSITIONING — place right after badge
+  ========================================================= */
+  function positionIllustrations() {
+    document.querySelectorAll('.project-row').forEach(row => {
+      const svg   = row.querySelector('.illus');
+      const badge = row.querySelector('.badge');
+      if (!svg) return;
+      // Measure the badge's right edge relative to the row's left edge
+      const anchor    = badge || row.querySelector('.project-title');
+      const rowRect   = row.getBoundingClientRect();
+      const anchRect  = anchor.getBoundingClientRect();
+      const left      = anchRect.right - rowRect.left + 20;
+      svg.style.left  = left + 'px';
+      svg.style.right = 'auto';
+    });
+  }
+  // Run multiple times to catch different layout phases:
+  // 1) immediately after first paint
+  // 2) after fonts settle (~300ms)
+  // 3) after loader exits and rows reveal (~4.5s)
+  requestAnimationFrame(() => positionIllustrations());
+  setTimeout(() => positionIllustrations(), 350);
+  setTimeout(() => positionIllustrations(), 4600);
+  window.addEventListener('resize', positionIllustrations);
+
+  /* =========================================================
+     SKILL MODAL — OPEN / CLOSE
+  ========================================================= */
+  const overlay    = document.getElementById('skill-overlay');
+  const modal      = document.getElementById('skill-modal');
+  const closeBtn   = document.getElementById('skill-close');
+  const modalTitle = document.getElementById('skill-modal-title');
+  const modalEyebrow = document.getElementById('skill-modal-eyebrow');
+  const modalDone  = document.getElementById('skill-modal-done');
+  const modalFeel  = document.getElementById('skill-modal-feel');
+  const levelFill  = document.getElementById('skill-modal-level-fill');
+  const levelPct   = document.getElementById('skill-modal-level-pct');
+  const modalTags  = document.getElementById('skill-modal-tags');
+
+  // Track all .project-row elements for morph reference
+  const allRows = Array.from(document.querySelectorAll('.project-row'));
+
+  function openModal(idx) {
+    const d = SKILL_DATA[idx];
+    if (!d) return;
+
+    // Pick background colour matching the row's hover colour
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const colors = dark ? ROW_COLORS_DARK : ROW_COLORS;
+    const bg = colors[idx] !== undefined ? colors[idx] : d.modalBg;
+    modal.style.setProperty('--modal-bg', bg);
+
+    // Text colour: light on dark bg (dark mode), dark on pastel (light mode)
+    if (dark) {
+      modal.style.setProperty('--fg',    '#ededed');
+      modal.style.setProperty('--muted', 'rgba(237,237,237,0.45)');
+      modal.style.setProperty('--dim',   'rgba(237,237,237,0.12)');
+      modal.style.color       = '#ededed';
+      modal.style.borderColor = 'rgba(237,237,237,0.35)';
+    } else {
+      modal.style.setProperty('--fg',    '#111111');
+      modal.style.setProperty('--muted', 'rgba(17,17,17,0.38)');
+      modal.style.setProperty('--dim',   'rgba(17,17,17,0.10)');
+      modal.style.color       = '#111';
+      modal.style.borderColor = '#111';
+    }
+
+    // Fill content
+    modalEyebrow.textContent = d.badge;
+    modalTitle.textContent   = d.title;
+    modalDone.textContent    = d.done;
+    modalFeel.textContent    = d.feel;
+    levelFill.style.width    = '0%';
+    levelFill.style.transition = '';
+    levelPct.textContent     = d.levelLabel;
+    modalTags.innerHTML      = d.tags.map(t => `<span class="modal-tag">${t}</span>`).join('');
+
+    // Show overlay + trigger modal open
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // One rAF to let the browser register the initial state, then add open class
+    requestAnimationFrame(() => {
+      modal.classList.add('modal-open');
+      // Animate level bar after modal has landed
+      setTimeout(() => {
+        levelFill.style.transition = 'width 0.8s cubic-bezier(0.32,0.72,0,1)';
+        levelFill.style.width = d.level + '%';
+      }, 280);
+    });
+  }
+
+  function closeModal() {
+    modal.classList.remove('modal-open');
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+    setTimeout(() => {
+      levelFill.style.transition = '';
+      levelFill.style.width = '0%';
+    }, 380);
+  }
+
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => {
+    const t = e.target;
+    if (t === overlay || t.id === 'skill-overlay-bg' ||
+        t.id === 'skill-overlay-dim' || t.id === 'skill-overlay-blur') closeModal();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  document.querySelectorAll('.project-row').forEach((row, i) => {
+    row.addEventListener('click', e => {
+      e.preventDefault();
+      openModal(i);
+    });
+  });
+
+  /* =========================================================
+     ILLUSTRATION — RISE FROM BELOW
+  ========================================================= */
+  document.querySelectorAll('.project-row').forEach(row => {
+    const svg = row.querySelector('.illus');
+    if (!svg) return;
+
+    row.addEventListener('mouseenter', () => {
+      svg.classList.remove('illus--out', 'illus--float');
+      void svg.offsetWidth;
+      svg.classList.add('illus--in');
+      svg.addEventListener('animationend', () => {
+        if (svg.classList.contains('illus--in')) {
+          svg.classList.remove('illus--in');
+          svg.classList.add('illus--float');
+        }
+      }, { once: true });
+    });
+
+    row.addEventListener('mouseleave', () => {
+      svg.classList.remove('illus--in', 'illus--float');
+      void svg.offsetWidth;
+      svg.classList.add('illus--out');
+      svg.addEventListener('animationend', () => svg.classList.remove('illus--out'), { once: true });
+    });
+  });
+
+  /* =========================================================
+     GREETING WORDS — slow random glide
+     Uses CSS `translate` property (independent of `transform`)
+     so existing rotations / writing-mode transforms stay intact.
+  ========================================================= */
+  (function initGreetingFloat() {
+    const stage = document.querySelector('.greeting-stage');
+    if (!stage) return;
+    const words = Array.from(stage.querySelectorAll('.gw'));
+
+    // Build per-word state with randomised velocity
+    const states = words.map(el => ({
+      el,
+      // translation offset (in px) added on top of CSS position
+      tx: 0, ty: 0,
+      // very gentle drift speed — each word unique
+      vx: (Math.random() - 0.5) * 0.32,
+      vy: (Math.random() - 0.5) * 0.26,
+    }));
+
+    // Drift bounds: how many px each word can wander from its home
+    const MAX = 28;
+
+    function tick() {
+      const W = stage.offsetWidth;
+      const H = stage.offsetHeight;
+      for (const s of states) {
+        s.tx += s.vx;
+        s.ty += s.vy;
+        // Soft bounce within MAX range
+        if (Math.abs(s.tx) > MAX) s.vx *= -1;
+        if (Math.abs(s.ty) > MAX) s.vy *= -1;
+        // CSS `translate` is separate from `transform` — won't clobber rotations
+        s.el.style.translate = `${s.tx.toFixed(2)}px ${s.ty.toFixed(2)}px`;
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // Start after initial layout is done
+    requestAnimationFrame(() => requestAnimationFrame(tick));
+  })();
+</script>
+
+</body>
+</html>
