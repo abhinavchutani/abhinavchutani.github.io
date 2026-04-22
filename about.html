@@ -566,6 +566,151 @@
       .contact-item { border-right: none !important; border-bottom: 1.5px solid var(--fg); }
       .laptop-scene { width: 300px; height: 200px; }
     }
+
+    /* ─── CURSOR TRAIL ─── */
+    #cursor-trail {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 7999;
+    }
+
+    /* ─── GLOBE SECTION ─── */
+    #globe-section {
+      border-bottom: 1.5px solid var(--fg);
+      background: var(--bg);
+      transition: background 0.3s, border-color 0.3s;
+      overflow: hidden;
+    }
+    .globe-wrap {
+      display: grid; grid-template-columns: 1fr 1fr;
+      min-height: 78vh;
+    }
+    .globe-text {
+      padding: 80px 56px 80px 48px;
+      display: flex; flex-direction: column; justify-content: center;
+      border-right: 1.5px solid var(--fg);
+    }
+    .globe-eyebrow {
+      font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 24px;
+    }
+    .globe-heading {
+      font-size: clamp(44px, 6vw, 96px); font-weight: 800;
+      letter-spacing: -0.045em; text-transform: uppercase; line-height: 0.88;
+      margin-bottom: 28px;
+    }
+    .globe-detail {
+      font-size: clamp(13px, 1.1vw, 16px); line-height: 1.82;
+      color: var(--muted); max-width: 400px; margin-bottom: 40px;
+    }
+    .globe-pins { display: flex; flex-direction: column; gap: 18px; }
+    .globe-pin { display: flex; align-items: center; gap: 14px; }
+    .pin-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      background: #f9b8c0;
+      box-shadow: 0 0 0 4px rgba(249,184,192,0.28);
+      animation: pinPulse 2.4s ease-in-out infinite;
+    }
+    .pin-dot-blue {
+      background: #93c5fd;
+      box-shadow: 0 0 0 4px rgba(147,197,253,0.28);
+      animation-delay: 1.2s;
+    }
+    @keyframes pinPulse {
+      0%,100% { box-shadow: 0 0 0 4px rgba(249,184,192,0.28); }
+      50%      { box-shadow: 0 0 0 9px rgba(249,184,192,0.06); }
+    }
+    .pin-label {
+      font-size: 11px; font-weight: 400; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--fg); line-height: 1.65;
+    }
+    .pin-sub { color: var(--muted); font-size: 10px; letter-spacing: 0.1em; }
+    .globe-canvas-wrap {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg); overflow: hidden;
+      transition: background 0.3s;
+      padding: 40px;
+    }
+    .globe-canvas-wrap::before {
+      content: ''; position: absolute;
+      width: 72%; height: 72%; border-radius: 50%;
+      background: radial-gradient(circle, rgba(249,184,192,0.11) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    [data-theme="dark"] .globe-canvas-wrap::before {
+      background: radial-gradient(circle, rgba(249,184,192,0.065) 0%, transparent 65%);
+    }
+    #globe-canvas {
+      width: clamp(260px, 44vw, 500px);
+      height: clamp(260px, 44vw, 500px);
+      cursor: grab; display: block; position: relative; z-index: 1;
+      opacity: 0; transition: opacity 1.4s ease;
+    }
+    #globe-canvas:active { cursor: grabbing; }
+    #globe-canvas.globe-visible { opacity: 1; }
+    .globe-hint {
+      position: absolute; bottom: 20px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px; letter-spacing: 0.32em; text-transform: uppercase;
+      color: var(--muted); z-index: 2; pointer-events: none;
+      opacity: 0; transition: opacity 1.6s ease 1s;
+    }
+    #globe-section.globe-loaded .globe-hint { opacity: 1; }
+
+    /* ─── PARALLAX IMAGE SECTIONS ─── */
+    .parallax-break {
+      position: relative; height: 62vh; min-height: 400px;
+      overflow: hidden; border-bottom: 1.5px solid var(--fg);
+    }
+    .parallax-img {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center;
+      background-attachment: fixed;
+    }
+    .parallax-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.44);
+      transition: background 0.3s;
+    }
+    [data-theme="dark"] .parallax-overlay { background: rgba(0,0,0,0.62); }
+    .parallax-text-wrap {
+      position: absolute; inset: 0; z-index: 2;
+      display: flex; align-items: flex-end;
+      padding: 52px 52px;
+    }
+    .p-eyebrow {
+      font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase;
+      color: rgba(255,255,255,0.5); margin-bottom: 12px;
+    }
+    .p-title {
+      font-size: clamp(44px, 6.5vw, 108px); font-weight: 800;
+      letter-spacing: -0.04em; line-height: 0.88; text-transform: uppercase;
+      color: #fff;
+    }
+    .p-tag {
+      display: inline-block; margin-top: 20px;
+      border: 1px solid rgba(255,255,255,0.32); border-radius: 100px;
+      padding: 6px 18px; font-size: 10px; letter-spacing: 0.22em;
+      text-transform: uppercase; color: rgba(255,255,255,0.55);
+    }
+    .parallax-india-img {
+      background-image: url('https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1920&q=85');
+    }
+    .parallax-helsinki-img {
+      background-image: url('https://images.unsplash.com/photo-1558522195-e1201b090344?auto=format&fit=crop&w=1920&q=85');
+    }
+
+    @media (max-width: 860px) {
+      .parallax-img { background-attachment: scroll; }
+      .globe-wrap { grid-template-columns: 1fr; }
+      .globe-text { border-right: none; border-bottom: 1.5px solid var(--fg); padding: 52px 28px; }
+      .globe-canvas-wrap { min-height: 50vw; padding: 32px; }
+    }
+    @media (max-width: 680px) {
+      #globe-canvas { width: clamp(220px, 78vw, 320px); height: clamp(220px, 78vw, 320px); }
+      .parallax-break { height: 50vh; min-height: 300px; }
+      .parallax-text-wrap { padding: 28px 24px; }
+    }
   </style>
 </head>
 <body>
@@ -588,6 +733,9 @@
   </div>
   <div id="loader-bar-morph"></div>
 </div>
+
+<!-- CURSOR TRAIL -->
+<canvas id="cursor-trail"></canvas>
 
 <!-- CURSOR -->
 <div id="cursor-ring"></div>
@@ -648,6 +796,31 @@
     <div class="stat-label">Skills &amp; Creative Disciplines</div>
   </div>
 </div>
+
+<!-- GLOBE: DELHI → HELSINKI -->
+<section id="globe-section">
+  <div class="globe-wrap">
+    <div class="globe-text reveal">
+      <div class="globe-eyebrow">WHERE I AM</div>
+      <h2 class="globe-heading">DELHI<br>→ HELSINKI.</h2>
+      <p class="globe-detail">Born and raised in Gurugram, India — a city that taught me to think fast. Applying to Helsinki next, where the silence teaches something the noise never could. Two coordinates. One continuous story.</p>
+      <div class="globe-pins">
+        <div class="globe-pin">
+          <span class="pin-dot"></span>
+          <div class="pin-label">DELHI, INDIA <span class="pin-sub">· Home · 28.6°N 77.2°E</span></div>
+        </div>
+        <div class="globe-pin">
+          <span class="pin-dot pin-dot-blue"></span>
+          <div class="pin-label">HELSINKI, FINLAND <span class="pin-sub">· Next chapter · 60.2°N 24.9°E</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="globe-canvas-wrap">
+      <canvas id="globe-canvas"></canvas>
+      <div class="globe-hint">drag to rotate</div>
+    </div>
+  </div>
+</section>
 
 <!-- STICKY CHAPTER SCROLL -->
 <div id="story-scroll">
@@ -715,6 +888,19 @@
   </div>
 </div>
 
+<!-- PARALLAX: INDIA -->
+<div class="parallax-break">
+  <div class="parallax-img parallax-india-img"></div>
+  <div class="parallax-overlay"></div>
+  <div class="parallax-text-wrap">
+    <div>
+      <div class="p-eyebrow">Gurugram · Delhi · India</div>
+      <div class="p-title">WHERE IT<br>ALL BEGAN.</div>
+      <div class="p-tag">28.6°N · The origin</div>
+    </div>
+  </div>
+</div>
+
 <!-- SPOTLIGHT ACHIEVEMENT CARDS -->
 <div class="spotlight-section">
   <div class="spotlight-eyebrow reveal">DEFINING MOMENTS</div>
@@ -736,6 +922,19 @@
       <div class="card-title">HEAD<br>BOY</div>
       <p class="card-detail">Elected Archon of the Prefect Body at DAV Public School. Leading 3,500 students. Assemblies, administration, mentorship, school-wide strategy. 2025–26.</p>
       <span class="card-badge">2025–26</span>
+    </div>
+  </div>
+</div>
+
+<!-- PARALLAX: HELSINKI -->
+<div class="parallax-break">
+  <div class="parallax-img parallax-helsinki-img"></div>
+  <div class="parallax-overlay"></div>
+  <div class="parallax-text-wrap">
+    <div>
+      <div class="p-eyebrow">Helsinki · Finland · North</div>
+      <div class="p-title">WHERE I'M<br>HEADED.</div>
+      <div class="p-tag">60.2°N · The destination</div>
     </div>
   </div>
 </div>
@@ -1589,6 +1788,213 @@ function updateScrollProgress() {
   if (bar) bar.style.width = pct + '%';
 }
 window.addEventListener('scroll', updateScrollProgress, { passive: true });
+
+/* =================================================================
+   CURSOR PARTICLE TRAIL
+================================================================= */
+(function initCursorTrail() {
+  const canvas = document.getElementById('cursor-trail');
+  if (!canvas) return;
+  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const ctx = canvas.getContext('2d');
+  let W, H;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const particles = [];
+  let lastX = -999, lastY = -999;
+
+  document.addEventListener('mousemove', e => {
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    const spd = Math.sqrt(dx * dx + dy * dy);
+    if (spd < 4) return;
+    const count = Math.min(Math.floor(spd / 7) + 1, 5);
+    for (let i = 0; i < count; i++) {
+      const isPink = Math.random() > 0.62;
+      particles.push({
+        x:    e.clientX + (Math.random() - 0.5) * 6,
+        y:    e.clientY + (Math.random() - 0.5) * 6,
+        vx:   (Math.random() - 0.5) * 1.1,
+        vy:   -Math.random() * 1.4 - 0.2,
+        life: 1,
+        size: Math.random() * 2.2 + 0.8,
+        pink: isPink
+      });
+    }
+    lastX = e.clientX; lastY = e.clientY;
+  });
+
+  function draw() {
+    requestAnimationFrame(draw);
+    ctx.clearRect(0, 0, W, H);
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy -= 0.018;
+      p.life -= 0.032;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+      const alpha = p.life * (dark ? 0.55 : 0.38);
+      const rgb   = p.pink ? '249,184,192' : (dark ? '237,237,237' : '40,40,40');
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${rgb},${alpha})`;
+      ctx.fill();
+    }
+  }
+  draw();
+})();
+
+/* =================================================================
+   HERO CURSOR DEPTH PARALLAX
+================================================================= */
+(function initHeroDepth() {
+  const heroInner = document.querySelector('.hero-inner');
+  const heroEl    = document.getElementById('hero');
+  if (!heroInner || !heroEl) return;
+  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
+  let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+
+  document.addEventListener('mousemove', e => {
+    const rect = heroEl.getBoundingClientRect();
+    if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+    const cx = window.innerWidth  / 2;
+    const cy = rect.top + rect.height / 2;
+    targetX = ((e.clientX - cx) / cx) * 10;
+    targetY = ((e.clientY - cy) / (rect.height / 2)) * 5;
+  });
+
+  (function raf() {
+    currentX += (targetX - currentX) * 0.07;
+    currentY += (targetY - currentY) * 0.07;
+    heroInner.style.transform = `translate(${currentX.toFixed(2)}px,${currentY.toFixed(2)}px)`;
+    requestAnimationFrame(raf);
+  })();
+})();
+
+/* =================================================================
+   INTERACTIVE GLOBE  (COBE — WebGL, Delhi ↔ Helsinki)
+================================================================= */
+(function initGlobe() {
+  const section = document.getElementById('globe-section');
+  const canvas  = document.getElementById('globe-canvas');
+  if (!section || !canvas) return;
+
+  let globePhi      = 1.32;   // start centred ~India longitude
+  let globeRotating = true;
+  let globeInstance = null;
+  let createGlobeFn = null;
+  let pointerDown   = false;
+  let pointerLastX  = 0;
+  let flyoverDone   = false;
+
+  function isDarkMode() {
+    return document.documentElement.getAttribute('data-theme') === 'dark';
+  }
+
+  function buildGlobe() {
+    if (!createGlobeFn) return;
+    if (globeInstance) { try { globeInstance.destroy(); } catch(e){} globeInstance = null; }
+
+    const dark = isDarkMode();
+    globeInstance = createGlobeFn(canvas, {
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+      width:  700,
+      height: 700,
+      phi:    globePhi,
+      theta:  0.28,
+      dark:   dark ? 1 : 0,
+      diffuse:  dark ? 1.2 : 1.6,
+      scale:    1.06,
+      mapSamples:  22000,
+      mapBrightness: dark ? 3.5 : 8,
+      baseColor:  dark ? [0.18, 0.18, 0.18] : [0.84, 0.84, 0.84],
+      markerColor: [1.0, 0.72, 0.75],
+      glowColor:  dark ? [0.08, 0.08, 0.08] : [0.95, 0.95, 0.95],
+      markers: [
+        { location: [28.6139,  77.2090], size: 0.08 },  // Delhi
+        { location: [60.1699,  24.9384], size: 0.08 }   // Helsinki
+      ],
+      arcs: [{
+        startLat: 28.6139, startLng: 77.2090,
+        endLat:   60.1699, endLng:   24.9384,
+        arcAlt:   0.38,
+        color: [1.0, 0.72, 0.75, 0.75]
+      }],
+      onRender(state) {
+        if (globeRotating) globePhi += 0.0025;
+        state.phi = globePhi;
+      }
+    });
+  }
+
+  // Motion-photo flyover: pan from India → midpoint arc on first reveal
+  function startFlyover() {
+    if (flyoverDone) return;
+    flyoverDone = true;
+    globeRotating = false;
+    const startPhi = globePhi;
+    const endPhi   = 1.05;
+    const startMs  = performance.now();
+    const dur      = 2200;
+
+    function fly(now) {
+      const t    = Math.min((now - startMs) / dur, 1);
+      const ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; // easeInOutCubic
+      globePhi = startPhi + (endPhi - startPhi) * ease;
+      if (t < 1) requestAnimationFrame(fly);
+      else { globeRotating = true; }
+    }
+    requestAnimationFrame(fly);
+  }
+
+  // Drag interaction
+  canvas.addEventListener('pointerdown', e => {
+    pointerDown = true; pointerLastX = e.clientX; globeRotating = false;
+  });
+  window.addEventListener('pointerup', () => {
+    pointerDown = false; globeRotating = true;
+  });
+  window.addEventListener('pointermove', e => {
+    if (!pointerDown) return;
+    globePhi += (e.clientX - pointerLastX) * 0.005;
+    pointerLastX = e.clientX;
+  });
+
+  // Lazy-load cobe when section scrolls into view
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      obs.disconnect();
+      import('https://esm.sh/cobe@0.6.3').then(mod => {
+        createGlobeFn = mod.default;
+        buildGlobe();
+        canvas.classList.add('globe-visible');
+        section.classList.add('globe-loaded');
+        setTimeout(startFlyover, 800);
+      }).catch(() => {});
+    });
+  }, { threshold: 0.12 });
+  obs.observe(section);
+
+  // Rebuild on theme change so dark/light colours are correct
+  const themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      // Wait for theme attribute to update, then rebuild
+      setTimeout(buildGlobe, 60);
+    });
+  }
+})();
 
 </script>
 </body>
