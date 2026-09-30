@@ -1,2 +1,29 @@
+# Dependencies
 node_modules/
+dist/
+
+# macOS
 .DS_Store
+.AppleDouble
+**/.DS_Store
+
+# Claude Code — ignore everything except project instructions
+.claude/settings.local.json
+.claude/plans/
+.claude/memory/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+npm-debug.log*
+
+# Dev screenshots
+screenshots/
+
+# Temp
+*.tmp
+*.bak
