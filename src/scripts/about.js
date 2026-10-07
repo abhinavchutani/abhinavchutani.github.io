@@ -264,6 +264,12 @@ function animateCounters(){
   let _wa=0,_wl=false,_wr=null;
   document.addEventListener('wheel',e=>{
     if(!shouldUseSnapScroll()) return;
+    // Let a page taller than the viewport scroll natively until it hits its edge
+    const pg=e.target.closest&&e.target.closest('.snap-page');
+    if(pg&&pg.scrollHeight>pg.clientHeight+2){
+      const atEdge=e.deltaY>0?pg.scrollTop+pg.clientHeight>=pg.scrollHeight-2:pg.scrollTop<=0;
+      if(!atEdge){_wa=0;return;}
+    }
     e.preventDefault();
     if(_wl)return;
     _wa+=e.deltaY;
@@ -755,9 +761,21 @@ function initWorksWeb() {
     },
     {
       id:'engram', label:'Engram',
-      sub:'AI Memory Auditor · Team Build · 2026', badge:'EVIDENCE-FIRST', color:'#93c5fd',
-      desc:'AI organizational memory auditor for a 45-document archive of emails, reports, and meeting transcripts. Treats every question as a Case: claims, supporting and conflicting evidence, a decision timeline, and source receipts. A Skeptic pass hunts for contradicting evidence, and a deterministic checker verifies every quote against the stored archive.',
+      sub:'Aalto AI Hackathon · Built for RELEX · 2026', badge:'EVIDENCE-FIRST', color:'#93c5fd',
+      desc:'Built for the RELEX challenge at the Aalto AI Hackathon. AI organizational memory auditor for a 45-document archive of emails, reports, and meeting transcripts. Treats every question as a Case: claims, supporting and conflicting evidence, a decision timeline, and source receipts. A Skeptic pass hunts for contradicting evidence, and a deterministic checker verifies every quote against the stored archive.',
       x:0, y:10, r:19
+    },
+    {
+      id:'quantum', label:'Quantum × Finance',
+      sub:'Ultrahack · Hackathon · 2026', badge:'IN PROGRESS', color:'#93c5fd',
+      desc:'Current hackathon build for the Ultrahack Quantum x Finance hackathon: benchmarking randomised ESG constraints with quantum methods.',
+      x:125, y:140, r:18
+    },
+    {
+      id:'aaltolife', label:'Aalto Community',
+      sub:'KY · KY-Sub · AaltoAI · Aaltoes', badge:'ACTIVE', color:'#c4b5fd',
+      desc:'Member of KY and volunteering in KY-Sub, part of AaltoAI and Aaltoes, and spending a lot of time at Startup Sauna.',
+      x:-125, y:140, r:18
     },
     {
       id:'blockchain', label:'Blockchain Simulator',
@@ -828,6 +846,10 @@ function initWorksWeb() {
     {s:'headboy',      t:'marksmax'},
     {s:'marksmax',     t:'kaizen'},
     {s:'engram',       t:'marksmax'},
+    {s:'engram',       t:'quantum'},
+    {s:'quantum',      t:'monte'},
+    {s:'engram',       t:'aaltolife'},
+    {s:'aaltolife',    t:'headboy'},
     {s:'engram',       t:'orbital'},
     {s:'engram',       t:'blockchain'},
     {s:'endless',      t:'kaizen'},
@@ -839,7 +861,7 @@ function initWorksWeb() {
   const SCALE = 1.72;
   NODES.forEach(n=>{ n.x*=SCALE; n.y*=SCALE; });
   // bump base radii
-  const BASE_R = {orbital:26,terra:26,shravan:26,monte:24,marksmax:24,engram:24,fll:26,
+  const BASE_R = {orbital:26,terra:26,shravan:26,monte:24,marksmax:24,engram:24,quantum:22,aaltolife:22,fll:26,
                   headboy:23,acon:21,vigyantram:20,irc:20,mun:20,endless:20,kaizen:20};
   NODES.forEach(n=>{
     n.r = BASE_R[n.id]||20; n._br = n.r;
@@ -1102,8 +1124,12 @@ function initMobileWorks() {
      desc:'Handled logistics, volunteer coordination, outreach, and registration recovery for ACON. Brought back two schools by cold-calling when registrations slowed.'},
     {label:'MarksMaxxing',        sub:'AI Product · Co-founder · 2026',       badge:'10-DAY BUILD',  color:'#fcd34d',
      desc:'AI-powered exam-analysis build made from 1,000+ pages of past papers to surface useful patterns and high-yield preparation areas.'},
-    {label:'Engram',              sub:'AI Memory Auditor · Team · 2026',      badge:'EVIDENCE-FIRST',color:'#93c5fd',
-     desc:'AI organizational memory auditor. Treats every question as a Case: claims, supporting and conflicting evidence, a decision timeline, and source receipts. A Skeptic pass hunts for contradicting evidence, and a deterministic checker verifies every quote against the stored archive.'},
+    {label:'Engram',              sub:'Aalto AI Hackathon · RELEX · 2026',     badge:'EVIDENCE-FIRST',color:'#93c5fd',
+     desc:'Built for the RELEX challenge at the Aalto AI Hackathon. AI organizational memory auditor. Treats every question as a Case: claims, supporting and conflicting evidence, a decision timeline, and source receipts. A Skeptic pass hunts for contradicting evidence, and a deterministic checker verifies every quote against the stored archive.'},
+    {label:'Quantum × Finance',   sub:'Ultrahack · Hackathon · 2026',         badge:'IN PROGRESS',   color:'#93c5fd',
+     desc:'Current hackathon build for the Ultrahack Quantum x Finance hackathon: benchmarking randomised ESG constraints with quantum methods.'},
+    {label:'Aalto Community',     sub:'KY · KY-Sub · AaltoAI · Aaltoes',      badge:'ACTIVE',        color:'#c4b5fd',
+     desc:'Member of KY and volunteering in KY-Sub, part of AaltoAI and Aaltoes, and spending a lot of time at Startup Sauna.'},
     {label:'Blockchain Simulator',sub:'Python · Systems Research',            badge:'SIMULATION',    color:'#93c5fd',
      desc:'Built a Python blockchain simulator to understand hashing, block creation, transaction flow, and the logic of chain validation.'},
     {label:'Monte Carlo Options', sub:'Quant Finance · Research',             badge:'RESEARCH',      color:'#93c5fd',

@@ -117,7 +117,7 @@
       badge: 'Product Builds · Cold Outreach · Execution',
       modalBg: '#FEF9C3',
       level: 63, levelLabel: 'Early-Stage Building',
-      done: 'I use small ventures to learn execution under real conditions. MarksMaxxing was the clearest early example: a 10-day AI exam-analysis build. Engram, an AI organizational memory auditor that cites the exact source passage behind every claim, is the most recent. Endless Media taught me outreach and meetings early, while Kaizen Ace taught me fulfilment, unit economics, and positioning.',
+      done: 'I use small ventures to learn execution under real conditions. MarksMaxxing was the clearest early example: a 10-day AI exam-analysis build. Engram, an AI organizational memory auditor built for RELEX at the Aalto AI Hackathon, is the most recent finished one, and I am now working on a Quantum x Finance hackathon project at Ultrahack. Endless Media taught me outreach and meetings early, while Kaizen Ace taught me fulfilment, unit economics, and positioning.',
       feel: 'I value these experiments because they force ideas into contact with customers, constraints, and consequences.',
       tags: ['Engram', 'MarksMaxxing', 'Execution', 'Cold Outreach', 'Unit Economics', 'Product Building']
     },
