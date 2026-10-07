@@ -80,8 +80,8 @@ function heroEntrance() {
   if(twEl){
     setTimeout(()=>{
       twEl.classList.add('in');
-      if (isMobileLayout()) twEl.textContent='Incoming economics student. Builder. Systems-minded.';
-      else typewriter(twEl,'Incoming economics student. Builder. Systems-minded.',42);
+      if (isMobileLayout()) twEl.textContent='Economics student at Aalto. Builder. Systems-minded.';
+      else typewriter(twEl,'Economics student at Aalto. Builder. Systems-minded.',42);
     },480);
   }
   setTimeout(()=>{document.getElementById('hero-tags')?.classList.add('in');},680);
@@ -754,6 +754,12 @@ function initWorksWeb() {
       x:0, y:230, r:18
     },
     {
+      id:'engram', label:'Engram',
+      sub:'AI Memory Auditor · Team Build · 2026', badge:'EVIDENCE-FIRST', color:'#93c5fd',
+      desc:'AI organizational memory auditor for a 45-document archive of emails, reports, and meeting transcripts. Treats every question as a Case: claims, supporting and conflicting evidence, a decision timeline, and source receipts. A Skeptic pass hunts for contradicting evidence, and a deterministic checker verifies every quote against the stored archive.',
+      x:0, y:10, r:19
+    },
+    {
       id:'blockchain', label:'Blockchain Simulator',
       sub:'Python · Systems Research', badge:'SIMULATION', color:'#93c5fd',
       desc:'Built a Python blockchain simulator to understand transaction flow, hashing, block creation, and the logic behind chain validation and distributed trust.',
@@ -821,6 +827,9 @@ function initWorksWeb() {
     {s:'headboy',      t:'endless'},
     {s:'headboy',      t:'marksmax'},
     {s:'marksmax',     t:'kaizen'},
+    {s:'engram',       t:'marksmax'},
+    {s:'engram',       t:'orbital'},
+    {s:'engram',       t:'blockchain'},
     {s:'endless',      t:'kaizen'},
     {s:'violin6',      t:'mun'},
     {s:'violin6',      t:'headboy'},
@@ -830,7 +839,7 @@ function initWorksWeb() {
   const SCALE = 1.72;
   NODES.forEach(n=>{ n.x*=SCALE; n.y*=SCALE; });
   // bump base radii
-  const BASE_R = {orbital:26,terra:26,shravan:26,monte:24,marksmax:24,fll:26,
+  const BASE_R = {orbital:26,terra:26,shravan:26,monte:24,marksmax:24,engram:24,fll:26,
                   headboy:23,acon:21,vigyantram:20,irc:20,mun:20,endless:20,kaizen:20};
   NODES.forEach(n=>{
     n.r = BASE_R[n.id]||20; n._br = n.r;
@@ -1093,6 +1102,8 @@ function initMobileWorks() {
      desc:'Handled logistics, volunteer coordination, outreach, and registration recovery for ACON. Brought back two schools by cold-calling when registrations slowed.'},
     {label:'MarksMaxxing',        sub:'AI Product · Co-founder · 2026',       badge:'10-DAY BUILD',  color:'#fcd34d',
      desc:'AI-powered exam-analysis build made from 1,000+ pages of past papers to surface useful patterns and high-yield preparation areas.'},
+    {label:'Engram',              sub:'AI Memory Auditor · Team · 2026',      badge:'EVIDENCE-FIRST',color:'#93c5fd',
+     desc:'AI organizational memory auditor. Treats every question as a Case: claims, supporting and conflicting evidence, a decision timeline, and source receipts. A Skeptic pass hunts for contradicting evidence, and a deterministic checker verifies every quote against the stored archive.'},
     {label:'Blockchain Simulator',sub:'Python · Systems Research',            badge:'SIMULATION',    color:'#93c5fd',
      desc:'Built a Python blockchain simulator to understand hashing, block creation, transaction flow, and the logic of chain validation.'},
     {label:'Monte Carlo Options', sub:'Quant Finance · Research',             badge:'RESEARCH',      color:'#93c5fd',

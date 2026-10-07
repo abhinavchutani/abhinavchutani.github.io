@@ -98,7 +98,7 @@ const GRAPH_DATA = {
     economics: {
       origin:  "Economics became serious for me through Yale's Financial Markets course, independent reading, and constantly asking what incentives are driving a system.",
       shaped:  'It changed the way I look at events, institutions, and even everyday decisions. I started caring more about cost, trade-offs, incentives, and long-term value creation.',
-      now:     'I am an incoming Economics & Business Administration student at Aalto University, starting in August 2026.',
+      now:     'I am studying Economics & Business Administration at Aalto University, where I started in August 2026.',
     },
 
     robotics: {
@@ -116,7 +116,7 @@ const GRAPH_DATA = {
     leadership: {
       origin:  'I was elected Head Boy for DAV Public School in 2025-26, representing 3,500+ students and helping coordinate a 70-member council.',
       shaped:  'It taught me that leadership is mostly operational. When ACON registrations slowed down, I called previous schools directly and helped bring two of them back into the event.',
-      now:     'I am still in the role, balancing student representation, event work, and the less visible administrative side of school life.',
+      now:     'The term ended when I graduated in 2026. What stayed is the habit of balancing representation, event work, and the less visible administrative side of any institution.',
     },
 
     code: {
@@ -170,7 +170,7 @@ const GRAPH_DATA = {
     headboy: {
       origin:  'Elected by peers and faculty. DAV Public School, representing 3,500 students.',
       shaped:  'The title is less interesting than the constraint: you have to move a large institution with limited authority. Teaches you to rely on persuasion, systems, and quiet consistency.',
-      now:     '2025–26 academic year. Still in it.',
+      now:     'Served through the 2025–26 academic year. Now at Aalto University.',
     },
 
     orbital: {

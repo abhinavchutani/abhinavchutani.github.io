@@ -36,7 +36,7 @@
       badge: 'Head Boy 2025–26 · 3,500 Students',
       modalBg: '#FEF08A',
       level: 92, levelLabel: 'Head Boy · School-Wide Authority',
-      done: 'As Head Boy of DAV Public School, I represent a student body of 3,500+ and coordinate a 70-member council across school operations, assemblies, conflict resolution, safety drills, and student representation. I also helped launch the Mental Health Corner and led major events such as Scifest and Melange.',
+      done: 'As Head Boy of DAV Public School in 2025–26, I represented a student body of 3,500+ and coordinated a 70-member council across school operations, assemblies, conflict resolution, safety drills, and student representation. I also helped launch the Mental Health Corner and led major events such as Scifest and Melange.',
       feel: 'Leadership has taught me to be useful before being visible. Most of the work is coordination, follow-through, and solving problems before they become public.',
       tags: ['Head Boy 2025–26', '3,500+ Students', '70-Member Council', 'DAV Public School', 'Mental Health Corner']
     },
@@ -45,7 +45,7 @@
       badge: 'Yale Certified · Financial Markets',
       modalBg: '#A7F3D0',
       level: 75, levelLabel: 'Yale Certified — Deep Interest',
-      done: 'I studied economics seriously through Yale University\'s Financial Markets course, independent reading, and my own attempts to understand incentives, risk, and public spending. That interest is now becoming formal through my incoming Economics & Business Administration degree at Aalto University.',
+      done: 'I studied economics seriously through Yale University\'s Financial Markets course, independent reading, and my own attempts to understand incentives, risk, and public spending. That interest is now formal: I study Economics & Business Administration at Aalto University.',
       feel: 'Economics interests me because it connects ideas to consequences. I like asking not just whether something is impressive, but whether it is sustainable, efficient, and worth the cost.',
       tags: ['Aalto University', 'Yale Certified', 'Financial Markets', 'Behavioural Econ', 'Risk', 'Incentives']
     },
@@ -117,9 +117,9 @@
       badge: 'Product Builds · Cold Outreach · Execution',
       modalBg: '#FEF9C3',
       level: 63, levelLabel: 'Early-Stage Building',
-      done: 'I use small ventures to learn execution under real conditions. MarksMaxxing was the clearest example: a 10-day AI exam-analysis build. Endless Media taught me outreach and meetings early, while Kaizen Ace taught me fulfilment, unit economics, and positioning.',
+      done: 'I use small ventures to learn execution under real conditions. MarksMaxxing was the clearest early example: a 10-day AI exam-analysis build. Engram, an AI organizational memory auditor that cites the exact source passage behind every claim, is the most recent. Endless Media taught me outreach and meetings early, while Kaizen Ace taught me fulfilment, unit economics, and positioning.',
       feel: 'I value these experiments because they force ideas into contact with customers, constraints, and consequences.',
-      tags: ['MarksMaxxing', 'Execution', 'Cold Outreach', 'Unit Economics', 'Product Building']
+      tags: ['Engram', 'MarksMaxxing', 'Execution', 'Cold Outreach', 'Unit Economics', 'Product Building']
     },
     {
       title: 'PHILOSOPHY',
