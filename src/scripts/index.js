@@ -510,7 +510,6 @@
   const modalEyebrow = document.getElementById('skill-modal-eyebrow');
   const modalDone  = document.getElementById('skill-modal-done');
   const modalFeel  = document.getElementById('skill-modal-feel');
-  const levelFill  = document.getElementById('skill-modal-level-fill');
   const levelPct   = document.getElementById('skill-modal-level-pct');
   const modalTags  = document.getElementById('skill-modal-tags');
 
@@ -565,8 +564,6 @@
     modalTitle.textContent   = d.title;
     modalDone.textContent    = d.done;
     modalFeel.textContent    = d.feel;
-    levelFill.style.width    = '0%';
-    levelFill.style.transition = '';
     levelPct.textContent     = d.levelLabel;
     modalTags.innerHTML      = d.tags.map(t => `<span class="modal-tag">${t}</span>`).join('');
 
@@ -577,11 +574,6 @@
     // One rAF to let the browser register the initial state, then add open class
     requestAnimationFrame(() => {
       modal.classList.add('modal-open');
-      // Animate level bar after modal has landed
-      setTimeout(() => {
-        levelFill.style.transition = 'width 0.8s cubic-bezier(0.32,0.72,0,1)';
-        levelFill.style.width = d.level + '%';
-      }, 280);
     });
   }
 
@@ -589,10 +581,6 @@
     modal.classList.remove('modal-open');
     overlay.classList.remove('active');
     document.body.style.overflow = '';
-    setTimeout(() => {
-      levelFill.style.transition = '';
-      levelFill.style.width = '0%';
-    }, 380);
   }
 
   closeBtn.addEventListener('click', closeModal);
