@@ -294,13 +294,12 @@
     /* ── GREETING SPACER ── */
     .greeting-section {
       position: relative;
-      min-height: 180px;
-      padding: 28px 26px 24px;
+      min-height: min(66vh, 640px);
+      padding: 30px 26px 26px;
       background: var(--bg);
       border-bottom: 1.5px solid var(--fg);
       overflow: hidden;
       display: flex;
-      align-items: flex-end;
       transition: background 0.3s, border-color 0.3s;
     }
     #greeting-canvas {
@@ -311,38 +310,69 @@
     .greeting-content {
       position: relative;
       z-index: 1;
-      max-width: 980px;
-      display: grid;
-      gap: 14px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
     }
-    .mobile-hero-note { display: none; }
-    .greeting-eyebrow {
+    .hero-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
       font-size: 10px;
       letter-spacing: 0.32em;
       text-transform: uppercase;
       color: var(--muted);
     }
-    .greeting-lede {
-      font-size: clamp(18px, 2.2vw, 32px);
-      line-height: 1.22;
-      letter-spacing: -0.03em;
-      max-width: 880px;
-    }
-    .greeting-impact {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .impact-pill {
-      border: 1.5px solid var(--fg);
-      border-radius: 999px;
-      padding: 5px 12px;
-      font-size: 10px;
-      letter-spacing: 0.12em;
+    .hero-wordmark {
+      font-size: clamp(54px, 12.4vw, 214px);
+      line-height: 0.8;
+      letter-spacing: -0.055em;
+      font-weight: 800;
       text-transform: uppercase;
-      color: var(--fg);
-      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      white-space: nowrap;
+      margin-left: -0.04em;
     }
+    .hero-wordmark .hw-first {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: -0.045em;
+      margin-right: 0.06em;
+    }
+    .hero-foot {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 40px;
+      align-items: end;
+      border-top: 1.5px solid var(--fg);
+      padding-top: 18px;
+    }
+    .greeting-lede {
+      font-size: clamp(18px, 1.9vw, 28px);
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      max-width: 22em;
+      text-wrap: balance;
+    }
+    .hero-credits {
+      list-style: none;
+      display: grid;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .hero-credits li {
+      display: flex;
+      gap: 18px;
+      padding: 7px 0;
+      border-top: 1px solid var(--dim);
+    }
+    .hero-credits li:first-child { border-top: none; padding-top: 0; }
+    .hero-credits li:last-child { padding-bottom: 0; }
+    .hero-credits li span { color: var(--muted); font-variant-numeric: tabular-nums; }
     .featured-strip {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -594,10 +624,6 @@
       body,
       .logo-btn,
       .nav-pill,
-      .project-title,
-      .project-title.pt-elegant,
-      .project-title.pt-tech,
-      .project-title.pt-strong,
       .cta-set,
       .footer-strip,
       .footer-strip a {
@@ -610,6 +636,7 @@
       .logo-btn { font-size: 10px; padding: 6px 11px; letter-spacing: 0.03em; }
       .nav { gap: 5px; }
       .nav-pill { font-size: 10px; padding: 7px 11px; letter-spacing: 0.02em; }
+      #theme-toggle { padding: 7px 11px; font-size: 11px; }
       /* Hide Contact pill — only About Me + theme needed on mobile */
       .nav .nav-pill:nth-child(2) { display: none; }
 
@@ -620,23 +647,26 @@
         border-top: 1.5px solid var(--fg);
       }
       .greeting-section {
-        display: flex;
-        align-items: flex-end;
-        min-height: 15svh;
-        padding: 0 14px 12px;
+        min-height: 0;
+        padding: 22px 16px 18px;
         border-bottom: 1.5px solid var(--fg);
       }
-      .greeting-section canvas,
-      .greeting-content { display: none !important; }
-      .mobile-hero-note {
-        display: block;
-        max-width: 235px;
-        font-size: 10px;
-        line-height: 1.45;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--muted);
+      .greeting-content { gap: 22px; }
+      .hero-meta { font-size: 8px; letter-spacing: 0.24em; }
+      .hero-wordmark {
+        font-size: clamp(60px, 20.5vw, 120px);
+        white-space: normal;
+        line-height: 0.84;
       }
+      .hero-wordmark .hw-first {
+        display: block;
+        font-family: 'Playfair Display', Georgia, serif !important;
+        font-style: italic !important;
+      }
+      .hero-foot { grid-template-columns: 1fr; gap: 18px; padding-top: 14px; }
+      .greeting-lede { font-size: 19px; }
+      .hero-credits { font-size: 9px; letter-spacing: 0.12em; }
+      .hero-credits li { gap: 12px; }
 
       .project-row {
         align-items: flex-end;
@@ -725,8 +755,6 @@
       .project-title.pt-tech,
       .project-title.pt-strong {
         font-size: clamp(64px, 18vw, 96px);
-        letter-spacing: -0.078em !important;
-        font-weight: 400 !important;
       }
       .badge {
         display: none;
@@ -767,14 +795,6 @@
       .project-row {
         padding: 5px 12px 8px;
         min-height: 58px;
-      }
-      .greeting-section {
-        min-height: 12svh;
-        padding: 0 12px 10px;
-      }
-      .mobile-hero-note {
-        max-width: 210px;
-        font-size: 9px;
       }
       .project-row.mobile-active .row-content {
         padding-left: 24px;
