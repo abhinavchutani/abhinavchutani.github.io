@@ -101,22 +101,24 @@ tool on both: an even scrub, a 192 × 120 greyscale frame at each step, copy and
 | This site, previous round | 324 | 9.0% | 8.8% |
 | This site, now | 656 | 2.1% | 1.7% |
 
-**Frame times.** Production build, headless Chromium on the machine's GPU (Metal), 1440 × 900 at
-device pixel ratio 2, with other applications running (load average about 8). A frame is "late"
-over 22 ms.
+**Frame times.** Production build, Chromium on the machine's GPU (Metal), 1440 × 900 at device
+pixel ratio 2, once headless and once in a real window, with other applications running (load
+average about 7). A frame is "late" over 22 ms.
 
-| Scenario | Frames | Late | p99 | Worst |
+| Scenario | Headless: frames | late | Real window: frames | late |
 | --- | --- | --- | --- | --- |
-| Opener | 344 | 0 | 17.7 ms | 17.8 ms |
-| Scrub down through every move | 1,882 | 1 (0.05%) | 17.7 ms | 66.7 ms (the first frame of the run) |
-| Scrub back up, faster | 1,705 | 1 (0.06%) | 17.7 ms | 32.4 ms |
+| Opener | 343 | 0 | 341 | 4 (33 ms each) |
+| Scrub down through every move | 1,917 | 6 (0.31%) | 1,371 | 1 (51 ms, on the first frame) |
+| Scrub back up, faster | 1,780 | 0 | 1,340 | 0 |
 
-That run was taken before the last round of savings. With the frame-rate limit off, the two
-dearest points of the page cost 14.8 ms (the hero) and 17.0 ms (half-way down the fall to Earth)
-per frame on a loaded machine: over a 60 Hz frame, which is why those two moves were the ones that
-stuttered. After baking the nebula, reading the planet's noise from a texture and simplifying the
-gallery's walls they cost 9.6 ms and 11.9 ms under the same load; everything else is between 3
-and 9 ms.
+Five of the six late headless frames came together (33 to 35 ms each) as the rise from the hall to
+the library began; they did not recur on the way back up or in the real window.
+
+The two moves that used to stutter were the two dearest to draw. With the frame-rate limit off,
+on a loaded machine, the hero cost 14.8 ms a frame and the middle of the fall to Earth 17.0 ms:
+over a 60 Hz frame. After baking the nebula, reading the planet's noise from a texture and
+simplifying the gallery's walls they cost 9.6 ms and 11.9 ms under the same load; everything else
+is between 3 and 9 ms.
 
 **Gestures**, with wheel events timed inside the page: flicks from gentle to very hard, each with
 a long tail of momentum, all stopped on the next stage (and one upwards on the stage above);
@@ -124,9 +126,9 @@ letting go 7% into a move fell back, 32% in carried on; a slow scrub of 400 px m
 357 px (the rest is the smoothing still catching up).
 
 Also checked from captures: all ten stages, and four frames inside every move, at 1440 × 900.
-**Not checked:** a run in a real window (the machine was too busy to make one meaningful), the
-feel on a real trackpad, the sound by ear, a real phone. A headless run is necessary, not
-sufficient: open the page with `?fps` to see what your own browser does.
+Reduced motion, no WebGL, no JavaScript and phone width (430 × 900) were each rendered and looked
+at. **Not checked:** the feel on a real trackpad, the sound by ear, a real phone. These numbers
+are this machine on one evening: open the page with `?fps` to see what your own browser does.
 
 ## Fallbacks
 
