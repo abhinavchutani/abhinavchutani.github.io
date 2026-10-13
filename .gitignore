@@ -27,3 +27,6 @@ screenshots/
 # Temp
 *.tmp
 *.bak
+
+# Vite
+*.local
