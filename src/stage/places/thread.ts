@@ -66,46 +66,82 @@ const RINGS = /* glsl */ `
 /** The same centre line as the shader's, for things that sit on the thread. */
 const centre = (u: number) => new THREE.Vector3(2.6 + 13.5 * Math.pow(1 - u, 1.7) + 0.9 * Math.sin(u * 6.3 + 0.5), -1.0 + 7.6 * Math.pow(1 - u, 1.5) + 0.55 * Math.sin(u * 4.7 + 1.3), -74 + 90 * u);
 
-const NEBULA = /* glsl */ `
-  uniform float uTime;
-  varying vec2 vUv;
-  float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
-  }
-  float fbm(vec2 p) {
-    float v = 0.0;
-    float a = 0.5;
-    for (int i = 0; i < 5; i++) {
-      v += a * noise(p);
-      p = p * 2.02 + 17.3;
-      a *= 0.5;
+/**
+ * The nebula: clouds folded through themselves, cool to rose to warm, brightest behind the star and kept
+ * off the left of the frame, where the name stands. It is worked out once, here, into a picture. (As a
+ * shader it was three five-octave noises for every pixel of the screen on every frame: the dearest thing
+ * in the place, and the reason the first move of the page could not hold its frame rate.)
+ */
+function nebulaPicture(width: number, height: number) {
+  const hash = (x: number, y: number) => {
+    const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+    return s - Math.floor(s);
+  };
+  const noise = (x: number, y: number) => {
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    let fx = x - ix;
+    let fy = y - iy;
+    fx = fx * fx * (3 - 2 * fx);
+    fy = fy * fy * (3 - 2 * fy);
+    const top = hash(ix, iy) + (hash(ix + 1, iy) - hash(ix, iy)) * fx;
+    const foot = hash(ix, iy + 1) + (hash(ix + 1, iy + 1) - hash(ix, iy + 1)) * fx;
+    return top + (foot - top) * fy;
+  };
+  const fbm = (x: number, y: number) => {
+    let v = 0;
+    let amp = 0.5;
+    for (let i = 0; i < 5; i++) {
+      v += amp * noise(x, y);
+      x = x * 2.02 + 17.3;
+      y = y * 2.02 + 17.3;
+      amp *= 0.5;
     }
     return v;
+  };
+  const step = (lo: number, hi: number, v: number) => {
+    const t = Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
+    return t * t * (3 - 2 * t);
+  };
+  // Light is added, so the picture holds colour already multiplied by how dense the cloud is, stored for the screen's curve.
+  const encode = (v: number) => Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d")!;
+  const image = ctx.createImageData(width, height);
+  for (let j = 0; j < height; j++) {
+    for (let i = 0; i < width; i++) {
+      const u = (i + 0.5) / width;
+      const v = 1 - (j + 0.5) / height;
+      const x = u * 5.2;
+      const y = v * 3.0;
+      const foldX = fbm(x, y);
+      const foldY = fbm(x + 5.2, y + 5.2);
+      const dense = step(0.42, 0.86, fbm(x + foldX * 1.6, y + foldY * 1.6));
+      const toRose = step(0.3, 0.8, foldX);
+      const toWarm = step(0.5, 0.95, foldY) * 0.8;
+      let r = 0.06 + (0.26 - 0.06) * toRose;
+      let g = 0.1 + (0.07 - 0.1) * toRose;
+      let b = 0.36 + (0.24 - 0.36) * toRose;
+      r += (0.42 - r) * toWarm;
+      g += (0.16 - g) * toWarm;
+      b += (0.08 - b) * toWarm;
+      const near = Math.exp(-((u - 0.62) * (u - 0.62) + (v - 0.58) * (v - 0.58)) * 9);
+      const edge = step(0, 0.25, u) * step(1, 0.8, u) * step(0, 0.2, v) * step(1, 0.8, v);
+      const amount = dense * (0.05 + near * 0.62) * edge * (0.35 + 0.65 * step(0.36, 0.56, u)) * 1.2;
+      const at = (j * width + i) * 4;
+      image.data[at] = encode(r * amount);
+      image.data[at + 1] = encode(g * amount);
+      image.data[at + 2] = encode(b * amount);
+      image.data[at + 3] = 255;
+    }
   }
-  void main() {
-    vec2 p = vUv * vec2(5.2, 3.0);
-    // Clouds folded through themselves, drifting very slowly.
-    vec2 fold = vec2(fbm(p + uTime * 0.008), fbm(p + 5.2 - uTime * 0.006));
-    float cloud = fbm(p + fold * 1.6);
-    float dense = smoothstep(0.42, 0.86, cloud);
-    vec3 cool = vec3(0.06, 0.1, 0.36);
-    vec3 warm = vec3(0.42, 0.16, 0.08);
-    vec3 rose = vec3(0.26, 0.07, 0.24);
-    vec3 colour = mix(cool, rose, smoothstep(0.3, 0.8, fold.x));
-    colour = mix(colour, warm, smoothstep(0.5, 0.95, fold.y) * 0.8);
-    // Brightest behind the star the thread comes from, gone at the edges and under the name.
-    float near = exp(-dot(vUv - vec2(0.62, 0.58), vUv - vec2(0.62, 0.58)) * 9.0);
-    float edge = smoothstep(0.0, 0.25, vUv.x) * smoothstep(1.0, 0.8, vUv.x) * smoothstep(0.0, 0.2, vUv.y) * smoothstep(1.0, 0.8, vUv.y);
-    // Kept off the left of the frame, where the name stands.
-    float clear = smoothstep(0.36, 0.56, vUv.x);
-    float a = dense * (0.05 + near * 0.62) * edge * (0.35 + 0.65 * clear);
-    gl_FragColor = vec4(colour * 1.2, a);
-  }
-`;
+  ctx.putImageData(image, 0, 0);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
 
 export function thread(): Place {
   const { root, slide } = shell();
@@ -113,17 +149,7 @@ export function thread(): Place {
   const random = rng(4);
 
   // ---- the nebula, and the star the thread comes from ----
-  const nebula = new THREE.Mesh(
-    new THREE.PlaneGeometry(520, 300),
-    new THREE.ShaderMaterial({
-      uniforms: { uTime: shared.uTime },
-      vertexShader: /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: NEBULA,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    }),
-  );
+  const nebula = new THREE.Mesh(new THREE.PlaneGeometry(520, 300), new THREE.MeshBasicMaterial({ map: nebulaPicture(560, 322), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
   nebula.renderOrder = -10;
   slide.add(put(nebula, 20, 10, -230));
 

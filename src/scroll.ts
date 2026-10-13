@@ -5,21 +5,24 @@ import Lenis from "lenis";
  * Scrolling for a staged page: Lenis on GSAP's ticker (so the page, the 3D
  * stage and every tween advance on the same frame).
  *
- * The hand is in charge. The page follows the wheel or the trackpad
+ * The hand is in charge: the page follows the wheel or the trackpad
  * directly, and since scroll position is the timeline, how fast the camera
- * travels is how fast the hand is scrolling. Three things are added, all
- * of them about where it comes to rest:
+ * travels is how fast the hand is scrolling. What is added is about where
+ * it comes to rest:
  *
  *  - a top speed, so a hard flick cannot throw the page across chapters;
- *  - one gesture can reach the next stage but not pass it: the momentum a
- *    trackpad adds after the fingers lift is absorbed there, so the page
- *    stays put where the copy can be read until the next deliberate scroll;
- *  - if the hand lets go between two stages, the page waits a moment and
- *    then glides, gently, to whichever of the two is nearer.
+ *  - one gesture (a swipe with all its momentum, or a run of notches) can
+ *    take the page as far as the next stage and no further. What is left of
+ *    it there is not thrown away: it is handed to the stage, which leans in
+ *    on it, so the hand never moves without something answering. A fresh
+ *    push after a pause, or a steady scroll kept up for a beat, moves on;
+ *  - it never rests between two stages: once the wheel has been quiet for a
+ *    moment the page finishes the move it was making, gently, into the next
+ *    stage in the direction of travel (or falls back, if it had barely set
+ *    off), and any new input takes over at once.
  *
- * It never plays a move on its own beyond that last glide. Skip all of it
- * under prefers-reduced-motion and on touch screens, which keep native
- * scrolling.
+ * Skip all of it under prefers-reduced-motion and on touch screens, which
+ * keep native scrolling.
  */
 
 const sineInOut = (t: number) => (1 - Math.cos(Math.PI * t)) / 2;
@@ -35,81 +38,104 @@ export type ScrollOptions = {
   rest?: number;
   /** Whether to hold at stages and settle (e.g. only on desktop layouts). */
   staged?: () => boolean;
+  /** Scroll the hand asked for while the page was holding at a stage, in screens (signed). */
+  onPush?: (screens: number) => void;
 };
 
-export function createScroll({ stops, topSpeed = 2.6, rest = 320, staged = () => true }: ScrollOptions) {
+export function createScroll({ stops, topSpeed = 1.8, rest = 200, staged = () => true, onPush }: ScrollOptions) {
   let points: number[] = [];
   let lastWheel = 0;
+  let heading = 1;
   let timer = 0;
-
-  // The gesture in progress: which way, the one stage it may reach, and when it got there.
-  const gesture = { dir: 0, limit: 0, reached: 0, level: 0 };
-
-  /** The next stage from `y` in direction `dir` (or the one `y` is on, if there is none beyond). */
-  const beyond = (y: number, dir: number) => {
-    if (dir > 0) return points.find((point) => point > y + 4) ?? points[points.length - 1];
-    return [...points].reverse().find((point) => point < y - 4) ?? points[0];
-  };
+  /** The gesture in progress: which way, the stage it may not pass, when it got there, its quietest and latest events since. */
+  const gesture = { dir: 0, limit: null as number | null, held: 0, floor: Infinity, last: Infinity };
+  const GESTURE_GAP = 160; // ms of quiet that makes the next event a new gesture
+  const DETENT = 600; // ms a steady scroll is held at a stage before it may carry on
+  const PUSH = 30; // px: an event this large, that long after arriving, is a hand and not momentum
+  const BARELY = 0.14; // of a move: let go before this, and the page falls back instead of going on
 
   const lenis = new Lenis({
-    lerp: 0.11,
+    lerp: 0.12,
     wheelMultiplier: 1,
     autoRaf: false,
     anchors: false,
     virtualScroll: (data) => {
-      if (!data.event.type.includes("wheel") || !staged() || points.length < 2) return true;
-      const now = performance.now();
-      const gap = now - lastWheel;
-      const elapsed = Math.min(0.1, Math.max(0.004, gap / 1000));
+      if (!data.event.type.includes("wheel")) return true;
+      // The event's own time, not the time this runs: a busy frame must not look like a pause.
+      const now = data.event.timeStamp || performance.now();
+      const quiet = now - lastWheel;
+      const asked = data.deltaY;
+      // Allow what the top speed permits since the last wheel event. A notched
+      // mouse wheel passes untouched; trackpad momentum is held to the limit.
+      const elapsed = Math.min(0.1, Math.max(0.004, quiet / 1000));
       lastWheel = now;
-      if (data.deltaY === 0) return true;
-      const dir = Math.sign(data.deltaY);
-      // A mouse wheel turns in coarse notches; give each a little more travel than a trackpad's fine deltas.
-      const notch = Number.isInteger(data.deltaY) && Math.abs(data.deltaY) >= 100;
-      const size = Math.abs(data.deltaY) * (notch ? 1.5 : 1);
-
-      // A new gesture: the wheel was quiet, the hand reversed, or (the page already holding at a stage, with
-      // only trackpad momentum still trickling in) the deltas suddenly jump: that is a fresh swipe.
-      const fresh = gesture.reached > 0 && now - gesture.reached > 260 && size > gesture.level * 2.4 + 10;
-      if (gap > 140 || dir !== gesture.dir || fresh) {
-        gesture.dir = dir;
-        gesture.limit = beyond(lenis.scroll, dir);
-        gesture.reached = 0;
-        gesture.level = 0;
-      }
-      gesture.level = gesture.level === 0 ? size : gesture.level * 0.8 + size * 0.2;
-
+      const most = Math.max(24, topSpeed * window.innerHeight * elapsed);
+      data.deltaY = Math.max(-most, Math.min(most, data.deltaY));
+      if (data.deltaY !== 0) heading = Math.sign(data.deltaY);
       window.clearTimeout(timer);
       timer = window.setTimeout(settle, rest);
 
-      // Follow the hand, no faster than the top speed, and not past the one stage this gesture may reach.
-      const most = Math.max(30, topSpeed * window.innerHeight * elapsed);
-      const want = lenis.targetScroll + dir * Math.min(size, most);
-      const next = dir > 0 ? Math.min(want, gesture.limit) : Math.max(want, gesture.limit);
-      data.deltaY = next - lenis.targetScroll;
-      if (Math.abs(next - gesture.limit) < 0.5 && gesture.reached === 0) gesture.reached = now;
-      if (Math.abs(data.deltaY) < 0.01) {
-        // Holding at the stage: what is left of this gesture is momentum, and goes nowhere.
-        data.event.preventDefault();
-        return false;
+      // No further than the next stage in one gesture.
+      const dir = Math.sign(data.deltaY);
+      if (dir !== 0 && staged() && points.length > 1) {
+        if (quiet > GESTURE_GAP || dir !== gesture.dir) begin(dir);
+        if (gesture.limit !== null && (gesture.limit - lenis.targetScroll) * dir <= 0.5) {
+          // Arrived. The rest goes to the stage as a push, unless the hand is plainly at it again: an event
+          // well above the momentum that was dying away, or a steady scroll kept up for a beat.
+          const size = Math.abs(asked);
+          if (gesture.held === 0) gesture.held = now;
+          const again = now - gesture.held > 320 && size > gesture.floor * 3 + 8;
+          const steady = now - gesture.held > DETENT && size >= PUSH && size >= gesture.last;
+          gesture.floor = Math.min(gesture.floor, size);
+          gesture.last = size;
+          if (again || steady) begin(dir);
+        }
+        if (gesture.limit !== null) {
+          const room = Math.max(0, (gesture.limit - lenis.targetScroll) * dir);
+          if (room <= 0.5) {
+            onPush?.(data.deltaY / window.innerHeight);
+            // Lenis lets an event with no movement through to the browser: stop it here.
+            if (data.event.cancelable) data.event.preventDefault();
+            data.deltaY = 0;
+          } else if (Math.abs(data.deltaY) > room) {
+            data.deltaY = room * dir;
+          }
+        } else {
+          // Nothing beyond: the top or the foot of the page.
+          onPush?.(data.deltaY / window.innerHeight);
+        }
       }
       return true;
     },
   });
 
-  /** The hand has let go between two stages: after a pause, glide to the nearer one. */
+  /** A new gesture: it may go as far as the first stage ahead of where the page is headed. */
+  function begin(dir: number) {
+    const here = lenis.targetScroll;
+    gesture.dir = dir;
+    gesture.limit = (dir > 0 ? points.find((point) => point > here + 3) : [...points].reverse().find((point) => point < here - 3)) ?? null;
+    gesture.held = 0;
+    gesture.floor = Infinity;
+    gesture.last = Infinity;
+  }
+
+  /** The wheel has gone quiet between two stages: finish the move it was making. */
   function settle() {
     if (!staged() || lenis.isStopped) return;
     const here = lenis.targetScroll;
-    if (points.some((point) => Math.abs(point - here) <= 2)) return;
-    const below = [...points].reverse().find((point) => point <= here) ?? points[0];
-    const above = points.find((point) => point >= here) ?? points[points.length - 1];
-    const target = here - below < above - here ? below : above;
-    // Anything still to come from this gesture must not start the page moving again.
-    gesture.limit = target;
-    gesture.reached = performance.now();
-    const screens = Math.abs(target - here) / window.innerHeight;
-    lenis.scrollTo(target, { duration: 0.9 + screens * 1.5, easing: sineInOut });
+    if (points.some((point) => Math.abs(point - here) <= 3)) return;
+    const ahead = heading > 0 ? points.find((point) => point > here + 3) : [...points].reverse().find((point) => point < here - 3);
+    const behind = heading > 0 ? [...points].reverse().find((point) => point < here - 3) : points.find((point) => point > here + 3);
+    if (ahead === undefined) return;
+    // Barely set off: fall back. Otherwise carry on to the stage it was heading for.
+    const done = behind === undefined ? 1 : Math.abs(here - behind) / Math.abs(ahead - behind);
+    const next = done < BARELY && behind !== undefined ? behind : ahead;
+    const screens = Math.abs(next - here) / window.innerHeight;
+    if (screens > 1.6) return;
+    // What is still to come of this gesture must not set the page off again.
+    gesture.limit = next;
+    gesture.dir = Math.sign(next - here) || gesture.dir;
+    lenis.scrollTo(next, { duration: 0.9 + screens * 1.3, easing: sineInOut });
   }
 
   // Prioritised on the shared ticker: scroll is resolved before the stage renders the frame.
@@ -131,7 +157,7 @@ export function createScroll({ stops, topSpeed = 2.6, rest = 320, staged = () =>
     if (next === undefined) return;
     event.preventDefault();
     const screens = Math.abs(next - here) / window.innerHeight;
-    lenis.scrollTo(next, { duration: Math.min(9, 1.2 + screens * 0.9), easing: screens > 3 ? cubicInOut : quartOut });
+    lenis.scrollTo(next, { duration: Math.min(7, 1.25 + screens * 0.5), easing: screens > 2 ? cubicInOut : quartOut });
   };
 
   const place = () => {

@@ -62,7 +62,7 @@ async function boot() {
   // Touch screens keep native scrolling (CSS snaps it to the stages); so does reduced motion.
   const touch = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
   if (!reduced && !touch) {
-    scroller = createScroll({ stops });
+    scroller = createScroll({ stops, onPush: (screens) => stage.nudge(screens) });
     scroller.lenis.stop();
   }
   const glide = (y: number) => {
@@ -94,10 +94,12 @@ async function boot() {
   const readoutName = $("[data-readout-name]");
   const readoutStage = $("[data-readout-stage]");
   const progress = $("[data-progress]");
+  const ticks = [...document.querySelectorAll<HTMLElement>("[data-tick]")];
   let place = -1;
 
   function arrive(index: number, at: number) {
-    if (readoutStage) readoutStage.textContent = `${two(index + 1)} / ${two(stage ? stage.stops().length : 20)}`;
+    if (readoutStage) readoutStage.textContent = `${two(index + 1)} / ${two(ticks.length)}`;
+    ticks.forEach((tick, i) => tick.toggleAttribute("data-live", i === index));
     if (at === place) {
       sound.tick();
       return;
@@ -121,6 +123,35 @@ async function boot() {
     sound.travel(moved);
   });
   gsap.ticker.add(stage.frame);
+
+  // ---- `?fps`: how this browser is running the page. Click the readout to start counting again. ----
+  // It counts the display's own refreshes (the timestamps requestAnimationFrame is given); a frame is late
+  // when it took more than one and a half of this display's usual interval.
+  const gauge = new URLSearchParams(window.location.search).has("fps") ? $("[data-gauge]") : null;
+  if (gauge) {
+    const frames = { last: 0, count: 0, late: 0, worst: 0, since: 0, recent: 0, usual: 16.7 };
+    gauge.hidden = false;
+    gauge.addEventListener("click", () => Object.assign(frames, { count: 0, late: 0, worst: 0 }));
+    const tick = (now: number) => {
+      const took = now - frames.last;
+      frames.last = now;
+      if (took > 0 && took < 250) {
+        frames.usual += (Math.min(took, 34) - frames.usual) * (took < frames.usual ? 0.2 : 0.002);
+        frames.count++;
+        frames.recent++;
+        if (took > Math.max(20, frames.usual * 1.5)) frames.late++;
+        if (took > frames.worst) frames.worst = took;
+      }
+      if (now - frames.since > 500) {
+        const fps = Math.round((frames.recent * 1000) / (now - frames.since));
+        frames.since = now;
+        frames.recent = 0;
+        gauge.textContent = `${fps} fps · ${frames.late} late of ${frames.count} (${((frames.late / Math.max(1, frames.count)) * 100).toFixed(1)}%) · worst ${Math.round(frames.worst)} ms · click to reset`;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
 
   // ---- sound: off until asked for ----
   const soundButton = $<HTMLButtonElement>("[data-sound]");

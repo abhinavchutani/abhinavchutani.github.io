@@ -5,11 +5,11 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { createFinishPass } from "./finish";
 import { Route } from "./handover";
-import { damp, follow, sample, type Keyframe } from "./journey";
+import { damp, follow, sample, tuning, type Keyframe } from "./journey";
 import { pin, stand, type Plane } from "./planes";
 import { setUploader, shared, type Place } from "./kit";
 import { build } from "./places";
-import { blankPose, buildPoses, FOV, PLACES, type Look, type PlaceKey, type Pose } from "./table";
+import { blankPose, buildPoses, EASE, FOV, PLACES, type Look, type PlaceKey, type Pose } from "./table";
 
 /**
  * The stage: one fixed canvas behind the page.
@@ -98,7 +98,9 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
   renderer.toneMapping = THREE.NoToneMapping;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 900);
+  // A move between places can cross scales by a factor of a hundred or more, and both places are in the frame
+  // for the whole of it: the far plane has to hold the larger one, or it would drop out of sight part-way.
+  const camera = new THREE.PerspectiveCamera(FOV, 1, 0.25, 60000);
   const fog = new THREE.FogExp2(0x000000, 0.02);
   scene.fog = fog;
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -179,7 +181,7 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
 
   // What the frame shows: one place at rest, or two while the camera is between them.
   // The far one of a pair is drawn first; the near one over it, in its own light, sharing the depth buffer.
-  const showing = { first: 0, second: -1, pane: null as [number, number, number, number] | null };
+  const showing = { first: 0, second: -1, pane: null as [number, number, number, number] | null, back: null as Tone | null };
 
   class WorldPass extends Pass {
     constructor() {
@@ -189,7 +191,7 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     render(gl: THREE.WebGLRenderer, _write: THREE.WebGLRenderTarget, read: THREE.WebGLRenderTarget) {
       for (const place of places) place.root.visible = false;
       backdrop.visible = true;
-      paint(mixed);
+      paint(showing.back ?? mixed);
       const pane = showing.pane;
       if (pane) {
         // The far place is seen through a window: lay the backdrop down first, then draw it only where the window is.
@@ -237,6 +239,24 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
   const DIST = PLACES[0].stages[0].dist;
   // routes[i]: how the camera gets from place i to place i + 1.
   const routes = PLACES.slice(1).map((row) => new Route(row.arrive!, DIST));
+  // `?raw` is for measuring a move: scroll maps straight on to the camera's path, with no easing, pacing or damping.
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.has("raw");
+  if (raw) {
+    tuning.linear = true;
+    for (const route of routes) route.retime(null);
+  }
+  // The frame round a place's way in is seen from the place before it, so it is drawn with that one.
+  const gates = places.map((place, i) => {
+    if (i > 0 && place.threshold) {
+      place.threshold.matrixAutoUpdate = false;
+      place.threshold.matrix.copy(routes[i - 1].seat).invert();
+      places[i - 1].root.add(place.threshold);
+    }
+    if (!place.gate) return null;
+    const [a, b, , d] = place.gate;
+    return { a, normal: new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(d, a)).normalize() };
+  });
   const target = blankPose();
   const current = blankPose();
   let frames: Keyframe<Pose>[] = [];
@@ -252,8 +272,9 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
   let lastScroll = options.scroll();
   let nearest = -1;
   let underway = false;
-  let late = 0;
-  let steppedAt = 0;
+  // What the hand is still pushing after the page has stopped at a stage (screens of scroll): the scene gives a little.
+  let impulse = 0;
+  let push = 0;
   const pointer = { x: 0, y: 0 };
 
   // ---- copy that stands in the scene ---------------------------------------------------
@@ -315,7 +336,7 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     const stops = document.querySelectorAll<HTMLElement>(".stop");
     stops.forEach((stop, s) => {
       if (s >= poses.length) return;
-      frames.push({ y: Math.round(stop.getBoundingClientRect().top + window.scrollY), pose: poses[s], chapter: stages[s].place, hold: 0.06 });
+      frames.push({ y: Math.round(stop.getBoundingClientRect().top + window.scrollY), pose: poses[s], chapter: stages[s].place, hold: EASE });
     });
   }
 
@@ -355,7 +376,30 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
   const last = PLACES.length - 1;
   const still = new THREE.Matrix4();
   const spare = new THREE.Matrix4();
+  const inverse = new THREE.Matrix4();
   const pane: [number, number, number, number] = [0, 0, 1, 1];
+
+  /** The box on screen round four corners given in a place's own coordinates; false if any is behind the lens. */
+  function frameOf(corners: THREE.Vector3[], slide: THREE.Object3D) {
+    let x0 = 1;
+    let y0 = 1;
+    let x1 = 0;
+    let y1 = 0;
+    for (const corner of corners) {
+      point.copy(corner).applyMatrix4(slide.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+      if (point.z > -camera.near) return false;
+      point.applyMatrix4(camera.projectionMatrix);
+      x0 = Math.min(x0, point.x * 0.5 + 0.5);
+      x1 = Math.max(x1, point.x * 0.5 + 0.5);
+      y0 = Math.min(y0, point.y * 0.5 + 0.5);
+      y1 = Math.max(y1, point.y * 0.5 + 0.5);
+    }
+    pane[0] = Math.max(0, x0);
+    pane[1] = Math.max(0, y0);
+    pane[2] = Math.min(1, x1);
+    pane[3] = Math.min(1, y1);
+    return pane[2] > pane[0] && pane[3] > pane[1];
+  }
 
   function pose(index: number) {
     const place = places[index];
@@ -376,8 +420,11 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     const moved = (scroll - lastScroll) / vh;
     lastScroll = scroll;
     speed = damp(speed, Math.abs(moved) / dt, 8, dt);
+    // What is left of a push against a stage dies away; while it lasts the camera leans in on it.
+    impulse *= Math.exp(-5 * dt);
+    push = damp(push, options.reduced ? 0 : impulse, 10, dt);
     // Time and distance scrolled both turn the world, so it answers the wheel even while a pose rests.
-    theta += dt * 0.3 + moved * 1.2;
+    theta += dt * 0.3 + moved * 2.4 + push * dt * 9;
 
     // Which stage the page is resting nearest to, for the chrome and the sound.
     let near = 0;
@@ -385,7 +432,7 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
 
     // With reduced motion there is no travel: the page shows the nearest stage, at rest, wherever it is scrolled to.
     sample(frames, options.reduced ? frames[near].y : scroll, vh, target);
-    follow(current, target, options.reduced ? 1e6 : 9, dt);
+    follow(current, target, options.reduced || raw ? 1e6 : 7.5, dt);
     if (near !== nearest) {
       nearest = near;
       options.onStage?.(near, stages[near].place);
@@ -401,13 +448,15 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     if (moving && !underway) options.onDive?.();
     underway = moving;
 
-    camera.position.set(0, 0, DIST * (compact ? 1.12 : 1));
+    camera.position.set(0, 0, DIST * (compact ? 1.12 : 1) - push * 1.1);
     camera.lookAt(0, 0, 0);
 
-    // Pointer lean and a slow idle sway.
-    const sway = options.reduced ? 0 : 1;
-    world.rotation.y = damp(world.rotation.y, (pointer.x * 0.05 + Math.sin(time * 0.23) * 0.012) * sway, 3, dt);
-    world.rotation.x = damp(world.rotation.x, (pointer.y * 0.03 + Math.cos(time * 0.19) * 0.008) * sway, 3, dt);
+    // The world leans towards the pointer (less while the camera is travelling: the move is the motion then),
+    // and sways a little on its own.
+    const sway = options.reduced || raw ? 0 : 1;
+    const lean = sway * (1 - 0.6 * Math.sin(Math.PI * through));
+    world.rotation.y = damp(world.rotation.y, pointer.x * 0.085 * lean + Math.sin(time * 0.23) * 0.012 * sway, 3.2, dt);
+    world.rotation.x = damp(world.rotation.x, pointer.y * 0.05 * lean + Math.cos(time * 0.19) * 0.008 * sway, 3.2, dt);
     // On a tall screen the copy sits at the foot, so the subject (composed off to one side for a wide
     // frame) is brought to the middle and lifted clear of it.
     const side = stages[Math.max(0, nearest)].row.side === "L" ? -1 : 1;
@@ -421,6 +470,8 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     ctx.intro = state.intro;
     let rush = 0;
     let wantPane = -1;
+    let wantGate = -1;
+    showing.back = null;
     if (between) {
       // The place being reached is drawn first (it is what is seen through the door, the screen, the window);
       // the place being left over it.
@@ -433,6 +484,7 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
       pose(from + 1);
       rush = route.rush * Math.pow(Math.sin(Math.PI * through), 2);
       blend(mixed, tones[from], tones[from + 1], through * through * (3 - 2 * through));
+      if (gates[from + 1]) wantGate = from + 1;
     } else {
       const at = through < 0.5 ? from : from + 1;
       places[at].root.matrix.copy(still);
@@ -466,34 +518,23 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
       // Where the window is on screen: the box round its four corners.
       const corners = places[wantPane].portal;
       if (corners) {
-        let x0 = 1;
-        let y0 = 1;
-        let x1 = 0;
-        let y1 = 0;
-        let behind = false;
-        for (const corner of corners) {
-          point.copy(corner).applyMatrix4(places[wantPane].slide.matrixWorld).project(camera);
-          if (point.z > 1 || point.z < -1) behind = true;
-          x0 = Math.min(x0, point.x * 0.5 + 0.5);
-          x1 = Math.max(x1, point.x * 0.5 + 0.5);
-          y0 = Math.min(y0, point.y * 0.5 + 0.5);
-          y1 = Math.max(y1, point.y * 0.5 + 0.5);
-        }
-        x0 = Math.max(0, x0);
-        y0 = Math.max(0, y0);
-        x1 = Math.min(1, x1);
-        y1 = Math.min(1, y1);
-        if (behind || x1 <= x0 || y1 <= y0) {
+        if (frameOf(corners, places[wantPane].slide)) showing.pane = pane;
+        else {
           // The window is out of frame: there is nothing of the far place to draw.
           showing.first = showing.second;
           showing.second = -1;
-        } else {
-          pane[0] = x0;
-          pane[1] = y0;
-          pane[2] = x1;
-          pane[3] = y1;
-          showing.pane = pane;
         }
+      }
+    }
+    if (wantGate >= 0) {
+      // The place ahead is entered through an opening. While the camera is still outside, that place is
+      // drawn only where the opening is, and what is round it is the place being left.
+      const gate = gates[wantGate]!;
+      const slide = places[wantGate].slide;
+      point.copy(camera.position).applyMatrix4(inverse.copy(slide.matrixWorld).invert());
+      if (point.sub(gate.a).dot(gate.normal) > 0) {
+        showing.back = tones[wantGate - 1];
+        if (frameOf(places[wantGate].gate!, slide)) showing.pane = pane;
       }
     }
 
@@ -539,17 +580,37 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
       }
     }
 
-    // Governor: when a run of frames comes in late, trade pixels for frame rate.
-    if (state.ready && time > 3) {
-      late = late * 0.95 + (deltaMs > 22 ? 0.05 : 0);
-      if (late > 0.45 && time - steppedAt > 2.5 && budget > 1.0e6) {
-        budget *= 0.72;
-        steppedAt = time;
-        late = 0;
-        size();
+  }
+
+  // ---- governor: if refreshes keep being missed, trade pixels for frame rate ----
+  // It watches the timestamps requestAnimationFrame is given (the display's own refreshes), not a ticker's
+  // delta, which wobbles by milliseconds on a real screen without a refresh being missed. Changing resolution
+  // re-allocates every buffer, which is a long frame of its own, so it is done rarely.
+  let frameAt = 0;
+  let refresh = 16.7;
+  let slow = 0;
+  let cooling = 240;
+  let watching = true;
+  const watch = (now: number) => {
+    if (!watching) return;
+    const took = now - frameAt;
+    frameAt = now;
+    if (took > 0 && took < 250 && !document.hidden && state.ready && state.intro >= 1) {
+      refresh += (Math.min(took, 34) - refresh) * (took < refresh ? 0.2 : 0.002);
+      if (cooling > 0) cooling--;
+      else {
+        slow = slow * 0.9 + (took > Math.max(20, refresh * 1.6) ? 0.1 : 0);
+        if (slow > 0.45 && budget > 1.0e6) {
+          budget *= 0.72;
+          slow = 0;
+          cooling = 150;
+          size();
+        }
       }
     }
-  }
+    requestAnimationFrame(watch);
+  };
+  requestAnimationFrame(watch);
 
   // ---- warm-up: compile every shader and draw every place once, before anything is shown ----
 
@@ -597,11 +658,16 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     state,
     frame,
     resize,
+    /** The hand pushed on although the page is holding at a stage: `screens` of scroll that went nowhere. */
+    nudge(screens: number) {
+      impulse = Math.max(-0.5, Math.min(0.5, impulse + screens * 0.55));
+    },
     /** Scroll position of every resting stage, top to bottom. */
     stops: () => frames.map((f) => f.y),
     /** Which place each stage is in. */
     placeOf: (stage: number) => stages[stage].place,
     destroy() {
+      watching = false;
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("resize", onResize);
       renderer.dispose();

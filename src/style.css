@@ -101,8 +101,7 @@ section[data-look="light"] {
   width: min(48rem, 100%);
 }
 .sign.is-economics,
-.sign.is-now,
-.sign.is-connect {
+.sign.is-contact {
   width: min(33rem, 100%);
 }
 
@@ -129,6 +128,10 @@ section[data-look="light"] {
   margin-left: 1.1rem;
   vertical-align: middle;
   background: color-mix(in srgb, var(--ink) 40%, transparent);
+}
+.kicker .of {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .title {
@@ -299,6 +302,20 @@ section[data-look="light"] {
   inset: 0;
   background: var(--ink);
   animation: drip 2.2s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+}
+@keyframes scan {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  8%,
+  92% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateY(var(--scan, 24rem));
+    opacity: 0;
+  }
 }
 @keyframes drip {
   0% {
@@ -499,7 +516,7 @@ html.js:not(.no-stage) {
     top: 0;
     left: 0;
     z-index: 2;
-    width: min(30rem, 37vw);
+    width: min(32rem, 39vw);
     transform-origin: 0 0;
     will-change: transform, opacity;
     backface-visibility: hidden;
@@ -513,10 +530,11 @@ html.js:not(.no-stage) {
   .sign.is-hero {
     width: min(50rem, 58vw);
   }
-  .sign.is-economics,
-    .sign.is-now,
-  .sign.is-connect {
-    width: min(33rem, 40vw);
+  .sign.is-economics {
+    width: min(35rem, 42vw);
+  }
+  .sign.is-contact {
+    width: min(37rem, 44vw);
   }
   .sign[data-on] {
     opacity: 1;
@@ -524,17 +542,204 @@ html.js:not(.no-stage) {
     pointer-events: auto;
     transition: opacity 0.34s linear;
   }
-  /* A pool of the ground colour behind the copy, so it reads over whatever the scene puts there. */
-  .sign::before {
-    content: "";
-    position: absolute;
-    inset: -3.5rem -4.5rem;
-    z-index: -1;
-    background: radial-gradient(closest-side, color-mix(in srgb, var(--ground) 74%, transparent) 30%, transparent);
-    pointer-events: none;
-  }
-  .sign.is-hero::before {
-    display: none;
+  @media (min-width: 820px) and (min-aspect-ratio: 9 / 10) {
+    /*
+     * Each sign is a card standing in its place: solid enough to read over whatever the scene puts behind
+     * it, and made of that place's own stuff (a museum label, an editor window, a title block on a
+     * blueprint, a column of newsprint, a programme, an index card).
+     */
+    .sign:not(.is-hero) {
+      --ink: var(--card-ink, var(--ivory));
+      padding: 1.6rem 1.85rem 1.75rem;
+      background: var(--card, color-mix(in srgb, var(--ground) 90%, transparent));
+      color: var(--ink);
+      border: 1px solid var(--card-line, color-mix(in srgb, var(--ink) 20%, transparent));
+      box-shadow: 0 2.2rem 4.5rem -2rem rgb(0 0 0 / 0.6);
+    }
+    /* A tick at each corner, in the accent. */
+    .sign:not(.is-hero)::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      pointer-events: none;
+      --t: var(--tick, var(--accent));
+      background:
+        linear-gradient(var(--t), var(--t)) left top / 0.9rem 2px no-repeat,
+        linear-gradient(var(--t), var(--t)) left top / 2px 0.9rem no-repeat,
+        linear-gradient(var(--t), var(--t)) right top / 0.9rem 2px no-repeat,
+        linear-gradient(var(--t), var(--t)) right top / 2px 0.9rem no-repeat,
+        linear-gradient(var(--t), var(--t)) left bottom / 0.9rem 2px no-repeat,
+        linear-gradient(var(--t), var(--t)) left bottom / 2px 0.9rem no-repeat,
+        linear-gradient(var(--t), var(--t)) right bottom / 0.9rem 2px no-repeat,
+        linear-gradient(var(--t), var(--t)) right bottom / 2px 0.9rem no-repeat;
+    }
+    .sign:not(.is-hero) .kicker {
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+    }
+    .sign:not(.is-hero) > .skill > .title {
+      font-size: clamp(2.3rem, 15cqi, 4.4rem);
+    }
+
+    /* 01 Sound: a museum label. Cream card, serif, a brass rule inside the edge. */
+    [data-chapter="sound"] .sign {
+      --card: #efe6d3;
+      --card-ink: #24170f;
+      --card-line: #8a6a2a;
+      --accent: #9a5a12;
+      outline: 1px solid rgb(138 106 42 / 0.55);
+      outline-offset: -0.5rem;
+      padding: 2rem 2.2rem 2.1rem;
+    }
+    [data-chapter="sound"] .sign::before {
+      display: none;
+    }
+    [data-chapter="sound"] .sign > .skill > .title {
+      font: 700 clamp(2.6rem, 16cqi, 4.6rem) / 0.95 var(--serif);
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+
+    /* 02 Code: an editor window. A title bar with its three lights, mono for the name. */
+    [data-chapter="code"] .sign {
+      --card: #06141af2;
+      --card-ink: #dff5ea;
+      --card-line: #1f4a44;
+      padding-top: 0;
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+    [data-chapter="code"] .sign::before {
+      display: none;
+    }
+    [data-chapter="code"] .sign .kicker {
+      margin: 0 -1.85rem 1.2rem;
+      padding: 0.7rem 1.1rem 0.7rem 4.4rem;
+      background:
+        radial-gradient(circle at 1.15rem 50%, #ff6159 0.3rem, transparent 0.34rem),
+        radial-gradient(circle at 2.15rem 50%, #ffbd2e 0.3rem, transparent 0.34rem),
+        radial-gradient(circle at 3.15rem 50%, #28c941 0.3rem, transparent 0.34rem),
+        #0b2228;
+      border-bottom: 1px solid #1f4a44;
+    }
+    [data-chapter="code"] .sign .kicker .idx::after {
+      display: none;
+    }
+    [data-chapter="code"] .sign > .skill > .title {
+      font: 700 clamp(2rem, 13.5cqi, 3.9rem) / 0.95 var(--mono);
+      letter-spacing: -0.02em;
+    }
+    [data-chapter="code"] .sign > .skill > .title::before {
+      content: "> ";
+      color: var(--accent);
+    }
+
+    /* 03 Orbit: a head-up display. No box: brackets at the corners and a line that scans. */
+    [data-chapter="orbit"] .sign {
+      --card: rgb(4 5 26 / 0.74);
+      --card-line: transparent;
+      box-shadow: none;
+    }
+    [data-chapter="orbit"] .sign::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.55;
+      animation: scan 5.5s linear infinite;
+      pointer-events: none;
+    }
+
+    /* 04 Machine: the title block of the drawing. White line on blue, the name in outline. */
+    [data-chapter="machine"] .sign {
+      --card: rgb(14 52 160 / 0.9);
+      --card-line: rgb(255 255 255 / 0.85);
+      --tick: #fff;
+      outline: 1px solid rgb(255 255 255 / 0.3);
+      outline-offset: 0.3rem;
+      box-shadow: none;
+    }
+    [data-chapter="machine"] .sign > .skill > .title {
+      color: transparent;
+      -webkit-text-stroke: 1.5px #fff;
+      letter-spacing: -0.03em;
+    }
+
+    /* 05 Markets: a column of the paper. Ink on newsprint, a heavy rule and a light one over the headline. */
+    [data-chapter="markets"] .sign {
+      --card: #f8ecde;
+      --card-ink: #17131a;
+      --card-line: transparent;
+      border-top: 4px solid #17131a;
+      box-shadow: 0 1.6rem 3rem -1.6rem rgb(60 30 10 / 0.45);
+    }
+    [data-chapter="markets"] .sign::before {
+      inset: 0.35rem 0 auto 0;
+      height: 1px;
+      background: #17131a;
+    }
+    [data-chapter="markets"] .sign > .skill > .title {
+      font: 900 clamp(2.5rem, 14.5cqi, 4.4rem) / 0.92 var(--serif);
+      letter-spacing: -0.03em;
+      text-transform: none;
+    }
+
+    /* 06 Stage: the programme. Deep red, a gold line inside the edge. */
+    [data-chapter="stage"] .sign {
+      --card: #1e0709f2;
+      --card-ink: #f7ead9;
+      --card-line: #b98a2e;
+      --tick: #e2b44c;
+      outline: 1px solid rgb(185 138 46 / 0.45);
+      outline-offset: -0.45rem;
+      padding: 1.9rem 2.1rem 2rem;
+    }
+
+    /* 07 Mind: an index card. Ruled, with the red line across its head. */
+    [data-chapter="mind"] .sign {
+      --card: #f8f3e7;
+      --card-ink: #1b1a30;
+      --card-line: #c9c1ae;
+      --tick: transparent;
+      background:
+        linear-gradient(#c8463c, #c8463c) 0 3.35rem / 100% 1px no-repeat,
+        repeating-linear-gradient(to bottom, transparent 0 1.55rem, rgb(59 51 214 / 0.1) 1.55rem calc(1.55rem + 1px)) 0 3.4rem,
+        #f8f3e7;
+      box-shadow: 0 1.4rem 3rem -1.4rem rgb(40 30 80 / 0.4);
+    }
+    [data-chapter="mind"] .sign .kicker {
+      border-bottom-color: transparent;
+    }
+    [data-chapter="mind"] .sign > .skill > .title {
+      font: 700 clamp(2.5rem, 15cqi, 4.4rem) / 0.95 var(--serif);
+      letter-spacing: -0.02em;
+      text-transform: none;
+    }
+
+    /* 08 Contact: a wire. Night blue, the address large. */
+    [data-chapter="contact"] .sign {
+      --card: rgb(3 15 26 / 0.86);
+      --card-line: rgb(125 255 192 / 0.4);
+      padding: 2rem 2.2rem 2.1rem;
+    }
+    [data-chapter="contact"] .sign .title.serif {
+      font-size: clamp(2.8rem, 15cqi, 5rem);
+    }
+    [data-chapter="contact"] .contact .big {
+      font-size: clamp(1.5rem, 8cqi, 2.4rem);
+      color: var(--accent);
+    }
+    [data-chapter="contact"] .contact a:not(.big) {
+      padding: 0.55rem 0.95rem;
+      border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+      border-radius: 99px;
+      text-decoration: none;
+    }
+
   }
 
   /* Each line of a sign arrives on time, not on scroll. */
@@ -596,15 +801,78 @@ html.js:not(.no-stage) {
   .tools,
   .rail,
   .readout,
-  .progress {
+  .progress,
+  .ruler,
+  .corner {
     position: fixed;
     z-index: 6;
     color: #fff;
     mix-blend-mode: difference;
     transition: opacity 0.9s linear;
   }
-  &[data-intro="pending"] :is(.brand, .tools, .rail, .readout, .progress) {
+  &[data-intro="pending"] :is(.brand, .tools, .rail, .readout, .progress, .ruler, .corner) {
     opacity: 0;
+  }
+  /* The frame: a bracket in each corner of the window, and a ruler with a tick for every stage. */
+  .corner {
+    width: 0.9rem;
+    height: 0.9rem;
+    border: 0 solid rgb(255 255 255 / 0.7);
+    pointer-events: none;
+  }
+  .corner.tl {
+    top: 0.55rem;
+    left: 0.55rem;
+    border-width: 1px 0 0 1px;
+  }
+  .corner.tr {
+    top: 0.55rem;
+    right: 0.55rem;
+    border-width: 1px 1px 0 0;
+  }
+  .corner.bl {
+    bottom: 0.55rem;
+    left: 0.55rem;
+    border-width: 0 0 1px 1px;
+  }
+  .corner.br {
+    bottom: 0.55rem;
+    right: 0.55rem;
+    border-width: 0 1px 1px 0;
+  }
+  .ruler {
+    right: max(1.4rem, 3vw);
+    bottom: 1.45rem;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    height: 1.1rem;
+    pointer-events: none;
+  }
+  .ruler i {
+    width: 1px;
+    height: 0.5rem;
+    background: currentColor;
+    opacity: 0.45;
+    transition:
+      height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 0.3s;
+  }
+  .ruler i[data-live] {
+    height: 1.1rem;
+    opacity: 1;
+  }
+  .gauge {
+    position: fixed;
+    z-index: 8;
+    left: 50%;
+    bottom: 1.2rem;
+    transform: translateX(-50%);
+    padding: 0.45rem 0.8rem;
+    background: rgb(0 0 0 / 0.75);
+    color: #fff;
+    font: 400 0.62rem/1 var(--mono);
+    letter-spacing: 0.08em;
   }
   .brand {
     top: 1.5rem;
@@ -843,8 +1111,7 @@ html.js:not(.no-stage) {
     .sign,
     .sign.is-hero,
     .sign.is-economics,
-        .sign.is-now,
-    .sign.is-connect {
+    .sign.is-contact {
       inset: auto 0 0 0;
       width: auto;
       max-height: 78svh;

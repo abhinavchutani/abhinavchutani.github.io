@@ -315,8 +315,8 @@ export function library(): Place {
     slide,
     // What is outside is drawn only where the window is.
     portal: [-1, 1].flatMap((sx) => [-1, 1].map((sy) => new THREE.Vector3(PANE.x + (sx * PANE.w) / 2, PANE.y + (sy * PANE.h) / 2, -16.2))),
-    update({ time }) {
-      leaves.rotation.y = Math.sin(time * 0.05) * 0.1;
+    update({ time, theta }) {
+      leaves.rotation.y = Math.sin(time * 0.05) * 0.1 + theta * 0.02;
       leaves.position.y = Math.sin(time * 0.21) * 0.3;
       // The pen works along three lines and starts the page again.
       const beat = (time * 0.11) % 1;

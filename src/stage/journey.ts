@@ -20,7 +20,7 @@ export type Keyframe<P extends PoseShape> = {
   pose: P;
   /** Index of the chapter it belongs to. */
   chapter: number;
-  /** Fraction of the step after this keyframe that the pose rests before moving on (0.1 .. 0.3). */
+  /** How much the step after this keyframe eases in and out: 0 is a straight line, 1 comes to rest at each end. */
   hold: number;
 };
 
@@ -34,14 +34,17 @@ export const smooth = (a: number, b: number, v: number) => {
 /** Frame-rate independent approach: `rate` is per second (6 to 7 feels weighty, 60 is instant). */
 export const damp = (current: number, target: number, rate: number, dt: number) => current + (target - current) * (1 - Math.exp(-rate * dt));
 
+/** Set while a move is being measured: scroll then maps straight on to the move, with no easing. */
+export const tuning = { linear: false };
+
 /**
  * Writes the pose for `scroll` into `out` (which must have the same shape as
  * the poses) and returns which keyframes it lies between.
  *
- * Scroll scrubs the move: the pose rests for a short stretch at each end of
- * a step (so a stage is a place to stop, not a point to hit) and in between
- * travels at a pace that is nearly even, so how fast things move is how
- * fast the hand is scrolling.
+ * Scroll scrubs the move. It eases in and out of each stage, but never to a
+ * standstill: even at a stage the pose is still creeping, so every bit of
+ * scroll moves something. (Where the page comes to rest is the scroller's
+ * business, not the easing's.)
  */
 export function sample<P extends PoseShape>(frames: Keyframe<P>[], scroll: number, _viewport: number, out: P) {
   if (frames.length === 0) return null;
@@ -53,9 +56,7 @@ export function sample<P extends PoseShape>(frames: Keyframe<P>[], scroll: numbe
   let t = 0;
   if (to !== from) {
     const raw = clamp01((scroll - from.y) / (to.y - from.y));
-    const u = clamp01((raw - from.hold) / (1 - 2 * from.hold));
-    // Mostly linear, eased only where it leaves and arrives.
-    t = u + (u * u * (3 - 2 * u) - u) * 0.55;
+    t = tuning.linear ? raw : raw + (smoother(raw) - raw) * from.hold;
   }
 
   const target = out as Record<string, number | number[]>;

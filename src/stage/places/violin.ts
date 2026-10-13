@@ -408,6 +408,14 @@ function doorCase(doorWide: number, floor: number, doorTop: number, deep: number
   return g;
 }
 
+/**
+ * Wallpaper: lit by the lamps and by a little of its own colour for the light of the room. (Paper has no
+ * shine to speak of, so it is not worth the reflections a full material works out for every pixel of four walls.)
+ */
+function wallpaper(map: THREE.Texture) {
+  return new THREE.MeshLambertMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.22 });
+}
+
 export function violin(): Place {
   const { root, slide } = shell();
   const FLOOR = -4.4;
@@ -423,7 +431,7 @@ export function violin(): Place {
   const paperOf = (across: number, up: number) => {
     const map = damask();
     map.repeat.set(across, up);
-    return new THREE.MeshStandardMaterial({ map, roughness: 0.92 });
+    return wallpaper(map);
   };
   const dadoOf = (across: number) => {
     const map = panelling();
@@ -446,16 +454,26 @@ export function violin(): Place {
   const DOOR = { z: 4, wide: 5.6, top: 2.9 };
   const perUnit = damask();
   perUnit.repeat.set(1 / 2.1, 1 / 1.6);
-  const papered = new THREE.MeshStandardMaterial({ map: perUnit, roughness: 0.92 });
+  const papered = wallpaper(perUnit);
   const stoneOut = matte(0x0d0d10, 0.9);
   room.add(put(wallWithDoor(deep, FLOOR, TOPS, DOOR.z - midZ, DOOR.wide, DOOR.top, papered), RIGHT, 0, midZ, 0, -HALF, 0));
   room.add(put(wallWithDoor(deep, FLOOR, TOPS, -(DOOR.z - midZ), DOOR.wide, DOOR.top, stoneOut), RIGHT + 0.5, 0, midZ, 0, HALF, 0));
   room.add(put(doorCase(DOOR.wide, FLOOR, DOOR.top, 0.9, matte(0x2a140b, 0.5)), RIGHT + 0.25, 0, DOOR.z, 0, HALF, 0));
-  // Front wall, with the way in. From outside, in the dark, it is a slab of stone with a lit doorway.
+  // Front wall, with the way in. From outside there is no building: only the doorway, standing in the dark
+  // at the end of the thread in a gilt frame, with the gallery inside it (see `gate` and `threshold`).
   const ENTRY = { wide: 6.4, top: 2.6 };
   room.add(put(wallWithDoor(wide, FLOOR, TOPS, -(0 - midX), ENTRY.wide, ENTRY.top, papered), midX, 0, FRONT, 0, Math.PI, 0));
-  room.add(put(wallWithDoor(wide + 30, FLOOR - 14, TOPS + 12, 0 - midX, ENTRY.wide, ENTRY.top, stoneOut), midX, 0, FRONT + 0.6));
-  room.add(put(doorCase(ENTRY.wide, FLOOR, ENTRY.top, 1.1, matte(0x3a2a1c, 0.6)), 0, 0, FRONT + 0.3));
+  const threshold = new THREE.Group();
+  const rise = ENTRY.top - FLOOR;
+  for (const side of [-1, 1]) threshold.add(put(box(0.26, rise + 0.3, 0.5, gilt), side * (ENTRY.wide / 2 + 0.13), FLOOR + rise / 2 + 0.15, FRONT + 0.3));
+  threshold.add(put(box(ENTRY.wide + 0.9, 0.3, 0.56, gilt), 0, ENTRY.top + 0.15, FRONT + 0.3), put(box(ENTRY.wide + 1.5, 0.12, 0.7, gilt), 0, ENTRY.top + 0.36, FRONT + 0.3));
+  threshold.add(put(box(ENTRY.wide + 1.5, 0.22, 1.6, matte(0x1a0b06, 0.5)), 0, FLOOR - 0.11, FRONT + 0.7));
+  const gate = [
+    new THREE.Vector3(-ENTRY.wide / 2, FLOOR, FRONT),
+    new THREE.Vector3(ENTRY.wide / 2, FLOOR, FRONT),
+    new THREE.Vector3(ENTRY.wide / 2, ENTRY.top, FRONT),
+    new THREE.Vector3(-ENTRY.wide / 2, ENTRY.top, FRONT),
+  ];
   // Floor, carpet, ceiling.
   const boards = parquet();
   boards.repeat.set(wide / 4.6, deep / 4.6);
@@ -548,11 +566,13 @@ export function violin(): Place {
   return {
     root,
     slide,
-    update({ speed, time }) {
+    gate,
+    threshold,
+    update({ speed, time, theta }) {
       // Scrolling plays it harder.
       amp.value = 0.45 + Math.min(1.3, speed * 0.6);
-      // It turns about its length, dwelling on the front and on the back and passing quickly edge-on.
-      const round = time * 0.3 + 0.3;
+      // It turns about its length (and with the wheel), dwelling on the front and on the back and passing quickly edge-on.
+      const round = time * 0.22 + theta * 0.35 + 0.3;
       spin.rotation.y = round - 0.45 * Math.sin(2 * round);
       // The kit keeps time: the kick's head on the beat, the cymbals still ringing.
       const beat = Math.exp(-((time * 1.6) % 1) * 6);

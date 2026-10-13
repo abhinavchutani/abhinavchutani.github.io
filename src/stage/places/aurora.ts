@@ -370,8 +370,8 @@ export function aurora(): Place {
     slide,
     anchors,
     update({ time, theta }) {
-      wheel.rotation.z = time * 0.05;
-      wheelBelow.rotation.z = time * 0.05;
+      wheel.rotation.z = time * 0.05 + theta * 0.12;
+      wheelBelow.rotation.z = time * 0.05 + theta * 0.12;
       sky.rotation.y = Math.sin(theta * 0.05) * 0.06;
       sheen.material.opacity = 0.42 + 0.12 * Math.sin(time * 0.23);
     },

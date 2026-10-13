@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { ball, box, cyl, dust, field, matte, paint, put, rng, shell, type Place } from "../kit";
 import { circle, staticRibbons } from "../ribbons";
+import { PAGE } from "../table";
 
 /**
  * 05 Markets. Salmon newsprint and ink. A candlestick series runs in from
@@ -23,7 +24,7 @@ export function chart(): Place {
   slide.add(set);
   const anchors: Record<string, THREE.Object3D> = {};
 
-  // ---- the page: salmon newsprint, a masthead, columns of type down the margins ----
+  // ---- the page: salmon newsprint, columns of type down the margins; its head lies just above the frame ----
   const page = paint(1024, 640, (ctx, w, h) => {
     ctx.fillStyle = "#f1d9c5";
     ctx.fillRect(0, 0, w, h);
@@ -33,39 +34,33 @@ export function chart(): Place {
       ctx.fillRect(r() * w, r() * h, 1.5, 1.5);
     }
     ctx.fillStyle = "#17131a";
-    ctx.fillRect(40, 58, w - 80, 3);
-    ctx.fillRect(40, 66, w - 80, 1);
+    ctx.fillRect(40, 62, w - 80, 3);
+    ctx.fillRect(40, 70, w - 80, 1);
     ctx.fillRect(40, h - 44, w - 80, 2);
-    ctx.textBaseline = "alphabetic";
-    ctx.font = `900 34px "Inter", sans-serif`;
-    ctx.fillText("MARKETS", 40, 46);
-    ctx.font = `400 13px "Space Mono", monospace`;
-    ctx.textAlign = "right";
-    ctx.fillText("HELSINKI  ·  MMXXVI  ·  NO. 05", w - 40, 44);
     // Type, set in columns down either margin and along the foot.
     ctx.fillStyle = "rgba(23,19,26,0.3)";
     for (const [x0, x1] of [[40, 86], [94, 140], [w - 140, w - 94], [w - 86, w - 40]]) {
       for (let y = 90; y < h - 70; y += 4) ctx.fillRect(x0, y, (x1 - x0) * (r() < 0.12 ? 0.5 : 1), 1.2);
     }
-  });
-  slide.add(put(new THREE.Mesh(new THREE.PlaneGeometry(80, 50), new THREE.MeshBasicMaterial({ map: page })), 2, 0, -8));
-  // The desk both sheets lie on: it runs away to the left, under the blueprint.
-  const oak = paint(256, 256, (ctx, w, h) => {
-    ctx.fillStyle = "#33241a";
-    ctx.fillRect(0, 0, w, h);
-    for (let i = 0; i < 140; i++) {
-      ctx.strokeStyle = `rgba(${i % 2 ? "150,104,66" : "0,0,0"},${0.05 + ((i * 37) % 10) * 0.012})`;
-      ctx.lineWidth = 0.6 + ((i * 13) % 5) * 0.4;
-      const y = ((i * 97) % 256) + 0.5;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.bezierCurveTo(w * 0.3, y + ((i * 7) % 9) - 4, w * 0.7, y - ((i * 5) % 9) + 4, w, y);
-      ctx.stroke();
+    for (let x = 150; x < w - 150; x += 62) {
+      for (let y = 330; y < h - 70; y += 4) ctx.fillRect(x, y, 54 * (r() < 0.12 ? 0.5 : 1), 1.2);
     }
   });
-  oak.wrapS = oak.wrapT = THREE.RepeatWrapping;
-  oak.repeat.set(14, 8);
-  slide.add(put(new THREE.Mesh(new THREE.PlaneGeometry(420, 240), new THREE.MeshBasicMaterial({ map: oak })), -30, 0, -11.5));
+  slide.add(put(new THREE.Mesh(new THREE.PlaneGeometry(PAGE.wide, PAGE.tall), new THREE.MeshBasicMaterial({ map: page })), PAGE.x, PAGE.y, PAGE.z));
+  // The masthead, set large enough to be read as the camera comes down the desk on to the page.
+  const head = paint(2048, 220, (ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#17131a";
+    ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "left";
+    ctx.font = `900 150px "Inter", sans-serif`;
+    ctx.fillText("MARKETS", 0, 160);
+    ctx.font = `400 44px "Space Mono", monospace`;
+    ctx.textAlign = "right";
+    ctx.fillText("HELSINKI  ·  MMXXVI  ·  NO. 05", w, 150);
+    ctx.fillRect(0, h - 14, w, 6);
+  });
+  slide.add(put(new THREE.Mesh(new THREE.PlaneGeometry(17.4, 1.87), new THREE.MeshBasicMaterial({ map: head, transparent: true, depthWrite: false })), 0, PAGE.y + PAGE.tall / 2 - 1.75, PAGE.z + 0.02));
 
   // ---- the series ----
   const N = 120;
@@ -244,7 +239,7 @@ export function chart(): Place {
     root,
     slide,
     anchors,
-    update({ ch, time }) {
+    update({ ch, time, theta }) {
       // The paths draw out from the last price; then they are run again.
       const run = (time % 11) / 11;
       const drawn = ch[6] * Math.min(1, run / 0.36);
@@ -255,9 +250,9 @@ export function chart(): Place {
       bars.scale.set(1, 1, 1);
       bars.visible = drawn > 0.6;
       // The qubit precesses.
-      state.rotation.set(0.9 + Math.sin(time * 0.7) * 0.25, time * 0.9, 0);
-      qubit.rotation.y = time * 0.25;
-      tape.offset.x = -time * 0.05;
+      state.rotation.set(0.9 + Math.sin(time * 0.7) * 0.25, time * 0.9 + theta * 1.2, 0);
+      qubit.rotation.y = time * 0.25 + theta * 0.6;
+      tape.offset.x = -time * 0.05 - theta * 0.06;
     },
   };
 }

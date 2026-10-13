@@ -3,7 +3,7 @@
  * vite.config.ts), so the document that ships is real, readable markup with
  * no JavaScript; the stage then pins each `.sign` into the 3D scene.
  */
-import { builds, chapters, count, disciplines, now, person, stageList, stats, type Skill, type Stage } from "./content";
+import { builds, chapters, count, disciplines, person, stageList, type Skill, type Stage } from "./content";
 
 const esc = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const two = (n: number) => String(n).padStart(2, "0");
@@ -51,15 +51,10 @@ function body(stage: Stage) {
       return `${first(skills[0])}
       <p class="label">Projects</p>
       <ul class="cards rows">${builds.map((b) => `<li><h3>${esc(b.name)}</h3><p class="badge">${esc(b.sub)}</p><p>${esc(b.text)}</p></li>`).join("")}</ul>`;
-    case "connect":
+    case "contact":
       return `
-      <h2 class="title serif">How it connects.</h2>
-      <p class="done">The goal is not to separate these interests, but to use the overlap well. Intersections over silos.</p>
-      <dl class="stats">${stats.map((s) => `<div><dt>${esc(s.value)}</dt><dd>${esc(s.label)}</dd></div>`).join("")}</dl>`;
-    case "now":
-      return `
-      <h2 class="title serif">What I am building.</h2>
-      <ul class="now">${now.map((n) => `<li><b>${esc(n.tag)}</b><span>${esc(n.text)}</span></li>`).join("")}</ul>
+      <h2 class="title serif">Let's talk.</h2>
+      <p class="done">${esc(person.line)}</p>
       <div class="contact">
         <a class="big" href="mailto:${person.email}">${person.email}</a>
         <a href="${person.linkedin}" target="_blank" rel="noopener">LinkedIn ↗</a>
@@ -71,8 +66,8 @@ function body(stage: Stage) {
   }
 }
 
-/** Screens of scroll between one stage and the next: long enough that a move is scrubbed, not triggered. */
-export const SPAN = 2;
+/** Screens of scroll between one stage and the next: one, everywhere, so every move costs the hand the same. */
+export const SPAN = 1;
 
 export function renderPage() {
   let index = 0;
@@ -82,11 +77,10 @@ export function renderPage() {
       const signs = chapter.stages
         .map((stage) => {
           const k = index++;
-          const kicker = stage.kind === "hero" ? "" : `<p class="kicker"><span class="idx">${two(c)}</span><span>${esc(stage.kicker ?? chapter.name)}</span></p>`;
+          const kicker = stage.kind === "hero" ? "" : `<p class="kicker"><span class="idx">${two(c)}</span><span>${esc(stage.kicker ?? chapter.name)}</span><span class="of">${two(k)} / ${two(total - 1)}</span></p>`;
           const caption = stage.caption ? `<p class="caption">${esc(stage.caption)}</p>` : "";
-          const id = stage.kind === "now" ? ` id="contact"` : "";
           return `
-    <article class="sign${stage.kind ? ` is-${stage.kind}` : ""}"${id} data-stage="${k}">
+    <article class="sign${stage.kind ? ` is-${stage.kind}` : ""}" data-stage="${k}">
       ${kicker}${body(stage)}
       ${caption}
     </article>`;
@@ -121,6 +115,9 @@ export function renderPage() {
   <nav class="rail" aria-label="Chapters">${rail}</nav>
   <p class="readout" aria-hidden="true"><b data-readout-index>00</b><span data-readout-name>Origin</span><em data-readout-stage>01 / ${two(stageList.length)}</em></p>
   <div class="progress" aria-hidden="true"><i data-progress></i></div>
+  <div class="ruler" aria-hidden="true">${stageList.map((_, i) => `<i data-tick="${i}"></i>`).join("")}</div>
+  <i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i>
+  <button class="gauge" type="button" data-gauge hidden></button>
 </header>
 <div class="opener" data-opener aria-hidden="true">
   <p><span>Loading</span><b data-count>000</b><span>%</span></p>

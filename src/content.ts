@@ -1,7 +1,7 @@
 /**
  * Everything the site says. All of it comes from abhinavchutani.github.io
- * (the 19 skill entries, the showcase, the stats and the "now" list); edit
- * copy here and nowhere else. `render.ts` turns this into static HTML at
+ * (the skill entries, the showcase and the contact details); edit copy here
+ * and nowhere else. `render.ts` turns this into static HTML at
  * build time, and the 3D stage reads the same list for its labels.
  */
 
@@ -24,7 +24,7 @@ export type Stage = {
   /** The first is the sign's headline; the rest sit under it, smaller. */
   skills?: Skill[];
   /** Anything that is not a plain skill block. */
-  kind?: "hero" | "economics" | "connect" | "now";
+  kind?: "hero" | "economics" | "contact";
   /** A caption that points at the scene ("every light is a student"). */
   caption?: string;
 };
@@ -52,26 +52,12 @@ export const person = {
   location: "Helsinki, Finland",
 };
 
-export const stats = [
-  { value: "3,500+", label: "Students led as Head Boy" },
-  { value: "#8", label: "FLL World Festival · 110+ nations" },
-  { value: "50+", label: "Books across finance, philosophy, history" },
-  { value: "19+", label: "Skills and creative disciplines" },
-];
-
 /** Projects: economics and code, put to work. */
 export const builds = [
   { key: "quantum", name: "Quantum × Finance", sub: "Ultrahack · 3rd place", text: "Benchmarking randomised ESG constraints with quantum methods." },
   { key: "engram", name: "Engram", sub: "Aalto AI Hackathon · Built for RELEX", text: "AI organizational memory auditor: every answer is a case, with evidence and verified receipts." },
   { key: "monte", name: "Monte Carlo Options", sub: "Quant finance · Research", text: "A simulator checked against the Black-Scholes formula." },
   { key: "chain", name: "Blockchain Simulator", sub: "Python · Systems research", text: "Hashing, block creation, and chain validation." },
-];
-
-export const now = [
-  { tag: "Studying", text: "Economics & Business Administration at Aalto University." },
-  { tag: "Placed", text: "3rd at Ultrahack's Quantum × Finance hackathon." },
-  { tag: "Shipped", text: "Engram, an AI organizational memory auditor, for RELEX." },
-  { tag: "Community", text: "KY, KY-Sub, AaltoAI, Aaltoes, and Startup Sauna." },
 ];
 
 export const chapters: Chapter[] = [
@@ -317,13 +303,13 @@ export const chapters: Chapter[] = [
     ],
   },
   {
-    // Helsinki, at night, under the aurora.
-    id: "now",
-    name: "Now",
+    // Helsinki, at night, under the aurora: where to find him.
+    id: "contact",
+    name: "Contact",
     accent: "#7dffc0",
     ground: "#041320",
     look: "dark",
-    stages: [{ kind: "connect", kicker: "Range · Compounding interests" }, { kind: "now", kicker: "Right now · Helsinki" }],
+    stages: [{ kind: "contact", kicker: "Get in touch" }],
   },
 ];
 

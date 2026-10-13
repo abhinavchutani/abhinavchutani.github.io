@@ -198,22 +198,34 @@ export function bench(): Place {
   set.add(robot);
 
   // ---- the sheet itself: blueprint blue with its grid ----
-  const blue = paint(256, 256, (ctx, w) => {
-    ctx.fillStyle = "#1444c4";
-    ctx.fillRect(0, 0, w, w);
-    ctx.strokeStyle = "rgba(255,255,255,0.11)";
-    ctx.lineWidth = 1;
-    for (let i = 0; i < w; i += 32) {
-      ctx.strokeRect(i, 0, 32, w);
-      ctx.strokeRect(0, i, w, 32);
-    }
-    ctx.strokeStyle = "rgba(255,255,255,0.2)";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, w, w);
+  // The grid is drawn in the shader and dies away towards the edge of the sheet, leaving plain blue: the same
+  // blue as the patch of sea the sheet lies on when it is come down to from orbit, so it has no edge to see.
+  const SHEET = { w: 420, h: 300 };
+  const blue = new THREE.ShaderMaterial({
+    uniforms: { uBlue: { value: new THREE.Color(0x1444c4) }, uSize: { value: new THREE.Vector2(SHEET.w, SHEET.h) } },
+    vertexShader: /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uBlue;
+      uniform vec2 uSize;
+      varying vec2 vUv;
+      float lines(vec2 p, float px) {
+        vec2 g = abs(fract(p - 0.5) - 0.5) / (fwidth(p) * px);
+        return 1.0 - min(min(g.x, g.y), 1.0);
+      }
+      void main() {
+        vec2 p = (vUv - 0.5) * uSize;
+        // Fine lines only while there is room on screen for them; the heavy ones every eight.
+        float room = 1.0 - smoothstep(0.08, 0.3, max(fwidth(p.x), fwidth(p.y)));
+        // From far off only the coarse squares show; the finer ones come in as there is room for them.
+        float far = smoothstep(0.25, 1.6, max(fwidth(p.x), fwidth(p.y)));
+        float grid = lines(p, 1.0) * 0.11 * room + lines(p / 8.0, 1.4) * 0.2 * (1.0 - far) + lines(p / 32.0, 1.5) * 0.26 * far;
+        float edge = max(abs(p.x) / (uSize.x * 0.5), abs(p.y) / (uSize.y * 0.5));
+        grid *= 1.0 - smoothstep(0.45, 0.95, edge);
+        gl_FragColor = vec4(uBlue + vec3(grid), 1.0);
+      }
+    `,
   });
-  blue.wrapS = blue.wrapT = THREE.RepeatWrapping;
-  blue.repeat.set(88 / 8, 60 / 8);
-  slide.add(put(new THREE.Mesh(new THREE.PlaneGeometry(88, 60), new THREE.MeshBasicMaterial({ map: blue })), -16, 0, -9.4));
+  slide.add(put(new THREE.Mesh(new THREE.PlaneGeometry(SHEET.w, SHEET.h), blue), 0, 4, -9.4));
   // ---- the drawing on it: three views, dimensions, construction lines ----
   const sheet = put(new THREE.Group(), 0, 0, -9);
   slide.add(sheet);
@@ -259,8 +271,8 @@ export function bench(): Place {
   return {
     root,
     slide,
-    update({ time, dt }) {
-      rotor.rotation.z = time * 1.3;
+    update({ time, dt, theta }) {
+      rotor.rotation.z = time * 1.3 + theta * 2.2;
 
       // Drive, stop, come apart, hold, go back together: ten seconds, then again.
       const beat = time % 10;

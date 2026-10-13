@@ -164,15 +164,15 @@ export function forum(): Place {
   [[-0.95, 0], [0.95, 0], [0.8, 3.0], [-0.8, 3.0]].forEach(([x, y], i) => (i === 0 ? body.moveTo(x, y) : body.lineTo(x, y)));
   lectern.add(put(new THREE.Mesh(new THREE.ExtrudeGeometry(body, { depth: 1.1, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2 }), wood), 0, 0, -0.55));
   lectern.add(put(box(2.0, 0.1, 1.5, wood), 0, 3.12, 0.15, 0.32));
-  // What is on the lectern: the newspaper page. The camera arrives by pulling back from it.
+  // What is on the lectern: the newspaper page. The camera arrives by looking up from it.
   const sheet = paint(256, 160, (ctx, w, h) => {
     ctx.fillStyle = "#f1d9c5";
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = "#17131a";
     ctx.fillRect(10, 14, w - 20, 1.5);
     ctx.fillRect(10, 8, 46, 4);
-    // The chart, as it reads from here: a run of candles, the fan, the histogram.
-    let y = 96;
+    // The chart, as it reads from here: a run of candles, the fan, the histogram, near the head of the page.
+    let y = 46;
     for (let i = 0; i < 24; i++) {
       const up = (i * 7) % 5 > 1;
       y -= up ? 2.2 : -1.2;
@@ -190,7 +190,8 @@ export function forum(): Place {
     ctx.fillStyle = "#0f6b5c";
     for (let i = 0; i < 14; i++) ctx.fillRect(198, y - 30 + i * 4.4, 4 + 22 * Math.exp(-Math.pow((i - 6.5) / 3.2, 2)), 3.4);
     ctx.fillStyle = "rgba(23,19,26,0.4)";
-    for (let line = 0; line < 9; line++) ctx.fillRect(10, 30 + line * 4.5, 16, 1.6);
+    for (let column = 0; column < 7; column++) for (let line = 0; line < 14; line++) ctx.fillRect(30 + column * 28, 84 + line * 4.5, 24, 1.4);
+    for (let line = 0; line < 26; line++) ctx.fillRect(10, 30 + line * 4.5, 16, 1.6);
   });
   lectern.add(put(new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.012, 0.75), new THREE.MeshStandardMaterial({ map: sheet, roughness: 0.9 })), 0, 3.211, 0.2, 0.32));
   // Microphone on a gooseneck.
@@ -400,9 +401,10 @@ export function forum(): Place {
   return {
     root,
     slide,
-    update({ time }) {
+    update({ time, theta }) {
       lamps.forEach((lamp, i) => {
-        lamp.rotation.z = [-0.55, 0, 0.5][i] + Math.sin(time * 0.25 + i * 2) * 0.05;
+        // The follow spots sweep slowly, and further with the wheel.
+        lamp.rotation.z = [-0.55, 0, 0.5][i] + Math.sin(time * 0.25 + theta * 0.45 + i * 2) * 0.09;
       });
     },
   };

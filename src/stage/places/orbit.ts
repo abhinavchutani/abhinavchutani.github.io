@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { ball, box, cyl, dust, glow, matte, paint, put, rng, shell, type Place } from "../kit";
+import { poseMatrix } from "../handover";
 import { circle, staticRibbons } from "../ribbons";
+import { PLACES } from "../table";
 
 /**
  * 03 Orbit. Low Earth orbit, which is where Orbital Guardian works: the
@@ -10,67 +12,104 @@ import { circle, staticRibbons } from "../ribbons";
  */
 
 const EARTH_FRAGMENT = /* glsl */ `
+  precision highp sampler3D;
+  uniform sampler3D uNoise;
   uniform float uTime;
   uniform vec3 uSun;
   uniform vec3 uSite;
+  uniform vec3 uBlue;
+  uniform vec3 uEast;
+  uniform vec3 uNorth;
+  uniform float uPerUnit;
+  uniform float uShow;
+  uniform float uClose;
+  varying vec3 vSun;
   varying vec3 vNormal;
   varying vec3 vView;
   varying vec3 vLocal;
 
-  float hash(vec3 p) {
-    p = fract(p * 0.3183099 + 0.1);
-    p *= 17.0;
-    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-  }
+  // Value noise, read from a small block of random numbers instead of being worked out: one look-up where
+  // there were eight hashes. With twenty-odd of these for every pixel of a planet that can fill the screen,
+  // that is the difference between holding the frame rate on the way down and not.
   float noise(vec3 x) {
     vec3 i = floor(x);
     vec3 f = fract(x);
     f = f * f * (3.0 - 2.0 * f);
-    return mix(mix(mix(hash(i), hash(i + vec3(1, 0, 0)), f.x), mix(hash(i + vec3(0, 1, 0)), hash(i + vec3(1, 1, 0)), f.x), f.y),
-               mix(mix(hash(i + vec3(0, 0, 1)), hash(i + vec3(1, 0, 1)), f.x), mix(hash(i + vec3(0, 1, 1)), hash(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+    return texture(uNoise, (i + f + 0.5) / 64.0).r;
   }
   float fbm(vec3 p) {
     float v = 0.0;
     float a = 0.5;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 4; i++) {
       v += a * noise(p);
       p = p * 2.03 + 11.7;
       a *= 0.5;
     }
-    return v;
+    return v * 1.033;
+  }
+  // Two octaves, scaled to the same range: enough for the fine layers, at well under half the cost.
+  float fbm2(vec3 p) {
+    return (0.5 * noise(p) + 0.25 * noise(p * 2.03 + 11.7)) * 1.29;
   }
 
   void main() {
     vec3 n = normalize(vNormal);
     vec3 p = normalize(vLocal);
+    // Where the camera is going to come down the sea brightens into the blue of a drawing, squared off like
+    // one: the sheet's own grid, coarser, runs out over the water, so on the way down there is always a
+    // line going by. The sheet the camera lands on lies in the middle of it.
+    float site = distance(p, uSite);
+    vec2 q = vec2(dot(p - uSite, uEast), dot(p - uSite, uNorth)) * uPerUnit - vec2(0.0, 4.0);
+    vec2 cell = abs(fract(q / 256.0 - 0.5) - 0.5) / (fwidth(q / 256.0) * 1.5);
+    float line = 1.0 - min(min(cell.x, cell.y), 1.0);
+    // The squares between, once they are wide enough on screen to be drawn cleanly.
+    vec2 fine = abs(fract(q / 64.0 - 0.5) - 0.5) / fwidth(q / 64.0);
+    line += (1.0 - min(min(fine.x, fine.y), 1.0)) * 0.5 * (1.0 - smoothstep(0.03, 0.12, max(fwidth(q.x), fwidth(q.y)) / 64.0));
+    float drawing = (1.0 - smoothstep(0.085, 0.21, site)) * uShow;
+    vec3 sheet = uBlue + vec3(line * 0.26);
+    // Inside it there is nothing else to work out, which matters: on the way down it fills the screen.
+    if (drawing > 0.995) {
+      gl_FragColor = vec4(sheet, 1.0);
+      return;
+    }
+
     float land = smoothstep(0.5, 0.54, fbm(p * 1.7));
-    // There is always ground where the camera is going to come down.
-    land = max(land, 1.0 - smoothstep(0.1, 0.26, distance(p, uSite)));
+    land *= smoothstep(0.2, 0.36, site);
     float ice = smoothstep(0.78, 0.9, abs(p.y));
-    vec3 sea = mix(vec3(0.012, 0.045, 0.16), vec3(0.02, 0.1, 0.26), fbm(p * 7.0));
-    vec3 ground = mix(vec3(0.06, 0.2, 0.06), vec3(0.34, 0.26, 0.12), fbm(p * 5.0 + 3.0));
-    // Finer and finer structure, so there is always something new to see on the way down:
-    // coasts, then the patchwork of the land, then fields.
-    float coast = fbm(p * 46.0);
-    float fields = fbm(p * 520.0);
+    vec3 sea = mix(vec3(0.012, 0.045, 0.16), vec3(0.02, 0.1, 0.26), noise(p * 9.0));
+    vec3 ground = mix(vec3(0.06, 0.2, 0.06), vec3(0.34, 0.26, 0.12), noise(p * 7.0 + 3.0));
+    // Finer and finer structure, so there is always something new to see on the way down: coasts, then the
+    // patchwork of the land, then fields. (From orbit it is too small to see, and is left out.)
+    float coast = 0.5;
+    float fields = 0.5;
+    float wisps = 0.0;
+    if (uClose > 0.004) {
+      float near = smoothstep(0.0, 0.14, uClose);
+      coast = mix(0.5, fbm2(p * 46.0), near);
+      fields = mix(0.5, fbm2(p * 520.0), near);
+      wisps = near * max(0.8 * smoothstep(0.62, 0.8, fbm2(p * 31.0 + 7.0)), 0.6 * smoothstep(0.64, 0.8, fbm2(p * 260.0 + 3.0)));
+    }
     land = smoothstep(0.42, 0.58, land + (coast - 0.5) * 0.5);
     ground *= 0.72 + 0.56 * coast;
     ground = mix(ground, ground * vec3(1.25, 1.12, 0.8), smoothstep(0.45, 0.62, fields));
-    sea *= 0.8 + 0.4 * coast;
+    sea *= (0.8 + 0.4 * coast) * (0.86 + 0.28 * fields);
     vec3 surface = mix(mix(sea, ground, land), vec3(0.75, 0.8, 0.85), ice);
-    float cloud = smoothstep(0.6, 0.82, fbm(p * 3.6 + vec3(uTime * 0.012, 0.0, uTime * 0.007)));
+    float cloud = max(smoothstep(0.6, 0.82, fbm(p * 3.6 + vec3(uTime * 0.012, 0.0, uTime * 0.007))), wisps);
+    cloud *= smoothstep(0.09, 0.17, site);
     surface = mix(surface, vec3(0.62), cloud * 0.6);
 
-    float day = dot(n, normalize(uSun));
+    float day = dot(n, normalize(vSun));
     float lit = smoothstep(-0.12, 0.3, day);
     vec3 colour = surface * (0.015 + lit * 0.62);
     // Cities on the night side.
-    float city = step(0.8, noise(p * 420.0)) * step(0.5, noise(p * 30.0)) * land * (1.0 - cloud) * (1.0 - lit);
-    colour += vec3(1.3, 0.9, 0.45) * city * 0.9;
+    if (lit < 0.98) {
+      float city = step(0.8, noise(p * 420.0)) * step(0.5, noise(p * 30.0)) * land * (1.0 - cloud) * (1.0 - lit);
+      colour += vec3(1.3, 0.9, 0.45) * city * 0.9;
+    }
     // Air: a thin bright line at the limb, bluer in daylight.
     float rim = pow(1.0 - max(0.0, dot(n, normalize(vView))), 5.0);
     colour += mix(vec3(0.2, 0.16, 0.6), vec3(0.2, 0.4, 1.0), lit) * rim * (0.25 + 0.5 * lit);
-    gl_FragColor = vec4(colour, 1.0);
+    gl_FragColor = vec4(mix(colour, sheet, drawing), 1.0);
   }
 `;
 
@@ -107,23 +146,58 @@ export function orbit(): Place {
   const sun = new THREE.Vector3(0.9, 0.35, -0.1);
 
   // ---- the planet ----
+  // A 64-cube of random numbers, repeating: the lattice its noise is read from.
+  const cube = new Uint8Array(64 * 64 * 64);
+  const scatter = rng(31);
+  for (let i = 0; i < cube.length; i++) cube[i] = Math.floor(scatter() * 256);
+  const lattice = new THREE.Data3DTexture(cube, 64, 64, 64);
+  lattice.format = THREE.RedFormat;
+  lattice.type = THREE.UnsignedByteType;
+  lattice.minFilter = lattice.magFilter = THREE.LinearFilter;
+  lattice.wrapS = lattice.wrapT = lattice.wrapR = THREE.RepeatWrapping;
+  lattice.unpackAlignment = 1;
+  lattice.needsUpdate = true;
+  // Where the drawing board of the next place lies on it, which way that sheet's own axes run, and how small it is.
+  const down = PLACES.find((row) => row.key === "bench")!.arrive!.into!;
+  const sheet = poseMatrix(down);
+  const landing = {
+    site: new THREE.Vector3().setFromMatrixColumn(sheet, 2).normalize(),
+    east: new THREE.Vector3().setFromMatrixColumn(sheet, 0).normalize(),
+    north: new THREE.Vector3().setFromMatrixColumn(sheet, 1).normalize(),
+    scale: down.scale ?? 1,
+  };
   const earth = new THREE.Mesh(
     new THREE.SphereGeometry(20, 96, 64),
     new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 }, uSun: { value: sun }, uSite: { value: new THREE.Vector3(0.354, 0.759, 0.557).normalize() } },
+      uniforms: {
+        uTime: { value: 0 },
+        uSun: { value: sun },
+        uSite: { value: landing.site },
+        uBlue: { value: new THREE.Color(0x1444c4) },
+        uEast: { value: landing.east },
+        uNorth: { value: landing.north },
+        uPerUnit: { value: 20 / landing.scale },
+        uShow: { value: 0 },
+        uClose: { value: 0 },
+        uNoise: { value: lattice },
+      },
       vertexShader: /* glsl */ `
+        uniform vec3 uSun;
         varying vec3 vNormal;
         varying vec3 vView;
         varying vec3 vLocal;
+        varying vec3 vSun;
         void main() {
           vLocal = position;
+          vSun = normalMatrix * uSun;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
           vNormal = normalMatrix * normal;
           vView = -mv.xyz;
           gl_Position = projectionMatrix * mv;
         }
       `,
-      fragmentShader: EARTH_FRAGMENT.replace("normalize(uSun)", "normalize((viewMatrix * vec4(uSun, 0.0)).xyz)"),
+      // (The sun is fixed to the planet's own frame, not the camera's: the terminator must not move when the camera turns to fall.)
+      fragmentShader: EARTH_FRAGMENT,
     }),
   );
   const globe = put(new THREE.Group(), 6, -22.4, -12);
@@ -170,6 +244,24 @@ export function orbit(): Place {
     slide.add(mesh);
     return { mesh, bits };
   });
+
+  // More of it along the way in from the study's monitor, close to the line of flight: it goes by the lens.
+  const corridor: Bit[] = [];
+  for (let i = 0; i < 84; i++) {
+    const a = random() * Math.PI * 2;
+    const r = 2.6 + random() * 7.5;
+    corridor.push({
+      at: new THREE.Vector3(Math.cos(a) * r * 1.5, Math.sin(a) * r * 0.9, 15 + random() * 38),
+      axis: new THREE.Vector3(random() - 0.5, random() - 0.5, random() - 0.5).normalize(),
+      spin: 0.2 + random() * 1.3,
+      size: 0.5 + random() * random() * 2.2,
+      drift: 0.2 + random() * 0.5,
+    });
+  }
+  const passing = new THREE.InstancedMesh(shapes[1], scrap, corridor.length);
+  passing.frustumCulled = false;
+  slide.add(passing);
+  swarms.push({ mesh: passing, bits: corridor });
 
   // ---- the satellite ----
   const craft = new THREE.Group();
@@ -259,10 +351,17 @@ export function orbit(): Place {
     root,
     slide,
     update({ ch, time, theta }) {
-      // (The planet itself holds still: the drawing board lies on it, a long way down.)
-      earth.material.uniforms.uTime.value = time;
-      station.rotation.z = 0.12 + Math.sin(time * 0.3) * 0.04;
-      station.position.y = 1.9 + Math.sin(time * 0.4) * 0.12;
+      // (The planet itself does not turn: the drawing board lies on it, a long way down.)
+      earth.material.uniforms.uTime.value = time + theta * 5;
+      // The patch of sea turns to drawing only once the camera has tipped over to fall towards it.
+      earth.material.uniforms.uShow.value = Math.min(1, Math.max(0, (ch[7] - 0.02) / 0.2));
+      earth.material.uniforms.uClose.value = ch[7];
+      // Arriving: the Earth comes up from under the frame and the satellite in from the right, as the camera does.
+      const here = Math.min(1, Math.max(0, (ch[6] - 0.3) / 0.7));
+      const away = 1 - here * here * (3 - 2 * here);
+      globe.position.y = -22.4 - away * 13;
+      station.rotation.z = 0.12 + Math.sin(time * 0.3) * 0.04 + away * 0.5;
+      station.position.set(4.7 + away * 13, 1.9 + Math.sin(time * 0.4) * 0.12 + away * 3, -3 - away * 8);
 
       // Debris: each bit tumbles on its own axis and drifts along the lane.
       for (const { mesh, bits } of swarms) {
@@ -271,7 +370,7 @@ export function orbit(): Place {
           dummy.position.copy(bit.at);
           dummy.position.x += Math.sin(theta * 0.1 * bit.drift + i) * 0.8;
           dummy.position.y += Math.cos(theta * 0.08 * bit.drift + i * 1.7) * 0.4;
-          dummy.quaternion.setFromAxisAngle(bit.axis, time * bit.spin + i);
+          dummy.quaternion.setFromAxisAngle(bit.axis, (time + theta * 1.5) * bit.spin + i);
           dummy.scale.setScalar(bit.size);
           dummy.updateMatrix();
           mesh.setMatrixAt(i, dummy.matrix);

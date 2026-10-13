@@ -364,18 +364,19 @@ export function editor(): Place {
   return {
     root,
     slide,
-    update({ ch, time }) {
+    update({ ch, time, theta }) {
       const up = ch[6];
       // The windows rise into place as the camera arrives.
       pageRig.position.y = 5.6 - (1 - up) * 4;
       tablet.position.y = -3.76 - (1 - up) * 1.5;
       // The cursor works its way down the file and starts again.
-      const row = Math.floor((time * 1.4) % 28);
+      const row = Math.floor((time * 1.4 + theta * 2.5) % 28);
       const y = 2.05 - row * 0.2065;
       lineBar.position.y = y;
       cursor.position.set(-3.2 + ((time * 9) % 1) * 0 + (row % 7) * 0.5, y, 0.02);
       cursor.visible = (time * 2) % 1 < 0.6;
       pageRig.rotation.z = 0.02 + Math.sin(time * 0.5) * 0.008;
+      pageRig.rotation.y = -0.2 + Math.sin(theta * 0.35) * 0.07;
       // On the way out the camera goes in through the main screen: the code clears off it, and off the
       // wall of code behind, so that what is beyond the glass can be seen and nothing is left hanging there.
       const leaving = ch[7];
