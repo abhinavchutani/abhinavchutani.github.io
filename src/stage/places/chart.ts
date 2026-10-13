@@ -139,6 +139,9 @@ export function chart(): Place {
   }
   const fan = staticRibbons(paths, { width: 0.014, minPx: 1, color: INK, gain: 1, opacity: 0.3, ink: true });
   set.add(fan);
+  // The last price, where the paths start: the point of light the thread of the first screen comes out of.
+  anchors.origin = put(new THREE.Object3D(), END, last, 0);
+  set.add(anchors.origin);
   const mean = ends.reduce((a, b) => a + b, 0) / PATHS;
   const meanLine = staticRibbons([[new THREE.Vector3(END, last, 0.3), new THREE.Vector3(FAR, mean, 0.3)]], { width: 0.06, minPx: 1.6, color: CLARET, gain: 1, ink: true });
   set.add(meanLine);

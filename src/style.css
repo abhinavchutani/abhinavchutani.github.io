@@ -101,6 +101,7 @@ section[data-look="light"] {
   width: min(48rem, 100%);
 }
 .sign.is-economics,
+.sign.is-projects,
 .sign.is-contact {
   width: min(33rem, 100%);
 }
@@ -159,6 +160,16 @@ section[data-look="light"] {
 }
 .seconds.n2 {
   grid-template-columns: 1fr 1fr;
+}
+.seconds.n3 {
+  grid-template-columns: 1fr 1fr 1fr;
+  column-gap: 1.2rem;
+}
+.seconds.n3 .second .title {
+  font-size: clamp(1.2rem, 5.2cqi, 1.55rem);
+}
+.seconds.n3 .second .done {
+  font-size: 0.8rem;
 }
 .second .badge {
   margin-top: 0.5rem;
@@ -413,6 +424,22 @@ section[data-look="light"] {
   margin-top: 0;
   font-size: 0.82rem;
 }
+.is-projects > .skill > .title {
+  font-size: clamp(2rem, 11.5cqi, 3.5rem) !important;
+}
+/* The projects: two by two, each a name, what kind of thing it was, and a line. */
+.is-projects .cards.rows {
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1.5rem;
+}
+.is-projects .cards.rows li {
+  display: block;
+  padding: 0.7rem 0 0.75rem;
+}
+.is-projects .cards.rows p:not(.badge) {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+}
 
 /* the finale */
 .now {
@@ -533,6 +560,9 @@ html.js:not(.no-stage) {
   .sign.is-economics {
     width: min(35rem, 42vw);
   }
+  .sign.is-projects {
+    width: min(38rem, 45vw);
+  }
   .sign.is-contact {
     width: min(37rem, 44vw);
   }
@@ -636,12 +666,12 @@ html.js:not(.no-stage) {
     }
 
     /* 03 Orbit: a head-up display. No box: brackets at the corners and a line that scans. */
-    [data-chapter="orbit"] .sign {
+    [data-chapter="projects"] .sign {
       --card: rgb(4 5 26 / 0.74);
       --card-line: transparent;
       box-shadow: none;
     }
-    [data-chapter="orbit"] .sign::after {
+    [data-chapter="projects"] .sign::after {
       content: "";
       position: absolute;
       left: 0;
@@ -1111,6 +1141,7 @@ html.js:not(.no-stage) {
     .sign,
     .sign.is-hero,
     .sign.is-economics,
+    .sign.is-projects,
     .sign.is-contact {
       inset: auto 0 0 0;
       width: auto;
@@ -1148,7 +1179,8 @@ html.js:not(.no-stage) {
       display: none;
     }
     .seconds,
-    .seconds.n2 {
+    .seconds.n2,
+    .seconds.n3 {
       grid-template-columns: 1fr 1fr;
       gap: 0.7rem 1rem;
       margin-top: 0.9rem;

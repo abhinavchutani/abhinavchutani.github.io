@@ -1,7 +1,7 @@
 /**
- * Everything the site says. All of it comes from abhinavchutani.github.io
- * (the skill entries, the showcase and the contact details); edit copy here
- * and nowhere else. `render.ts` turns this into static HTML at
+ * Everything the site says. It comes from abhinavchutani.github.io, from his
+ * CV and from the profile he wrote for LinkedIn; edit copy here and nowhere
+ * else. `render.ts` turns this into static HTML at
  * build time, and the 3D stage reads the same list for its labels.
  */
 
@@ -24,7 +24,7 @@ export type Stage = {
   /** The first is the sign's headline; the rest sit under it, smaller. */
   skills?: Skill[];
   /** Anything that is not a plain skill block. */
-  kind?: "hero" | "economics" | "contact";
+  kind?: "hero" | "economics" | "projects" | "contact";
   /** A caption that points at the scene ("every light is a student"). */
   caption?: string;
 };
@@ -44,22 +44,36 @@ export type Chapter = {
 export const person = {
   first: "Abhinav",
   last: "Chutani",
-  line: "Economics student at Aalto University, building across AI, finance, and hardware.",
+  line: "Economics & Business student at Aalto University, building across AI, finance, and hardware.",
   place: "Aalto University · Helsinki",
   edition: "Portfolio — MMXXVI",
+  /** What he is open to, in his words (the last line of his profile). */
+  open: "Always open to connecting with people working across finance, economics, AI, software engineering, startups, and technology.",
   email: "abhinavchutani3@gmail.com",
   linkedin: "https://linkedin.com/in/abhinavchutani/",
   location: "Helsinki, Finland",
 };
 
-/** Projects: economics and code, put to work. */
-export const builds = [
-  { key: "quantum", name: "Quantum × Finance", sub: "Ultrahack · 3rd place", text: "Benchmarking randomised ESG constraints with quantum methods." },
-  { key: "engram", name: "Engram", sub: "Aalto AI Hackathon · Built for RELEX", text: "AI organizational memory auditor: every answer is a case, with evidence and verified receipts." },
-  { key: "monte", name: "Monte Carlo Options", sub: "Quant finance · Research", text: "A simulator checked against the Black-Scholes formula." },
-  { key: "chain", name: "Blockchain Simulator", sub: "Python · Systems research", text: "Hashing, block creation, and chain validation." },
+export type Build = { key: string; name: string; sub: string; text: string };
+
+/** Finance, in code: the two that sit with Economics. */
+export const models: Build[] = [
+  { key: "monte", name: "Monte Carlo Options", sub: "Python · 2026", text: "European option pricing by simulation, checked against the analytical Black-Scholes result." },
+  { key: "chain", name: "Blockchain", sub: "Python · 2026", text: "A proof-of-work chain and a visualiser for mining, hash linking, and chain integrity." },
 ];
 
+/** The projects, most recent first, that stand beside Orbital Guardian. */
+export const projects: Build[] = [
+  { key: "fairbench", name: "FairBench", sub: "ESG finance × quantum · 3rd place", text: "A benchmark that separates an ESG fund manager's skill from the cost of the constraints. Third at the Hanken Quantum × Finance Hackathon." },
+  { key: "engram", name: "Engram", sub: "Enterprise decision search · 2026", text: "Searches 257 unstructured company documents so a manager can ask how any decision was made; challenger agents contest each answer." },
+  { key: "shravan", name: "Shravan Doot", sub: "Assistive tech · Team lead · 2025", text: "Smart glasses for the hearing-impaired on a Raspberry Pi, built for under ₹4,000." },
+  { key: "terra", name: "Terra Mitra", sub: "Sustainability · Designer · 2023", text: "An AI-enabled farming device: Top 24 of 13,000+ projects at the national NEP celebrations." },
+];
+
+/**
+ * The chapters, in his order of importance: what he is doing now, what he has led and built,
+ * the making behind it, and then the person (the violin, the books, the pens).
+ */
 export const chapters: Chapter[] = [
   {
     id: "top",
@@ -70,7 +84,153 @@ export const chapters: Chapter[] = [
     stages: [{ kind: "hero" }],
   },
   {
-    // A violin and a drum kit under warm stage light.
+    // A chart on salmon newsprint.
+    id: "markets",
+    name: "Markets",
+    accent: "#9b1c2e",
+    ground: "#f1d9c5",
+    look: "light",
+    stages: [
+      {
+        kind: "economics",
+        skills: [
+          {
+            name: "Economics",
+            badge: "Aalto BSc · Yale Financial Markets (Honors)",
+            done: "Economics & Business Administration at Aalto University, after Yale's Financial Markets course and a lot of independent reading. Interested in FinTech, capital allocation, and how economic systems interact at scale.",
+            feel: "Not just whether something is impressive, but whether it is sustainable, efficient, and worth the cost.",
+            level: 75,
+            levelLabel: "Yale Certified — Deep Interest",
+          },
+        ],
+        caption: "180 simulated paths, one distribution",
+      },
+    ],
+  },
+  {
+    // An auditorium, from the lectern.
+    id: "stage",
+    name: "Stage",
+    accent: "#ff7d6e",
+    ground: "#1a0507",
+    look: "dark",
+    stages: [
+      {
+        skills: [
+          {
+            name: "Leadership",
+            badge: "Head Boy 2025–26 · DAV Public School",
+            done: "Elected to represent 3,500+ students, coordinating a 70-member council across operations, conflict resolution, and policy. Founded the Mental Health Corner.",
+            feel: "Leadership has taught me to be useful before being visible.",
+            level: 92,
+            levelLabel: "Head Boy · School-Wide",
+          },
+          {
+            name: "Public Speaking",
+            badge: "High commendation · MUN",
+            done: "Assemblies and national platforms, with MUN awards at Concordia (high commendation), SHISMUN (special mention), and BBI.",
+            level: 80,
+          },
+          {
+            name: "Symposium",
+            badge: "Scifest · Melange · ACON",
+            done: "Led Scifest and Melange for 2,000+ attendees, and helped scale ACON into a regional symposium of 500+ students.",
+            level: 85,
+          },
+        ],
+        caption: "Every light is a student — 3,500 of them",
+      },
+    ],
+  },
+  {
+    // Low Earth orbit: the satellite, its net, the debris.
+    id: "projects",
+    name: "Projects",
+    accent: "#a99bff",
+    ground: "#04051a",
+    look: "dark",
+    stages: [
+      {
+        kind: "projects",
+        skills: [
+          {
+            name: "Orbital Guardian",
+            badge: "Defence tech · Solo · 2024",
+            done: "A computer-vision system that finds a piece of space debris and sends a servo-aligned net after it. I presented it personally to the Prime Minister of India at Pariksha Pe Charcha 2024.",
+            feel: "Most of my projects start with a problem that stays in my head until I build around it.",
+            level: 80,
+            levelLabel: "Solo Project — Complete",
+          },
+        ],
+        caption: "Detect · align · capture",
+      },
+    ],
+  },
+  {
+    // The competition table, drawn on a blueprint.
+    id: "machine",
+    name: "Machine",
+    accent: "#ffd84a",
+    ground: "#1444c4",
+    look: "dark",
+    stages: [
+      {
+        skills: [
+          {
+            name: "Robotics",
+            badge: "FLL World #8 · Detroit 2019",
+            done: "I represented India at the FIRST Lego League World Festival in Detroit: 8th in the world out of 110+ nations, after qualifying #1 in North India. National finalist, International Robotics League 2025.",
+            feel: "It made global competition feel real rather than distant.",
+            level: 82,
+            levelLabel: "World Top-10 · FLL",
+          },
+          {
+            name: "Techne",
+            badge: "CAD · Dassault 3DEXPERIENCE",
+            done: "CAD, Arduino, and Raspberry Pi for robotics and hardware. ISRO's National Space Innovation Challenge 2023, and the North India zonals of La Fondation Dassault Systèmes.",
+            level: 68,
+          },
+        ],
+        caption: "Exploded view, every few seconds",
+      },
+    ],
+  },
+  {
+    // A desk at night: editors, a browser, an artboard.
+    id: "code",
+    name: "Code",
+    accent: "#5cf2a0",
+    ground: "#06161c",
+    look: "dark",
+    stages: [
+      {
+        skills: [
+          {
+            name: "Syntax",
+            badge: "Python · Self-taught",
+            done: "I taught myself Python by building things instead of only studying syntax: computer vision, retrieval and LLM workflows, automation scripts, and small data projects.",
+            feel: "Coding makes vague ideas testable. If it fails, the feedback is immediate.",
+            level: 72,
+            levelLabel: "Intermediate — Advancing",
+          },
+          {
+            name: "Web & App Design",
+            badge: "HTML · CSS · JS · Tailwind",
+            done: "MarksMaxxing, co-founded in 2026: it read 1,000+ pages of past board papers for what recurs, and the web app was built in under 10 days.",
+            level: 78,
+          },
+          {
+            name: "Design",
+            badge: "Photoshop · Figma · Canva",
+            done: "Posters, interfaces, and small brand systems. Good design is usually quiet.",
+            level: 74,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    // A violin and a drum kit under warm gallery light.
     id: "sound",
     name: "Sound",
     accent: "#ffb45c",
@@ -94,157 +254,6 @@ export const chapters: Chapter[] = [
             level: 65,
           },
         ],
-      },
-    ],
-  },
-  {
-    // A desk at night: editors, a browser, an artboard.
-    id: "code",
-    name: "Code",
-    accent: "#5cf2a0",
-    ground: "#06161c",
-    look: "dark",
-    stages: [
-      {
-        skills: [
-          {
-            name: "Syntax",
-            badge: "Python · Self-taught",
-            done: "I taught myself Python by building things instead of only studying syntax: Orbital Guardian, automation scripts, web experiments, and small data projects.",
-            feel: "Coding makes vague ideas testable. If it fails, the feedback is immediate.",
-            level: 72,
-            levelLabel: "Intermediate — Advancing",
-          },
-          {
-            name: "Web & App Design",
-            badge: "HTML · CSS · JS · Tailwind",
-            done: "Websites and lightweight apps. MarksMaxxing was built and launched in under 10 days.",
-            level: 78,
-          },
-          {
-            name: "Design",
-            badge: "Photoshop · Figma · Canva",
-            done: "Posters, interfaces, and small brand systems. Good design is usually quiet.",
-            level: 74,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    // Low Earth orbit: the satellite, its net, the debris.
-    id: "orbit",
-    name: "Orbit",
-    accent: "#a99bff",
-    ground: "#04051a",
-    look: "dark",
-    stages: [
-      {
-        skills: [
-          {
-            name: "Orbital Guardian",
-            badge: "Space debris · Solo project · 2024",
-            done: "Computer vision detects a piece of debris, and a servo-aligned net moves toward the target.",
-            feel: "It pushed me to translate an idea into a working mechanism.",
-            level: 80,
-            levelLabel: "Solo Project — Complete",
-          },
-          {
-            name: "Innovation",
-            badge: "Pariksha Pe Charcha 2024",
-            done: "I presented it directly to the Prime Minister of India. Most of my projects start with a problem that stays in my head until I build around it.",
-            level: 88,
-          },
-        ],
-        caption: "Detect · align · capture",
-      },
-    ],
-  },
-  {
-    // The competition table, drawn on a blueprint.
-    id: "machine",
-    name: "Machine",
-    accent: "#ffd84a",
-    ground: "#1444c4",
-    look: "dark",
-    stages: [
-      {
-        skills: [
-          {
-            name: "Robotics",
-            badge: "FLL World #8 · Detroit 2019",
-            done: "I represented India at the FIRST Lego League World Festival in Detroit: 8th in the world out of 110+ nations, after qualifying #1 in North India. National finalist, IRC 2025.",
-            feel: "It made global competition feel real rather than distant.",
-            level: 82,
-            levelLabel: "World Top-10 · FLL",
-          },
-          {
-            name: "Techne",
-            badge: "CAD · Dassault 3DExperience",
-            done: "CAD for robotics and hardware: Terra Mitra, an AI-enabled farming device (Top 24 of 13,000), and Shravan Doot, speech-to-text smart glasses (national semifinalist).",
-            level: 68,
-          },
-        ],
-        caption: "Exploded view, every few seconds",
-      },
-    ],
-  },
-  {
-    // A chart on salmon newsprint.
-    id: "markets",
-    name: "Markets",
-    accent: "#9b1c2e",
-    ground: "#f1d9c5",
-    look: "light",
-    stages: [
-      {
-        kind: "economics",
-        skills: [
-          {
-            name: "Economics",
-            badge: "Yale certified · Financial Markets",
-            done: "Yale University's Financial Markets course, independent reading, and now formally: Economics & Business Administration at Aalto University.",
-            feel: "Not just whether something is impressive, but whether it is sustainable, efficient, and worth the cost.",
-            level: 75,
-            levelLabel: "Yale Certified — Deep Interest",
-          },
-        ],
-        caption: "180 simulated paths, one distribution",
-      },
-    ],
-  },
-  {
-    // An auditorium, from the lectern.
-    id: "stage",
-    name: "Stage",
-    accent: "#ff7d6e",
-    ground: "#1a0507",
-    look: "dark",
-    stages: [
-      {
-        skills: [
-          {
-            name: "Leadership",
-            badge: "Head Boy 2025–26 · DAV Public School",
-            done: "Head Boy for 3,500+ students, coordinating a 70-member council across assemblies, operations, conflict resolution, and the launch of the Mental Health Corner.",
-            feel: "Leadership has taught me to be useful before being visible.",
-            level: 92,
-            levelLabel: "Head Boy · School-Wide",
-          },
-          {
-            name: "Public Speaking",
-            badge: "High commendation · MUN",
-            done: "Assemblies, national platforms, and MUN awards at Concordia, SHISMUN, and BBI.",
-            level: 80,
-          },
-          {
-            name: "Symposium",
-            badge: "Scifest · Melange · ACON",
-            done: "Organised and hosted three events: roughly 2,000 attendees across them.",
-            level: 85,
-          },
-        ],
-        caption: "Every light is a student — 3,500 of them",
       },
     ],
   },
@@ -280,11 +289,16 @@ export const chapters: Chapter[] = [
         skills: [
           {
             name: "Journaling",
-            badge: "Daily reflection · Fountain pen",
+            badge: "Daily reflection · Creative writing",
             done: "Private reflection and a decision-making tool: a written record of what I am actually trying to improve.",
             feel: "Most of my clearest thinking happens on paper.",
             level: 76,
             levelLabel: "Daily Practice",
+          },
+          {
+            name: "Fountain Pens",
+            badge: "Enthusiast",
+            done: "If you're going to take notes, you might as well enjoy the instrument.",
           },
           {
             name: "Art & Illustration",

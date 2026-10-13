@@ -443,37 +443,31 @@ export function violin(): Place {
   const midX = (LEFT + RIGHT) / 2;
   const midZ = (FRONT + BACK) / 2;
   const tall = TOPS - FLOOR;
-  // Back wall: paper, dado, rails.
-  room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(wide, tall), paperOf(wide / 2.1, tall / 1.6)), midX, FLOOR + tall / 2, BACK));
-  room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(wide, 2.4), dadoOf(wide / 3)), midX, FLOOR + 1.2, BACK + 0.06));
-  room.add(put(box(wide, 0.14, 0.2, gilt), midX, FLOOR + 2.44, BACK + 0.1), put(box(wide, 0.3, 0.16, matte(0x1a0b06, 0.5)), midX, FLOOR + 0.15, BACK + 0.12), put(box(wide, 0.1, 0.14, gilt), midX, 7.4, BACK + 0.08));
-  // Left wall.
-  room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(deep, tall), paperOf(deep / 2.1, tall / 1.6)), LEFT, FLOOR + tall / 2, midZ, 0, HALF, 0));
-  room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(deep, 2.4), dadoOf(deep / 3)), LEFT + 0.06, FLOOR + 1.2, midZ, 0, HALF, 0));
-  // Right wall, with the door to the study. (A ShapeGeometry's UVs are its own coordinates, so the paper repeats per unit.)
-  const DOOR = { z: 4, wide: 5.6, top: 2.9 };
+  // Back wall: paper, dado, rails; and at its left-hand end a tall doorway, which is the way on to the library.
+  // (A ShapeGeometry's UVs are its own coordinates, so the paper on a wall with a hole in it repeats per unit.)
+  const WAY = { x: -19, wide: 6.6, top: 5.4 };
   const perUnit = damask();
   perUnit.repeat.set(1 / 2.1, 1 / 1.6);
   const papered = wallpaper(perUnit);
-  const stoneOut = matte(0x0d0d10, 0.9);
-  room.add(put(wallWithDoor(deep, FLOOR, TOPS, DOOR.z - midZ, DOOR.wide, DOOR.top, papered), RIGHT, 0, midZ, 0, -HALF, 0));
-  room.add(put(wallWithDoor(deep, FLOOR, TOPS, -(DOOR.z - midZ), DOOR.wide, DOOR.top, stoneOut), RIGHT + 0.5, 0, midZ, 0, HALF, 0));
-  room.add(put(doorCase(DOOR.wide, FLOOR, DOOR.top, 0.9, matte(0x2a140b, 0.5)), RIGHT + 0.25, 0, DOOR.z, 0, HALF, 0));
-  // Front wall, with the way in. From outside there is no building: only the doorway, standing in the dark
-  // at the end of the thread in a gilt frame, with the gallery inside it (see `gate` and `threshold`).
-  const ENTRY = { wide: 6.4, top: 2.6 };
-  room.add(put(wallWithDoor(wide, FLOOR, TOPS, -(0 - midX), ENTRY.wide, ENTRY.top, papered), midX, 0, FRONT, 0, Math.PI, 0));
-  const threshold = new THREE.Group();
-  const rise = ENTRY.top - FLOOR;
-  for (const side of [-1, 1]) threshold.add(put(box(0.26, rise + 0.3, 0.5, gilt), side * (ENTRY.wide / 2 + 0.13), FLOOR + rise / 2 + 0.15, FRONT + 0.3));
-  threshold.add(put(box(ENTRY.wide + 0.9, 0.3, 0.56, gilt), 0, ENTRY.top + 0.15, FRONT + 0.3), put(box(ENTRY.wide + 1.5, 0.12, 0.7, gilt), 0, ENTRY.top + 0.36, FRONT + 0.3));
-  threshold.add(put(box(ENTRY.wide + 1.5, 0.22, 1.6, matte(0x1a0b06, 0.5)), 0, FLOOR - 0.11, FRONT + 0.7));
-  const gate = [
-    new THREE.Vector3(-ENTRY.wide / 2, FLOOR, FRONT),
-    new THREE.Vector3(ENTRY.wide / 2, FLOOR, FRONT),
-    new THREE.Vector3(ENTRY.wide / 2, ENTRY.top, FRONT),
-    new THREE.Vector3(-ENTRY.wide / 2, ENTRY.top, FRONT),
-  ];
+  room.add(put(wallWithDoor(wide, FLOOR, TOPS, WAY.x - midX, WAY.wide, WAY.top, papered), midX, 0, BACK));
+  // Dado and rails stop either side of it.
+  const leftOf = WAY.x - WAY.wide / 2 - LEFT;
+  const rightOf = RIGHT - (WAY.x + WAY.wide / 2);
+  for (const [span, at] of [[leftOf, LEFT + leftOf / 2], [rightOf, RIGHT - rightOf / 2]]) {
+    room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(span, 2.4), dadoOf(span / 3)), at, FLOOR + 1.2, BACK + 0.06));
+    room.add(put(box(span, 0.14, 0.2, gilt), at, FLOOR + 2.44, BACK + 0.1), put(box(span, 0.3, 0.16, matte(0x1a0b06, 0.5)), at, FLOOR + 0.15, BACK + 0.12));
+  }
+  room.add(put(box(wide, 0.1, 0.14, gilt), midX, 7.4, BACK + 0.08));
+  room.add(put(doorCase(WAY.wide, FLOOR, WAY.top, 0.8, matte(0x2a140b, 0.5)), WAY.x, 0, BACK + 0.2));
+  // Left wall.
+  room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(deep, tall), paperOf(deep / 2.1, tall / 1.6)), LEFT, FLOOR + tall / 2, midZ, 0, HALF, 0));
+  room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(deep, 2.4), dadoOf(deep / 3)), LEFT + 0.06, FLOOR + 1.2, midZ, 0, HALF, 0));
+  // Right wall.
+  room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(deep, tall), paperOf(deep / 2.1, tall / 1.6)), RIGHT, FLOOR + tall / 2, midZ, 0, -HALF, 0));
+  room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(deep, 2.4), dadoOf(deep / 3)), RIGHT - 0.06, FLOOR + 1.2, midZ, 0, -HALF, 0));
+  // Front wall, behind the camera. (The left wall is only ever seen from inside: from the study next door,
+  // which is how the camera arrives, there is nothing there and the room stands open like a set.)
+  room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(wide, tall), paperOf(wide / 2.1, tall / 1.6)), midX, FLOOR + tall / 2, FRONT, 0, Math.PI, 0));
   // Floor, carpet, ceiling.
   const boards = parquet();
   boards.repeat.set(wide / 4.6, deep / 4.6);
@@ -489,7 +483,7 @@ export function violin(): Place {
   });
   carpet.wrapT = THREE.RepeatWrapping;
   carpet.repeat.set(1, 14);
-  // The runner comes in through the door and down the middle of the room.
+  // The runner, down the middle of the room.
   room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(6.4, deep + 2), new THREE.MeshStandardMaterial({ map: carpet, roughness: 0.95 })), 0, FLOOR + 0.02, midZ + 1, -HALF));
   const coffer = paint(128, 128, (ctx, w) => {
     ctx.fillStyle = "#120807";
@@ -506,13 +500,13 @@ export function violin(): Place {
 
   // The paintings. All five are in the public domain (The Met, Open Access).
   const hang: [string, number, number, number][] = [
-    ["boy-with-a-lute", 3.3, 4.02, -19.6],
-    ["lute-player", 3.4, 4.43, -13.2],
+    ["lute-player", 3.4, 4.43, -12.6],
     ["musicians", 7.4, 5.74, -4.4],
     ["woman-with-a-lute", 3.7, 4.24, 4.2],
     ["allegory-of-music", 6.4, 4.71, 11.6],
   ];
   for (const [file, w, h, x] of hang) room.add(put(framed(`./art/${file}.jpg`, w, h), x, 1.5, BACK + 0.24));
+  room.add(put(framed("./art/boy-with-a-lute.jpg", 3.3, 4.02), RIGHT - 0.24, 1.5, 5, 0, -HALF, 0));
 
   // ---- on the right: the kit, on a dais, behind a rope ----
   const { kit, kick, crash, ride, hat } = drumKit();
@@ -566,8 +560,6 @@ export function violin(): Place {
   return {
     root,
     slide,
-    gate,
-    threshold,
     update({ speed, time, theta }) {
       // Scrolling plays it harder.
       amp.value = 0.45 + Math.min(1.3, speed * 0.6);

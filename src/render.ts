@@ -3,14 +3,14 @@
  * vite.config.ts), so the document that ships is real, readable markup with
  * no JavaScript; the stage then pins each `.sign` into the 3D scene.
  */
-import { builds, chapters, count, disciplines, person, stageList, type Skill, type Stage } from "./content";
+import { chapters, count, disciplines, models, person, projects, stageList, type Build, type Skill, type Stage } from "./content";
 
 const esc = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const two = (n: number) => String(n).padStart(2, "0");
 
 /** The sign's headline skill: everything about it. */
-function first(skill: Skill) {
-  const meter = skill.level === undefined ? "" : `<div class="meter" style="--level:${skill.level}"><b>${skill.level}</b><i></i><em>${esc(skill.levelLabel ?? "")}</em></div>`;
+function first(skill: Skill, measured = true) {
+  const meter = skill.level === undefined || !measured ? "" : `<div class="meter" style="--level:${skill.level}"><b>${skill.level}</b><i></i><em>${esc(skill.levelLabel ?? "")}</em></div>`;
   return `
       <div class="skill">
         <h2 class="title">${esc(skill.name)}</h2>
@@ -38,6 +38,13 @@ function rest(skills: Skill[]) {
       </div>`;
 }
 
+/** A list of things built: name and what kind of thing on the left, what it was on the right. */
+function rows(label: string, list: Build[]) {
+  return `
+      <p class="label">${esc(label)}</p>
+      <ul class="cards rows">${list.map((b) => `<li><h3>${esc(b.name)}</h3><p class="badge">${esc(b.sub)}</p><p>${esc(b.text)}</p></li>`).join("")}</ul>`;
+}
+
 function body(stage: Stage) {
   const skills = stage.skills ?? [];
   switch (stage.kind) {
@@ -48,13 +55,13 @@ function body(stage: Stage) {
       <p class="lede">${esc(person.line)}</p>
       <a class="cue" href="#sound"><i></i>One thread, ${count.word} disciplines</a>`;
     case "economics":
-      return `${first(skills[0])}
-      <p class="label">Projects</p>
-      <ul class="cards rows">${builds.map((b) => `<li><h3>${esc(b.name)}</h3><p class="badge">${esc(b.sub)}</p><p>${esc(b.text)}</p></li>`).join("")}</ul>`;
+      return first(skills[0]) + rows("In code", models);
+    case "projects":
+      return first(skills[0], false) + rows("Also built", projects);
     case "contact":
       return `
       <h2 class="title serif">Let's talk.</h2>
-      <p class="done">${esc(person.line)}</p>
+      <p class="done">${esc(person.open)}</p>
       <div class="contact">
         <a class="big" href="mailto:${person.email}">${person.email}</a>
         <a href="${person.linkedin}" target="_blank" rel="noopener">LinkedIn ↗</a>
@@ -102,7 +109,7 @@ export function renderPage() {
   // Labels that ride on things in the scene: place key, anchor name, and the step of the place they show on.
   const followers =
     disciplines.map((node) => `<span class="follower node" data-follow="aurora:${node.key}" data-step="0" style="--accent:${chapters[node.chapter].accent}">${esc(node.name)}</span>`).join("") +
-    `<span class="follower prop" data-follow="chart:quantum" data-step="0">Quantum × Finance<em>3rd · Ultrahack</em></span>`;
+    `<span class="follower prop" data-follow="chart:quantum" data-step="0">FairBench<em>3rd · Quantum × Finance</em></span>`;
 
   return `
 <canvas class="stage" id="stage" aria-hidden="true"></canvas>

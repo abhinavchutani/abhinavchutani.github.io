@@ -76,23 +76,19 @@ const EARTH_FRAGMENT = /* glsl */ `
     float land = smoothstep(0.5, 0.54, fbm(p * 1.7));
     land *= smoothstep(0.2, 0.36, site);
     float ice = smoothstep(0.78, 0.9, abs(p.y));
-    vec3 sea = mix(vec3(0.012, 0.045, 0.16), vec3(0.02, 0.1, 0.26), noise(p * 9.0));
-    vec3 ground = mix(vec3(0.06, 0.2, 0.06), vec3(0.34, 0.26, 0.12), noise(p * 7.0 + 3.0));
-    // Finer and finer structure, so there is always something new to see on the way down: coasts, then the
-    // patchwork of the land, then fields. (From orbit it is too small to see, and is left out.)
+    // Finer structure for the way down: coasts and the patchwork of the land, and a second scale of
+    // cloud. (From orbit it is too small to see, and is left out; nearer still, the camera is over the
+    // drawing and none of this is worked out at all.)
     float coast = 0.5;
-    float fields = 0.5;
     float wisps = 0.0;
     if (uClose > 0.004) {
       float near = smoothstep(0.0, 0.14, uClose);
       coast = mix(0.5, fbm2(p * 46.0), near);
-      fields = mix(0.5, fbm2(p * 520.0), near);
-      wisps = near * max(0.8 * smoothstep(0.62, 0.8, fbm2(p * 31.0 + 7.0)), 0.6 * smoothstep(0.64, 0.8, fbm2(p * 260.0 + 3.0)));
+      wisps = near * 0.8 * smoothstep(0.62, 0.8, fbm2(p * 31.0 + 7.0));
     }
+    vec3 sea = mix(vec3(0.012, 0.045, 0.16), vec3(0.02, 0.1, 0.26), coast);
+    vec3 ground = mix(vec3(0.06, 0.2, 0.06), vec3(0.34, 0.26, 0.12), coast) * (0.72 + 0.56 * coast);
     land = smoothstep(0.42, 0.58, land + (coast - 0.5) * 0.5);
-    ground *= 0.72 + 0.56 * coast;
-    ground = mix(ground, ground * vec3(1.25, 1.12, 0.8), smoothstep(0.45, 0.62, fields));
-    sea *= (0.8 + 0.4 * coast) * (0.86 + 0.28 * fields);
     vec3 surface = mix(mix(sea, ground, land), vec3(0.75, 0.8, 0.85), ice);
     float cloud = max(smoothstep(0.6, 0.82, fbm(p * 3.6 + vec3(uTime * 0.012, 0.0, uTime * 0.007))), wisps);
     cloud *= smoothstep(0.09, 0.17, site);
@@ -245,13 +241,13 @@ export function orbit(): Place {
     return { mesh, bits };
   });
 
-  // More of it along the way in from the study's monitor, close to the line of flight: it goes by the lens.
+  // More of it along the way in, just above the roof the camera comes out through and close to the line of flight: it goes by the lens.
   const corridor: Bit[] = [];
   for (let i = 0; i < 84; i++) {
     const a = random() * Math.PI * 2;
     const r = 2.6 + random() * 7.5;
     corridor.push({
-      at: new THREE.Vector3(Math.cos(a) * r * 1.5, Math.sin(a) * r * 0.9, 15 + random() * 38),
+      at: new THREE.Vector3(Math.cos(a) * r * 1.5, Math.sin(a) * r * 0.9, 14 + random() * 15),
       axis: new THREE.Vector3(random() - 0.5, random() - 0.5, random() - 0.5).normalize(),
       spin: 0.2 + random() * 1.3,
       size: 0.5 + random() * random() * 2.2,

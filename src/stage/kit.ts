@@ -53,12 +53,12 @@ export type Place = {
   /** The corners (in the slide's coordinates) of an opening the next place is seen through from here. */
   portal?: THREE.Vector3[];
   /**
-   * The corners (in the slide's coordinates, counter-clockwise seen from outside) of the opening this place
-   * is entered through. Until the camera is through it, the place is drawn only where the opening is.
+   * A screen in this place that the place before it is seen in while the camera arrives (by pulling back out
+   * of it): its corners in the slide's coordinates (bottom left, bottom right, top right, top left), and where
+   * it stands (its centre and facing, as a matrix in the slide's coordinates).
    */
-  gate?: THREE.Vector3[];
-  /** What stands round that opening on the outside (its frame). It is drawn with the place the camera comes from. */
-  threshold?: THREE.Object3D;
+  screen?: THREE.Vector3[];
+  mount?: THREE.Matrix4;
 };
 
 export function shell() {

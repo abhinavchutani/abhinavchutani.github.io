@@ -46,6 +46,18 @@ export type Travel = {
   rush?: number;
   /** Where along the move the camera is for each even step of scroll (first 0, last 1). */
   pace?: number[];
+  /**
+   * Instead of `into`: the place reached is brought to meet the one being left at a point. Its anchor of this
+   * name sits at `at` (in the coordinates of the place being left), turned and scaled so, and the camera homes on it.
+   */
+  meet?: { anchor: string; at: [number, number, number]; turn?: [number, number, number]; scale?: number };
+  /**
+   * Instead of `from`: the place being left is what a screen in the place reached is showing (see `mount` on a
+   * place). `scale` is how much smaller it is there, `back` how far behind the glass its origin lies (in its own units).
+   */
+  inScreen?: { scale: number; back: number };
+  /** While the camera is on its way, what is behind everything stays the sky of the place being left. */
+  keepSky?: boolean;
 };
 
 const smoother = (a: number, b: number, v: number) => {
@@ -124,8 +136,25 @@ export class Route {
     return pace[i] + (pace[i + 1] - pace[i]) * (x - i);
   }
 
-  /** The camera, `t` of the way through the move: writes where the two places must stand for it to be there. */
+  /**
+   * The camera, `t` of the way through the move, as a matrix in the coordinates of the place being reached
+   * (where it is, which way it faces, and how large a unit of its own is there).
+   */
+  pose(t: number, out: THREE.Matrix4) {
+    this.solve(t);
+    return out.compose(position, rotation, scale);
+  }
+
+  /** The same, as where the two places must stand for the real, fixed camera to be that camera. */
   at(t: number, left: THREE.Matrix4, reached: THREE.Matrix4) {
+    this.solve(t);
+    // The place reached stands so that this camera pose falls on the real camera; the place left rides with it.
+    camera.compose(position, rotation, scale).invert();
+    reached.makeTranslation(0, 0, this.dist).multiply(camera);
+    left.multiplyMatrices(reached, this.seat);
+  }
+
+  private solve(t: number) {
     t = this.along(t);
     const keys = this.keys;
     const first = keys[0];
@@ -173,9 +202,5 @@ export class Route {
       rotation.normalize();
       scale.setScalar(a.s * Math.pow(b.s / a.s, u));
     }
-    // The place reached stands so that this camera pose falls on the real, fixed camera; the place left rides with it.
-    camera.compose(position, rotation, scale).invert();
-    reached.makeTranslation(0, 0, this.dist).multiply(camera);
-    left.multiplyMatrices(reached, this.seat);
   }
 }

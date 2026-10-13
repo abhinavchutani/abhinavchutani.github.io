@@ -205,15 +205,14 @@ export function thread(): Place {
   slide.add(strands);
 
   // ---- rings of light that run down the thread towards the lens, like a scan ----
-  slide.add(
-    proceduralRibbons(16, 72, RINGS, {
-      width: 0.014,
-      minPx: 1,
-      hasGain: true,
-      gain: 1.0,
-      color: 0xbfd8ff,
-    }),
-  );
+  const rings = proceduralRibbons(16, 72, RINGS, {
+    width: 0.014,
+    minPx: 1,
+    hasGain: true,
+    gain: 1.0,
+    color: 0xbfd8ff,
+  });
+  slide.add(rings);
 
   // ---- the way in: long streaks either side of the line of flight. The opener flies down them; at rest they are behind the lens. ----
   const streaks: THREE.Vector3[][] = [];
@@ -241,10 +240,10 @@ export function thread(): Place {
     }
     far.push(line);
   }
-  slide.add(staticRibbons(far, { width: 0.02, minPx: 1, color: 0x8f96b8, gain: 0.5, opacity: 0.55, pulse: 1.2, pulseN: 1, pulseSpeed: 0.06, taper: true }));
-  slide.add(dust({ count: 3200, size: [90, 50, 130], centre: [4, 2, -40], color: 0xdcd6c8, gain: 1.1, point: 0.055, seed: 3 }));
-  slide.add(
-    dust({
+  const others = staticRibbons(far, { width: 0.02, minPx: 1, color: 0x8f96b8, gain: 0.5, opacity: 0.55, pulse: 1.2, pulseN: 1, pulseSpeed: 0.06, taper: true });
+  const haze = dust({ count: 3200, size: [90, 50, 130], centre: [4, 2, -40], color: 0xdcd6c8, gain: 1.1, point: 0.055, seed: 3 });
+  slide.add(others, haze);
+  const motes = dust({
       count: 620,
       size: [0, 0, 0],
       color: 0xfff1d8,
@@ -258,8 +257,8 @@ export function thread(): Place {
         const d = 0.3 + r() * r() * 2.6;
         return [at.x + Math.cos(a) * d, at.y + Math.sin(a) * d, at.z];
       },
-    }),
-  );
+    });
+  slide.add(motes);
   return {
     root,
     slide,
@@ -274,11 +273,20 @@ export function thread(): Place {
       slide.position.z = ch[2] - (1 - flown) * 190;
       tunnel.visible = intro < 1;
       tunnel.material.uniforms.uOpacity.value = Math.min(1, intro * 6) * (1 - Math.max(0, intro * 5 - 4));
-      // The star is the light at the end of the thread. It fades as the camera sets off down it: it turns out to be a doorway.
+      // The star is the light the thread comes out of. As the camera flies down to it, it turns out to be a
+      // point on a page: the star fades first, and then the thread itself thins away into the lines drawn there.
       const gone = Math.min(1, ch[6] / 0.38);
       const lit = Math.min(1, intro * 1.6) * (1 - gone * gone * (3 - 2 * gone));
       star.material.opacity = lit;
       star.scale.setScalar(30 + Math.sin(time * 0.7) * 1.5 + lit * 4);
+      const thin = Math.min(1, Math.max(0, (ch[6] - 0.5) / 0.42));
+      const held = 1 - thin * thin * (3 - 2 * thin);
+      u.uGain.value = 1.15 * held;
+      u.uOpacity.value = held;
+      rings.material.uniforms.uGain.value = held;
+      others.material.uniforms.uGain.value = 0.5 * held;
+      haze.material.uniforms.uGain.value = 1.1 * held;
+      motes.material.uniforms.uGain.value = 0.8 * held;
     },
   };
 }

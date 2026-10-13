@@ -4,7 +4,7 @@ import { Pass } from "three/addons/postprocessing/Pass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { createFinishPass } from "./finish";
-import { Route } from "./handover";
+import { poseMatrix, Route, type Travel } from "./handover";
 import { damp, follow, sample, tuning, type Keyframe } from "./journey";
 import { pin, stand, type Plane } from "./planes";
 import { setUploader, shared, type Place } from "./kit";
@@ -179,9 +179,11 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     scene.environmentIntensity = t.env;
   }
 
-  // What the frame shows: one place at rest, or two while the camera is between them.
-  // The far one of a pair is drawn first; the near one over it, in its own light, sharing the depth buffer.
-  const showing = { first: 0, second: -1, pane: null as [number, number, number, number] | null, back: null as Tone | null };
+  // What the frame shows: one place at rest; two while the camera is between them; three for the moment it
+  // is carried through a place at speed (the one behind, the one it is passing, the one ahead). They are
+  // drawn in this order, each in its own light, into the same depth buffer. A place marked `clip` is drawn
+  // only inside `pane` (a window or a screen it is seen through).
+  const showing = { list: [] as { index: number; clip: boolean }[], pane: null as [number, number, number, number] | null, back: null as Tone | null };
 
   class WorldPass extends Pass {
     constructor() {
@@ -193,34 +195,37 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
       backdrop.visible = true;
       paint(showing.back ?? mixed);
       const pane = showing.pane;
-      if (pane) {
-        // The far place is seen through a window: lay the backdrop down first, then draw it only where the window is.
-        read.scissorTest = false;
+      let cleared = false;
+      for (const item of showing.list) {
+        const clip = item.clip && pane !== null;
+        if (clip && !cleared) {
+          // Seen through an opening: lay the backdrop down over the whole frame first.
+          read.scissorTest = false;
+          gl.setRenderTarget(read);
+          gl.autoClear = true;
+          gl.render(scene, camera);
+          backdrop.visible = false;
+          cleared = true;
+        }
+        if (clip) {
+          const left = Math.floor(pane![0] * read.width);
+          const foot = Math.floor(pane![1] * read.height);
+          read.scissorTest = true;
+          read.scissor.set(left, foot, Math.max(1, Math.ceil(pane![2] * read.width) - left), Math.max(1, Math.ceil(pane![3] * read.height) - foot));
+        } else read.scissorTest = false;
         gl.setRenderTarget(read);
+        const place = places[item.index];
+        place.root.visible = true;
+        light(tones[item.index]);
+        gl.autoClear = !cleared;
         gl.render(scene, camera);
+        place.root.visible = false;
         backdrop.visible = false;
-        const left = Math.floor(pane[0] * read.width);
-        const foot = Math.floor(pane[1] * read.height);
-        read.scissorTest = true;
-        read.scissor.set(left, foot, Math.max(1, Math.ceil(pane[2] * read.width) - left), Math.max(1, Math.ceil(pane[3] * read.height) - foot));
-        gl.autoClear = false;
+        cleared = true;
       }
-      gl.setRenderTarget(read);
-      places[showing.first].root.visible = true;
-      light(tones[showing.first]);
-      gl.render(scene, camera);
       read.scissorTest = false;
       gl.setRenderTarget(read);
       gl.autoClear = true;
-      if (showing.second >= 0) {
-        places[showing.first].root.visible = false;
-        places[showing.second].root.visible = true;
-        backdrop.visible = false;
-        light(tones[showing.second]);
-        gl.autoClear = false;
-        gl.render(scene, camera);
-        gl.autoClear = true;
-      }
     }
   }
 
@@ -238,7 +243,28 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
   const keys = PLACES.map((row) => row.key);
   const DIST = PLACES[0].stages[0].dist;
   // routes[i]: how the camera gets from place i to place i + 1.
-  const routes = PLACES.slice(1).map((row) => new Route(row.arrive!, DIST));
+  /** Works out where two places stand to each other when the storyboard gives it by a landmark instead of by numbers. */
+  function settle(travel: Travel, left: Place, reached: Place): Travel {
+    if (travel.meet) {
+      // A named point of the place reached is to sit at a given point of the place being left.
+      const anchor = reached.anchors?.[travel.meet.anchor];
+      if (!anchor) throw new Error(`No anchor "${travel.meet.anchor}" to meet at.`);
+      reached.root.updateMatrixWorld(true);
+      const spot = reached.slide.worldToLocal(anchor.getWorldPosition(new THREE.Vector3()));
+      const pose = poseMatrix({ at: [0, 0, 0], turn: travel.meet.turn, scale: travel.meet.scale });
+      const origin = new THREE.Vector3(...travel.meet.at).sub(spot.clone().applyMatrix4(pose));
+      const seat = pose.setPosition(origin).invert();
+      return { ...travel, seat, pivot: [spot.x, spot.y, spot.z] };
+    }
+    if (travel.inScreen && reached.mount) {
+      // The place being left is what a screen of the place reached is showing: behind its glass, and smaller.
+      const { scale, back } = travel.inScreen;
+      const seat = reached.mount.clone().multiply(new THREE.Matrix4().makeTranslation(0, 0, -back * scale)).multiply(new THREE.Matrix4().makeScale(scale, scale, scale));
+      return { ...travel, seat };
+    }
+    return travel;
+  }
+  const routes = PLACES.slice(1).map((row, i) => new Route(settle(row.arrive!, places[i], places[i + 1]), DIST));
   // `?raw` is for measuring a move: scroll maps straight on to the camera's path, with no easing, pacing or damping.
   const params = new URLSearchParams(window.location.search);
   const raw = params.has("raw");
@@ -246,17 +272,16 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     tuning.linear = true;
     for (const route of routes) route.retime(null);
   }
-  // The frame round a place's way in is seen from the place before it, so it is drawn with that one.
-  const gates = places.map((place, i) => {
-    if (i > 0 && place.threshold) {
-      place.threshold.matrixAutoUpdate = false;
-      place.threshold.matrix.copy(routes[i - 1].seat).invert();
-      places[i - 1].root.add(place.threshold);
-    }
-    if (!place.gate) return null;
-    const [a, b, , d] = place.gate;
-    return { a, normal: new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(d, a)).normalize() };
-  });
+  // Each route's seat (the place left, in the coordinates of the place reached) and its inverse: with these a
+  // pose known in one place's coordinates can be said in any other's.
+  const seats = routes.map((route) => route.seat);
+  const unseats = routes.map((route) => route.seat.clone().invert());
+  /** Re-expresses `m`, given in the coordinates of place `from`, in those of place `to`. */
+  function carry(m: THREE.Matrix4, from: number, to: number) {
+    while (from < to) m.premultiply(seats[from++]);
+    while (from > to) m.premultiply(unseats[--from]);
+    return m;
+  }
   const target = blankPose();
   const current = blankPose();
   let frames: Keyframe<Pose>[] = [];
@@ -374,25 +399,48 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
 
   const ctx = { time: 0, dt: 0, theta: 0, speed: 0, ch: [] as number[], intro: 0 };
   const last = PLACES.length - 1;
-  const still = new THREE.Matrix4();
   const spare = new THREE.Matrix4();
-  const inverse = new THREE.Matrix4();
+  const goal = new THREE.Matrix4();
+  /**
+   * The camera itself, as a thing with weight: where it is, which way it faces and how large it is, in the
+   * coordinates of the place it is nearest (`anchor`). Scroll says where it should be; this follows, so that
+   * carried through a place at speed it sweeps round on one line instead of stopping and setting off again
+   * on another axis.
+   */
+  const rig = { anchor: 0, at: new THREE.Vector3(0, 0, PLACES[0].stages[0].dist), facing: new THREE.Quaternion(), size: 0 };
+  const goalAt = new THREE.Vector3();
+  const goalFacing = new THREE.Quaternion();
+  const goalSize = new THREE.Vector3();
   const pane: [number, number, number, number] = [0, 0, 1, 1];
 
-  /** The box on screen round four corners given in a place's own coordinates; false if any is behind the lens. */
-  function frameOf(corners: THREE.Vector3[], slide: THREE.Object3D) {
-    let x0 = 1;
-    let y0 = 1;
-    let x1 = 0;
-    let y1 = 0;
-    for (const corner of corners) {
-      point.copy(corner).applyMatrix4(slide.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+  /**
+   * The box on screen round four corners given in a place's own coordinates; false if any is behind the lens.
+   * With `inside`, the largest upright box that fits within them instead (they must run bottom left, bottom
+   * right, top right, top left): for an opening that is being looked out of, not into.
+   */
+  function frameOf(corners: THREE.Vector3[], slide: THREE.Object3D, inside = false) {
+    let x0 = inside ? 0 : 1;
+    let y0 = inside ? 0 : 1;
+    let x1 = inside ? 1 : 0;
+    let y1 = inside ? 1 : 0;
+    for (let i = 0; i < corners.length; i++) {
+      point.copy(corners[i]).applyMatrix4(slide.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
       if (point.z > -camera.near) return false;
       point.applyMatrix4(camera.projectionMatrix);
-      x0 = Math.min(x0, point.x * 0.5 + 0.5);
-      x1 = Math.max(x1, point.x * 0.5 + 0.5);
-      y0 = Math.min(y0, point.y * 0.5 + 0.5);
-      y1 = Math.max(y1, point.y * 0.5 + 0.5);
+      const x = point.x * 0.5 + 0.5;
+      const y = point.y * 0.5 + 0.5;
+      if (inside) {
+        // Left-hand corners bound it on the left, bottom ones from below, and so on.
+        if (i === 0 || i === 3) x0 = Math.max(x0, x);
+        else x1 = Math.min(x1, x);
+        if (i < 2) y0 = Math.max(y0, y);
+        else y1 = Math.min(y1, y);
+      } else {
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y);
+      }
     }
     pane[0] = Math.max(0, x0);
     pane[1] = Math.max(0, y0);
@@ -438,17 +486,18 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
       options.onStage?.(near, stages[near].place);
     }
 
-    // Where the camera is along the journey: at rest in a place, or part of the way to the next.
+    // Where the journey has got to (damped: it is what the eye has been shown), and where scroll says it should be.
     const d = Math.min(last, Math.max(0, current.depth));
     const from = Math.min(last - 1, Math.floor(d));
-    let through = d - from;
-    if (options.reduced) through = Math.round(through);
+    const through = d - from;
     const between = through > 0.0015 && through < 0.9985;
     const moving = through > 0.25 && through < 0.75;
     if (moving && !underway) options.onDive?.();
     underway = moving;
+    const want = options.reduced ? Math.round(d) : Math.min(last, Math.max(0, target.depth));
 
-    camera.position.set(0, 0, DIST * (compact ? 1.12 : 1) - push * 1.1);
+    // A push against a stage brings the camera in a little, and tips it the way the wheel is going.
+    camera.position.set(0, push * 0.5, DIST * (compact ? 1.12 : 1) - Math.abs(push) * 1.6);
     camera.lookAt(0, 0, 0);
 
     // The world leans towards the pointer (less while the camera is travelling: the move is the motion then),
@@ -468,75 +517,89 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     ctx.theta = theta;
     ctx.speed = speed;
     ctx.intro = state.intro;
-    let rush = 0;
-    let wantPane = -1;
-    let wantGate = -1;
+
+    // ---- the camera ----
+    // It is kept in the coordinates of the place it is nearest; when that changes, it is said again in the new one's.
+    const nearestPlace = Math.round(d);
+    if (nearestPlace !== rig.anchor) {
+      spare.compose(rig.at, rig.facing, goalSize.setScalar(Math.exp(rig.size)));
+      carry(spare, rig.anchor, nearestPlace).decompose(rig.at, rig.facing, goalSize);
+      rig.size = Math.log(goalSize.x);
+      rig.anchor = nearestPlace;
+    }
+    // Where scroll says it should be: at rest in a place, or part of the way along the route to the next.
+    const wantFrom = Math.min(last - 1, Math.floor(want));
+    const wantThrough = want - wantFrom;
+    if (wantThrough < 1e-5) carry(goal.makeTranslation(0, 0, DIST), wantFrom, rig.anchor);
+    else if (wantThrough > 1 - 1e-5) carry(goal.makeTranslation(0, 0, DIST), wantFrom + 1, rig.anchor);
+    else carry(routes[wantFrom].pose(wantThrough, goal), wantFrom + 1, rig.anchor);
+    goal.decompose(goalAt, goalFacing, goalSize);
+    // And it goes there as a thing with weight does: the same damping for where it is, which way it faces and its scale.
+    const pull = options.reduced || raw ? 1 : 1 - Math.exp(-7 * dt);
+    rig.at.lerp(goalAt, pull);
+    rig.facing.slerp(goalFacing, pull);
+    rig.size += (Math.log(goalSize.x) - rig.size) * pull;
+
+    // ---- which places are in the frame ----
+    // Every place between where the eye has got to and where scroll is asking for: one at rest, two on the
+    // way, three when a place is passed at speed.
+    let low = Math.floor(Math.min(d, want) + 0.0015);
+    let high = Math.ceil(Math.max(d, want) - 0.0015);
+    low = Math.max(0, Math.max(low, rig.anchor - 1));
+    high = Math.min(last, Math.min(high, rig.anchor + 1));
+    if (low > rig.anchor) low = rig.anchor;
+    if (high < rig.anchor) high = rig.anchor;
+
+    // The place the camera is in stands so that the camera's pose falls on the real, fixed camera; the others stand to it.
+    const base = places[rig.anchor].root.matrix;
+    spare.compose(rig.at, rig.facing, goalSize.setScalar(Math.exp(rig.size))).invert();
+    base.makeTranslation(0, 0, DIST).multiply(spare);
+    for (let j = low; j <= high; j++) {
+      if (j !== rig.anchor) places[j].root.matrix.multiplyMatrices(base, carry(spare.identity(), j, rig.anchor));
+      pose(j);
+    }
+
+    // The order they are drawn in: the one furthest on first, as a rule (it is what is seen through the door or
+    // the window of the one before). But a place that is being backed out of through a screen goes down before
+    // the place the screen is in, and only inside the screen's outline; so does anything behind it.
+    showing.list.length = 0;
+    showing.pane = null;
     showing.back = null;
-    if (between) {
-      // The place being reached is drawn first (it is what is seen through the door, the screen, the window);
-      // the place being left over it.
-      const route = routes[from];
-      route.at(through, places[from].root.matrix, places[from + 1].root.matrix);
-      showing.first = from + 1;
-      showing.second = from;
-      showing.pane = null;
-      pose(from);
-      pose(from + 1);
-      rush = route.rush * Math.pow(Math.sin(Math.PI * through), 2);
-      blend(mixed, tones[from], tones[from + 1], through * through * (3 - 2 * through));
-      if (gates[from + 1]) wantGate = from + 1;
-    } else {
-      const at = through < 0.5 ? from : from + 1;
-      places[at].root.matrix.copy(still);
-      showing.first = at;
-      showing.second = -1;
-      showing.pane = null;
-      pose(at);
-      blend(mixed, tones[at], tones[at], 0);
-      // A place with an outlook: the next one can be seen from it (through a window), so it is drawn as well,
-      // standing where it will be when the camera sets off for it.
-      const row = PLACES[at];
-      if (row.outlook && at < last) {
-        const ch = current[`c${at}`] as number[];
-        const dx = ch[0] - row.exit[0];
-        const dy = ch[1] - row.exit[1];
-        const dz = ch[2] - row.exit[2];
-        if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) < row.outlook) {
-          routes[at].at(0, spare, places[at + 1].root.matrix);
-          places[at + 1].root.matrix.premultiply(spare.makeTranslation(dx, dy, dz));
-          pose(at + 1);
-          showing.first = at + 1;
-          showing.second = at;
-          wantPane = at;
-        }
+    let screenOf = -1;
+    for (let j = low; j < high; j++) if (PLACES[j + 1].arrive!.inScreen && places[j + 1].screen) screenOf = j + 1;
+    if (screenOf >= 0) {
+      for (let j = screenOf - 1; j >= low; j--) showing.list.push({ index: j, clip: true });
+      for (let j = high; j >= screenOf; j--) showing.list.push({ index: j, clip: false });
+      showing.back = tones[screenOf];
+    } else for (let j = high; j >= low; j--) showing.list.push({ index: j, clip: false });
+    if (between && PLACES[from + 1].arrive!.keepSky) showing.back = tones[from];
+    blend(mixed, tones[from], tones[from + 1], through * through * (3 - 2 * through));
+    const rush = between ? routes[from].rush * Math.pow(Math.sin(Math.PI * through), 2) : 0;
+
+    // A place with an outlook: the next one can be seen from it at rest (through a window), so it is drawn
+    // as well, inside the window's outline, standing where it will be when the camera sets off for it.
+    let outlook = -1;
+    const row = PLACES[rig.anchor];
+    if (low === high && row.outlook && rig.anchor < last) {
+      const ch = current[`c${rig.anchor}`] as number[];
+      const dx = ch[0] - row.exit[0];
+      const dy = ch[1] - row.exit[1];
+      const dz = ch[2] - row.exit[2];
+      if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) < row.outlook) {
+        outlook = rig.anchor;
+        places[outlook + 1].root.matrix.multiplyMatrices(base, spare.makeTranslation(dx, dy, dz)).multiply(unseats[outlook]);
+        pose(outlook + 1);
       }
     }
+
     for (const place of places) place.root.matrixWorldNeedsUpdate = true;
     world.updateMatrixWorld(true);
     camera.updateMatrixWorld();
-    if (wantPane >= 0) {
-      // Where the window is on screen: the box round its four corners.
-      const corners = places[wantPane].portal;
-      if (corners) {
-        if (frameOf(corners, places[wantPane].slide)) showing.pane = pane;
-        else {
-          // The window is out of frame: there is nothing of the far place to draw.
-          showing.first = showing.second;
-          showing.second = -1;
-        }
-      }
+    if (outlook >= 0 && places[outlook].portal && frameOf(places[outlook].portal!, places[outlook].slide)) {
+      showing.list.unshift({ index: outlook + 1, clip: true });
+      showing.pane = pane;
     }
-    if (wantGate >= 0) {
-      // The place ahead is entered through an opening. While the camera is still outside, that place is
-      // drawn only where the opening is, and what is round it is the place being left.
-      const gate = gates[wantGate]!;
-      const slide = places[wantGate].slide;
-      point.copy(camera.position).applyMatrix4(inverse.copy(slide.matrixWorld).invert());
-      if (point.sub(gate.a).dot(gate.normal) > 0) {
-        showing.back = tones[wantGate - 1];
-        if (frameOf(places[wantGate].gate!, slide)) showing.pane = pane;
-      }
-    }
+    if (screenOf >= 0 && frameOf(places[screenOf].screen!, places[screenOf].slide, true)) showing.pane = pane;
 
     bloom.strength = mixed.bloom;
     const u = finish.uniforms;
@@ -553,7 +616,7 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     for (const sign of signs) {
       // A sign belongs to its place: it is there as the camera comes in, and goes soon after it sets off again.
       const ahead = sign.k - current.s;
-      const on = state.ready && ahead < 0.44 && ahead > -0.16 && (sign.place === showing.first || sign.place === showing.second);
+      const on = state.ready && ahead < 0.44 && ahead > -0.16 && showing.list.some((item) => item.index === sign.place);
       if (on !== sign.on) {
         sign.on = on;
         sign.el.toggleAttribute("data-on", on);
@@ -633,12 +696,11 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     ctx.ch = PLACES[i].stages[0].ch;
     ctx.intro = 1;
     places[i].update(ctx);
-    showing.first = i;
-    showing.second = -1;
+    showing.list = [{ index: i, clip: false }];
     blend(mixed, tones[i], tones[i], 0);
     composer.render(0.016);
   }
-  showing.first = 0;
+  showing.list = [{ index: 0, clip: false }];
   for (const object of culled) object.frustumCulled = true;
 
   const onPointer = (event: PointerEvent) => {
@@ -660,7 +722,9 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     resize,
     /** The hand pushed on although the page is holding at a stage: `screens` of scroll that went nowhere. */
     nudge(screens: number) {
-      impulse = Math.max(-0.5, Math.min(0.5, impulse + screens * 0.55));
+      impulse = Math.max(-0.6, Math.min(0.6, impulse + screens * 0.7));
+      // Whatever turns with the wheel goes on turning with it: the page is holding, the hand is not.
+      if (!options.reduced) theta += screens * 2.4;
     },
     /** Scroll position of every resting stage, top to bottom. */
     stops: () => frames.map((f) => f.y),

@@ -4,7 +4,9 @@ import type { Travel } from "./handover";
 import { PACE } from "./pace";
 
 /**
- * The storyboard, as numbers. One row per resting stage; ten in all.
+ * The storyboard, as numbers. One row per resting stage; ten in all, in the
+ * order of what matters most to him now: markets, the stage, the projects,
+ * the machine, code, sound, mind, and how to reach him.
  *
  * The camera stays on the z axis, twelve units back, looking at the origin;
  * each place is modelled round that view, so a place at rest needs no pose
@@ -15,15 +17,15 @@ import { PACE } from "./pace";
  *
  * `arrive` is how the camera gets here from the place before: a real move
  * through one continuous world (see handover.ts). Each is a single gesture,
- * and no two are along the same axis:
+ * and neighbours never share an axis:
  *
- *   thread  -> gallery   forwards, down the thread and in through the doorway at its end.
- *   gallery -> study     sideways to the right, through the wall, as on a film set.
- *   study   -> orbit     in through the monitor, and on through the debris to the satellite.
- *   orbit   -> bench     straight down: the sea below turns out to be blueprint blue.
- *   bench   -> chart     down the desk, off the blueprint and on to the newspaper lying across its foot.
+ *   thread  -> chart     forwards, down the thread to the point it comes from: the last price, where the paths fan out.
  *   chart   -> forum     eyes up from the page: it is on a lectern, and there is the hall.
- *   forum   -> library   up through the oculus, turning with the stair of books.
+ *   forum   -> orbit     up: one tilt of the head, then straight through the oculus in the ceiling to the stars.
+ *   orbit   -> bench     down: the sea below turns out to be blueprint blue.
+ *   bench   -> study     backwards: the drawing is on a screen, and the camera pulls out of it to the desk it stands on.
+ *   study   -> gallery   sideways to the right, into the room next door, opened up like a film set.
+ *   gallery -> library   forwards and round to the left, through the tall doorway at the end of the wall.
  *   books   -> desk      sideways to the left (inside the library; no hand-over).
  *   library -> harbour   forwards, over the desk and out through the open window.
  */
@@ -117,45 +119,52 @@ export const PLACES: PlaceRow[] = [
     stages: [{ ch: c(0, 0, 0, 0, 0, 0, 0), dist: DIST, side: "L", y: 0.56 }],
   },
   {
-    // 01 Sound. A museum gallery: damask, paintings of musicians, a violin in a case, a drum kit behind a rope.
-    key: "violin",
-    look: tone(1, { top: 0x080303, glow: 0.04, haze: 0.03, at: [0.6, 0.4], vignette: 0.5, grid: 0, fog: 0.006, bloom: 0.3, env: 0.4, key: 1.35, rim: 0.7 }),
+    // 01 Markets. A newspaper page: candles, simulated paths, the podium.
+    key: "chart",
+    look: tone(1, { top: 0xf6e4d4, glow: 0, haze: 0, at: [0.5, 0.5], vignette: 0.14, grid: 0, fog: 0.008, bloom: 0, env: 0.36, key: 1.15, rim: 0.25, light: true }),
     arrive: {
-      // The gallery's doorway stands where the thread's star is, square to the line of flight: one straight run in.
-      into: { at: [24.0, 11.23, -113.08], turn: [-0.1896, 0.0809, 0] },
-      via: [{ at: [0, -0.4, 58], when: 0.55 }],
+      // The thread comes out of one point of light. That point is the last price on the chart, where the
+      // simulated paths fan out: the page is there from the start, twenty times too small to see.
+      meet: { anchor: "origin", at: [16.1, 6.6, -74], turn: [-0.1852, 0.0754, 0], scale: 0.05 },
+      turning: [0, 0.55],
+      sliding: [0.1, 0.9],
+      keepSky: true,
       rush: 0.25,
-      pace: PACE.violin,
+      pace: PACE.chart,
+    },
+    enter: c(0, 0, 0, 0, 0, 0, 0, 0),
+    exit: c(0, 0, 0, 0, 0, 0, 1, 0),
+    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1, 0), dist: DIST, side: "L" }],
+  },
+  {
+    // 02 Stage. The auditorium, from beside the lectern: curtains, a balcony, 3,500 lights.
+    key: "forum",
+    look: tone(2, { top: 0x070102, glow: 0.1, haze: 0.07, at: [0.5, 0.3], vignette: 0.6, grid: 0, fog: 0.011, bloom: 0.7, env: 0.34, key: 1.2, rim: 1.2 }),
+    arrive: {
+      // The newspaper page is the sheet lying on the lectern. Eyes up first, then step back from it.
+      seat: onLectern.seat,
+      pivot: onLectern.pivot,
+      turning: [0, 0.5],
+      sliding: [0.05, 0.9],
+      pace: PACE.forum,
     },
     enter: c(0, 0, 0, 0, 0, 0, 1),
     exit: c(0, 0, 0, 0, 0, 0, 1),
-    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1), dist: DIST, side: "L", deep: -3 }],
+    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1), dist: DIST, side: "L" }],
   },
   {
-    // 02 Code. The study next door. A desk at night: screens of source, a browser, an artboard.
-    key: "editor",
-    look: tone(2, { top: 0x020a0e, glow: 0.06, haze: 0.05, at: [0.3, 0.5], vignette: 0.6, grid: 0, fog: 0.014, bloom: 0.5, env: 0.3, key: 1.0, rim: 1.4 }),
-    arrive: {
-      // The other side of the gallery's right-hand wall. The camera does not turn: it slides, and the wall goes by.
-      into: { at: [31, 0, 0] },
-      pace: PACE.editor,
-    },
-    enter: c(0, 0, 0, 0, 0, 0, 1, 0),
-    exit: c(0, 0, 0, 0, 0, 0, 1, 1),
-    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1, 0), dist: DIST, side: "R" }],
-  },
-  {
-    // 03 Orbit. Indigo. The Earth's limb, a belt of debris, the satellite and its net.
+    // 03 Projects. Indigo. The Earth's limb, a belt of debris, the satellite and its net.
     key: "orbit",
     look: tone(3, { top: 0x01010a, glow: 0.03, haze: 0.03, at: [0.7, 0.3], vignette: 0.5, grid: 0, fog: 0.007, bloom: 0.5, env: 0.3, key: 2.0, rim: 1.6 }),
     arrive: {
-      // Orbit is on the far side of the main monitor, a long way behind the glass, along its axis.
-      into: { at: [-4.48, 1.27, -58], turn: [0.06, 0, 0] },
-      via: [{ at: [0, 0, 56], when: 0.4 }], // squared up to the screen, about to go through it
-      rush: 0.2,
+      // Orbit is above the hall, along the line from the lectern through the oculus in its ceiling, and tipped
+      // to face down that line: there is no up out there. So the camera tilts once and then flies straight.
+      into: { at: [-5.93, 68.83, -16.82], turn: [0.2031, 1.1668, 0] },
+      via: [{ at: [0, 0, 44], when: 0.48 }], // squared up to the opening, about to go through it
+      rush: 0.25,
       pace: PACE.orbit,
     },
-    // The whole sky is still swinging round into place as the camera comes through the glass.
+    // The whole sky is still swinging round into place as the camera comes out through the roof.
     enter: c(-5, 1.5, 0, 0.05, 0.3, 0, 0, 0),
     exit: c(0, 0, 0, 0, 0, 0, 1, 1),
     stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1, 0), dist: DIST, side: "L" }],
@@ -178,48 +187,42 @@ export const PLACES: PlaceRow[] = [
     stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1), dist: DIST, side: "R" }],
   },
   {
-    // 05 Markets. The newspaper lying across the foot of the blueprint: candles, simulated paths, the podium.
-    key: "chart",
-    look: tone(5, { top: 0xf6e4d4, glow: 0, haze: 0, at: [0.5, 0.5], vignette: 0.14, grid: 0, fog: 0.008, bloom: 0, env: 0.36, key: 1.15, rim: 0.25, light: true }),
+    // 05 Code. A desk at night: screens of source, a browser, an artboard.
+    key: "editor",
+    look: tone(5, { top: 0x020a0e, glow: 0.06, haze: 0.05, at: [0.3, 0.5], vignette: 0.6, grid: 0, fog: 0.014, bloom: 0.5, env: 0.3, key: 1.0, rim: 1.4 }),
     arrive: {
-      // Straight down the desk: the head of the page comes up from the foot of the frame.
-      into: { at: [0, -16, 0] },
-      pace: PACE.chart,
+      // The blueprint is a drawing open on the main monitor, half the size. The camera backs out of the screen.
+      inScreen: { scale: 0.5, back: 4.6 },
+      pace: PACE.editor,
     },
     enter: c(0, 0, 0, 0, 0, 0, 0, 0),
     exit: c(0, 0, 0, 0, 0, 0, 1, 0),
-    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1, 0), dist: DIST, side: "L" }],
+    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1, 0), dist: DIST, side: "R" }],
   },
   {
-    // 06 Stage. The auditorium, from beside the lectern: curtains, a balcony, 3,500 lights.
-    key: "forum",
-    look: tone(6, { top: 0x070102, glow: 0.1, haze: 0.07, at: [0.5, 0.3], vignette: 0.6, grid: 0, fog: 0.011, bloom: 0.7, env: 0.34, key: 1.2, rim: 1.2 }),
+    // 06 Sound. A museum gallery: damask, paintings of musicians, a violin in a case, a drum kit behind a rope.
+    key: "violin",
+    look: tone(6, { top: 0x080303, glow: 0.04, haze: 0.03, at: [0.6, 0.4], vignette: 0.5, grid: 0, fog: 0.006, bloom: 0.3, env: 0.4, key: 1.35, rim: 0.7 }),
     arrive: {
-      // The newspaper page is the sheet lying on the lectern. Eyes up first, then step back from it.
-      seat: onLectern.seat,
-      pivot: onLectern.pivot,
-      turning: [0, 0.5],
-      sliding: [0.05, 0.9],
-      pace: PACE.forum,
+      // The gallery is the room to the right of the study, seen from the side with its near wall away.
+      // The camera does not turn: it slides, and the room opens up.
+      into: { at: [41, 0, 0] },
+      pace: PACE.violin,
     },
     enter: c(0, 0, 0, 0, 0, 0, 1),
     exit: c(0, 0, 0, 0, 0, 0, 1),
-    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1), dist: DIST, side: "L" }],
+    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1), dist: DIST, side: "L", deep: -3 }],
   },
   {
-    // 07 Mind. The floor above. Cream paper and ink: a stair of books past a colonnade; then, tracking, the desk by the window.
+    // 07 Mind. Cream paper and ink: a stair of books past a colonnade; then, tracking, the desk by the window.
     key: "library",
     // From the desk, the harbour can be seen through the window: draw it whenever the camera is within this of the desk.
     outlook: 21,
     look: tone(7, { top: 0xf3eee2, glow: 0, haze: 0, at: [0.5, 0.5], vignette: 0.15, grid: -0.035, fog: 0.022, bloom: 0, env: 0.36, key: 1.15, rim: 0.2, light: true }),
     arrive: {
-      // The floor above the hall. Up through the opening in its ceiling, turning with the stair of books that winds up through it.
-      into: { at: [0, 46, 0] },
-      via: [
-        { at: [-1.6, -31, 4.5], turn: [0.5, 1.0, 0], when: 0.3 }, // rising, eyes going up to the opening
-        { at: [-3.4, -10, -4.2], turn: [1.5, 1.32, 0], when: 0.56 }, // under it, looking up the stair as it turns
-        { at: [-2.9, -0.7, -1.5], turn: [0.9, 0.5, 0], when: 0.8 }, // up inside the stair, levelling off and coming round
-      ],
+      // The library is through the tall doorway at the left-hand end of the gallery's far wall, and faces
+      // along the line from where the camera stood to that door: one straight walk, turning to it on the way.
+      into: { at: [-41.3, 2.1, -40.2], turn: [0.67, 0, 0] },
       pace: PACE.library,
     },
     enter: c(0, 0, 0, 0, 0, 0, 0, 0),

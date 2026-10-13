@@ -189,6 +189,26 @@ export function library(): Place {
   hand.add(pen);
   journal.add(hand);
 
+  // The rest of the pens, in a tray: each its own colour of resin, a gold band, a clip, and one left uncapped.
+  const tray = put(new THREE.Group(), 5.0, 0, 0.5, 0, -0.3, 0);
+  tray.add(put(box(3.3, 0.12, 2.5, matte(0x3a2a1c, 0.6)), 0, 0.06, 0), put(box(3.05, 0.02, 2.25, matte(0x1f3a2a, 0.95)), 0, 0.13, 0));
+  const laid: [number, number, boolean][] = [[0x6e1220, -0.7, true], [0x16324a, 0, true], [0x1e4a34, 0.7, false]];
+  laid.forEach(([colour, z, capped], i) => {
+    const one = put(new THREE.Group(), -0.1 + i * 0.08, 0.26, z, 0, 0.05 * (i - 1), Math.PI / 2);
+    const body = matte(colour, 0.22, 0.25);
+    one.add(put(cyl(0.11, 0.1, 1.5, body, 16), 0, -0.35, 0), put(cyl(0.114, 0.114, 0.07, goldTrim, 16), 0, 0.42, 0));
+    if (capped) one.add(put(cyl(0.125, 0.125, 0.9, body, 16), 0, 0.88, 0), put(box(0.03, 0.62, 0.05, goldTrim), 0, 0.92, 0.13), put(cyl(0.1, 0.1, 0.05, goldTrim, 16), 0, 1.35, 0));
+    else {
+      one.add(put(cyl(0.095, 0.07, 0.4, resin, 16), 0, 0.66, 0));
+      const point = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.36, 12), goldTrim);
+      point.scale.set(1, 1, 0.4);
+      one.add(put(point, 0, 1.03, 0));
+      tray.add(put(cyl(0.125, 0.125, 0.9, body, 16), 1.15, 0.26, 0.15, 0, 0.5, Math.PI / 2));
+    }
+    tray.add(one);
+  });
+  desk.add(tray);
+
   // Ink, sketchbook, pencil.
   const bottle = put(new THREE.Group(), 4.6, 0, -2.2);
   bottle.add(put(box(1.0, 1.0, 1.0, new THREE.MeshStandardMaterial({ color: 0x8f9dc4, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.45 })), 0, 0.5, 0), put(box(0.86, 0.62, 0.86, matte(0x1c1870, 0.3)), 0, 0.34, 0), put(cyl(0.3, 0.3, 0.3, resin, 20), 0, 1.15, 0));

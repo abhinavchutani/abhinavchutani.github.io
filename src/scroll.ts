@@ -16,10 +16,12 @@ import Lenis from "lenis";
  *    it there is not thrown away: it is handed to the stage, which leans in
  *    on it, so the hand never moves without something answering. A fresh
  *    push after a pause, or a steady scroll kept up for a beat, moves on;
- *  - it never rests between two stages: once the wheel has been quiet for a
- *    moment the page finishes the move it was making, gently, into the next
- *    stage in the direction of travel (or falls back, if it had barely set
- *    off), and any new input takes over at once.
+ *  - it never rests between two stages, but it is in no hurry about it: the
+ *    hand can scrub a move a notch at a time, and pause on the way. Only when
+ *    the wheel has been quiet for half a second does the page finish the move
+ *    it was making, gently, into the next stage in the direction of travel
+ *    (or fall back, if it was under a third of the way), and any new input
+ *    takes over at once.
  *
  * Skip all of it under prefers-reduced-motion and on touch screens, which
  * keep native scrolling.
@@ -42,7 +44,7 @@ export type ScrollOptions = {
   onPush?: (screens: number) => void;
 };
 
-export function createScroll({ stops, topSpeed = 1.8, rest = 200, staged = () => true, onPush }: ScrollOptions) {
+export function createScroll({ stops, topSpeed = 1.8, rest = 520, staged = () => true, onPush }: ScrollOptions) {
   let points: number[] = [];
   let lastWheel = 0;
   let heading = 1;
@@ -52,7 +54,7 @@ export function createScroll({ stops, topSpeed = 1.8, rest = 200, staged = () =>
   const GESTURE_GAP = 160; // ms of quiet that makes the next event a new gesture
   const DETENT = 600; // ms a steady scroll is held at a stage before it may carry on
   const PUSH = 30; // px: an event this large, that long after arriving, is a hand and not momentum
-  const BARELY = 0.14; // of a move: let go before this, and the page falls back instead of going on
+  const COMMIT = 0.3; // of a move: let go before this, and the page falls back instead of going on
 
   const lenis = new Lenis({
     lerp: 0.12,
@@ -129,7 +131,7 @@ export function createScroll({ stops, topSpeed = 1.8, rest = 200, staged = () =>
     if (ahead === undefined) return;
     // Barely set off: fall back. Otherwise carry on to the stage it was heading for.
     const done = behind === undefined ? 1 : Math.abs(here - behind) / Math.abs(ahead - behind);
-    const next = done < BARELY && behind !== undefined ? behind : ahead;
+    const next = done < COMMIT && behind !== undefined ? behind : ahead;
     const screens = Math.abs(next - here) / window.innerHeight;
     if (screens > 1.6) return;
     // What is still to come of this gesture must not set the page off again.

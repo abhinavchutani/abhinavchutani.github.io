@@ -260,8 +260,14 @@ export function editor(): Place {
   const desk = box(34, 0.4, 16, matte(0x060a0c, 0.62, 0.1));
   set.add(put(desk, 0, -4.05, 1.5));
 
-  const { group: main, fade: fadeMain } = display(10.2, 6.1, editorScreen(1340, 800, "orbital_guardian.py", DETECTOR, 22));
+  const MAIN = { w: 10.2, h: 6.1 };
+  const { group: main, fade: fadeMain } = display(MAIN.w, MAIN.h, editorScreen(1340, 800, "orbital_guardian.py", DETECTOR, 22));
   set.add(put(main, 0.6, 0.1, -2.2, 0, -0.04, 0));
+  // The main screen is how the camera arrives: it backs out of the drawing that is open on it. So the stage
+  // needs to know where the glass is (its four corners) and how it stands.
+  slide.updateMatrixWorld(true);
+  const mount = slide.matrixWorld.clone().invert().multiply(main.matrixWorld);
+  const screen = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) => new THREE.Vector3((sx * MAIN.w) / 2, (sy * MAIN.h) / 2, 0).applyMatrix4(mount));
   set.add(put(cyl(0.14, 0.14, 1.2, matte(0x14181c, 0.4, 0.6), 12), 0.6, -3.4, -2.5), put(cyl(1.4, 1.5, 0.08, matte(0x14181c, 0.4, 0.6), 32), 0.6, -3.82, -2.4));
 
   const { group: tall } = display(4.3, 7.4, editorScreen(660, 1140, "monte_carlo.py", PRICER, 21));
@@ -364,10 +370,13 @@ export function editor(): Place {
   return {
     root,
     slide,
+    screen,
+    mount,
     update({ ch, time, theta }) {
       const up = ch[6];
-      // The windows rise into place as the camera arrives.
-      pageRig.position.y = 5.6 - (1 - up) * 4;
+      // The windows settle into place as the camera arrives: the browser down from above (clear of the main
+      // screen, which is what the camera is looking out of), the tablet up from the desk.
+      pageRig.position.y = 5.6 + (1 - up) * 5;
       tablet.position.y = -3.76 - (1 - up) * 1.5;
       // The cursor works its way down the file and starts again.
       const row = Math.floor((time * 1.4 + theta * 2.5) % 28);
@@ -377,14 +386,13 @@ export function editor(): Place {
       cursor.visible = (time * 2) % 1 < 0.6;
       pageRig.rotation.z = 0.02 + Math.sin(time * 0.5) * 0.008;
       pageRig.rotation.y = -0.2 + Math.sin(theta * 0.35) * 0.07;
-      // On the way out the camera goes in through the main screen: the code clears off it, and off the
-      // wall of code behind, so that what is beyond the glass can be seen and nothing is left hanging there.
-      const leaving = ch[7];
-      const clear = Math.min(1, Math.max(0, (leaving - 0.3) / 0.22));
-      fadeMain(1 - clear * clear * (3 - 2 * clear));
-      lineBar.visible = clear < 0.5;
-      cursor.visible = cursor.visible && clear < 0.5;
-      wallOfCode.opacity = 0.85 * (1 - Math.min(1, Math.max(0, (leaving - 0.15) / 0.4)));
+      // On the way in the main screen is showing the drawing the camera has just backed out of; the editor
+      // comes up over it as the camera settles at the desk.
+      const open = Math.min(1, Math.max(0, (up - 0.7) / 0.27));
+      const shown = open * open * (3 - 2 * open);
+      fadeMain(shown);
+      lineBar.visible = shown > 0.5;
+      cursor.visible = cursor.visible && shown > 0.5;
     },
   };
 }
