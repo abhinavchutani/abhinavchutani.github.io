@@ -175,18 +175,58 @@ export function chart(): Place {
     });
   const under = lights(0.42);
   const over = lights(0.9);
-  for (const map of [under, over]) {
-    map.wrapS = map.wrapT = THREE.RepeatWrapping;
-    map.repeat.set((HALF * 2) / 7.4, deep / 7.4);
+  for (const map of [under, over]) map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  // The camera comes down through the roof by a skylight, whose two doors swing open into the hall below as it
+  // comes. So the roof is laid round that one bay, in four pieces, its lights lined up with the bay.
+  const BAY = { x: 0, z: 12, half: 3.7 };
+  const roofLeft = -HALF - 1;
+  const roofRight = HALF + 1;
+  const roofBack = BACK - 1;
+  const roofFront = FRONT + 1;
+  const pieces: [number, number, number, number][] = [
+    [roofLeft, BAY.x - BAY.half, roofBack, roofFront],
+    [BAY.x + BAY.half, roofRight, roofBack, roofFront],
+    [BAY.x - BAY.half, BAY.x + BAY.half, roofBack, BAY.z - BAY.half],
+    [BAY.x - BAY.half, BAY.x + BAY.half, BAY.z + BAY.half, roofFront],
+  ];
+  /** A flat piece of roof or ceiling between x0..x1 and z0..z1, its lights lined up so that one bay is the skylight. */
+  const sheet = (x0: number, x1: number, z0: number, z1: number, y: number, map: THREE.Texture, up: boolean, gain: number) => {
+    const geometry = new THREE.PlaneGeometry(x1 - x0, z1 - z0);
+    geometry.rotateX(up ? -Math.PI / 2 : Math.PI / 2);
+    const at = geometry.attributes.position as THREE.BufferAttribute;
+    const uv = geometry.attributes.uv as THREE.BufferAttribute;
+    for (let i = 0; i < at.count; i++) uv.setXY(i, (at.getX(i) + (x0 + x1) / 2 - (BAY.x - BAY.half)) / 7.4, (at.getZ(i) + (z0 + z1) / 2 - (BAY.z - BAY.half)) / 7.4);
+    return put(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map, color: new THREE.Color(gain, gain, gain) })), (x0 + x1) / 2, y, (z0 + z1) / 2);
+  };
+  // (A thin roof: the camera comes down through it, and the less time it spends inside it the better.)
+  for (const [x0, x1, z0, z1] of pieces) {
+    slide.add(sheet(Math.max(x0, -HALF), Math.min(x1, HALF), Math.max(z0, BACK), Math.min(z1, FRONT), TOP, under, false, 1));
+    slide.add(sheet(x0, x1, z0, z1, TOP + 0.26, over, true, 1.5));
+    slide.add(put(box(x1 - x0, 0.24, z1 - z0, matte(0x0a0d14, 0.9)), (x0 + x1) / 2, TOP + 0.13, (z0 + z1) / 2));
   }
-  slide.add(put(new THREE.Mesh(new THREE.PlaneGeometry(HALF * 2, deep), new THREE.MeshBasicMaterial({ map: under })), 0, TOP, midZ, Math.PI / 2));
-  slide.add(put(new THREE.Mesh(new THREE.PlaneGeometry(HALF * 2 + 2, deep + 2), new THREE.MeshBasicMaterial({ map: over, color: new THREE.Color(1.5, 1.5, 1.5) })), 0, TOP + 0.7, midZ, -Math.PI / 2));
-  slide.add(put(box(HALF * 2 + 2, 0.7, deep + 2, matte(0x0a0d14, 0.9)), 0, TOP + 0.34, midZ));
+  // The skylight's doors: glass in a bronze frame, hinged along the sides of the bay.
+  const pane = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.55, 0.75, 1.0), transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
+  const frameOf = new THREE.MeshStandardMaterial({ color: 0x6a5230, roughness: 0.35, metalness: 0.9 });
+  const hatch = [-1, 1].map((side) => {
+    const hinge = put(new THREE.Group(), BAY.x + side * BAY.half, TOP + 0.13, BAY.z);
+    const w = BAY.half;
+    hinge.add(put(new THREE.Mesh(new THREE.PlaneGeometry(w, BAY.half * 2), pane), (-side * w) / 2, 0, 0, -Math.PI / 2, 0, 0));
+    for (const z of [-BAY.half, 0, BAY.half]) hinge.add(put(box(w, 0.14, 0.14, frameOf), (-side * w) / 2, 0, z));
+    for (const x of [0, -side * w]) hinge.add(put(box(0.14, 0.14, BAY.half * 2, frameOf), x, 0, 0));
+    slide.add(hinge);
+    return { hinge, side };
+  });
 
   // ---- the board: the width of the far wall, over the doors ----
   const board = quotes(2048, 560, 7, 11, 17, true);
   slide.add(put(new THREE.Mesh(new THREE.PlaneGeometry(34, 9.3), new THREE.MeshBasicMaterial({ map: board, color: new THREE.Color(1.5, 1.5, 1.5) })), 0, 7.6, BACK + 0.46));
   slide.add(put(box(35, 10.3, 0.3, matte(0x0a0d14, 0.6)), 0, 7.6, BACK + 0.2));
+  // Over the board, up to the ceiling: a cornice in brass with a row of lamps under it, so that coming down past
+  // the top of the wall the camera sees something lit, not a band of bare stone.
+  const cornice = new THREE.MeshStandardMaterial({ color: 0xb08a48, roughness: 0.35, metalness: 0.8, emissive: 0x2a1c08, emissiveIntensity: 0.6 });
+  slide.add(put(box(HALF * 2, 0.62, 0.5, cornice), 0, TOP - 0.31, BACK + 0.3), put(box(HALF * 2, 0.08, 0.7, cornice), 0, TOP - 0.66, BACK + 0.38));
+  slide.add(put(box(HALF * 2, 0.4, 0.2, matte(0x1a2132, 0.6, 0.2)), 0, 12.45, BACK + 0.25));
+  slide.add(field(new THREE.SphereGeometry(0.09, 10, 8), glow(0xffd9a0, 2.4), 29, (i, d) => d.position.set(-HALF + 1 + i * ((HALF * 2 - 2) / 28), TOP - 0.78, BACK + 0.62)));
   // The ticker: a band of figures running round the hall under it.
   const tape = paint(2048, 64, (ctx, w, h) => {
     ctx.fillStyle = "#03070c";
@@ -418,6 +458,10 @@ export function chart(): Place {
     slide,
     anchors,
     update({ ch, time, theta }) {
+      // Coming down: the skylight's doors swing open into the hall before the camera reaches the roof.
+      const lift = Math.min(1, Math.max(0, (ch[6] - 0.12) / 0.3));
+      const drop = lift * lift * (3 - 2 * lift) * 1.75;
+      for (const { hinge, side } of hatch) hinge.rotation.z = side * drop;
       // The paths draw out from the last price; then they are run again.
       const run = (time % 11) / 11;
       const drawn = ch[6] * Math.min(1, run / 0.36);

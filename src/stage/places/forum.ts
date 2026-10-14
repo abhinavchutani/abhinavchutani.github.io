@@ -367,7 +367,7 @@ export function forum(): Place {
     slide.add(put(flag, -1.6 + i * 5.5, 5.6, -22 - Math.abs(i - 1) * 1.5, 0, (1 - i) * 0.12, 0, 0.86));
   });
 
-  // ---- overhead: the ceiling, with a round opening in it. The floor above is the library. ----
+  // ---- overhead: the ceiling, with a round opening in it, shut by two doors that open on the sky ----
   const soffit = paint(128, 128, (ctx, w) => {
     ctx.fillStyle = "#0b0304";
     ctx.fillRect(0, 0, w, w);
@@ -387,6 +387,19 @@ export function forum(): Place {
     const a = (i / 20) * Math.PI * 2;
     slide.add(put(ball(0.22, glow(0xffd29a, 2.4), 8), OCULUS.x + Math.cos(a) * (OCULUS.r + 1.6), OCULUS.y - 0.3, OCULUS.z + Math.sin(a) * (OCULUS.r + 1.6)));
   }
+  // The doors: two halves of a disc, painted like the ceiling underneath, hinged at the rim. As the camera looks up
+  // and makes for the opening they swing up and apart, and the stars are behind them.
+  const shutterFace = new THREE.MeshStandardMaterial({ map: soffit.clone(), color: 0xc9a3a0, roughness: 0.8, side: THREE.DoubleSide });
+  shutterFace.map!.repeat.set(1.4, 1.4);
+  shutterFace.map!.wrapS = shutterFace.map!.wrapT = THREE.RepeatWrapping;
+  const shutters = [-1, 1].map((side) => {
+    const hinge = put(new THREE.Group(), OCULUS.x + side * OCULUS.r, OCULUS.y - 0.08, OCULUS.z);
+    const half = new THREE.Mesh(new THREE.CircleGeometry(OCULUS.r, 40, side < 0 ? Math.PI / 2 : -Math.PI / 2, Math.PI), shutterFace);
+    hinge.add(put(half, -side * OCULUS.r, 0, 0, Math.PI / 2, 0, 0));
+    hinge.add(put(box(0.12, 0.12, OCULUS.r * 2, gilt), -side * 0.06, -0.04, 0));
+    slide.add(hinge);
+    return { hinge, side };
+  });
 
   // ---- light ----
   const lamps: THREE.Mesh[] = [];
@@ -401,7 +414,11 @@ export function forum(): Place {
   return {
     root,
     slide,
-    update({ time, theta }) {
+    update({ ch, time, theta }) {
+      // Leaving: the doors in the ceiling open as the camera looks up at them.
+      const open = Math.min(1, Math.max(0, ((ch[7] ?? 0) - 0.3) / 0.28));
+      const swing = open * open * (3 - 2 * open) * 1.9;
+      for (const { hinge, side } of shutters) hinge.rotation.z = -side * swing;
       lamps.forEach((lamp, i) => {
         // The follow spots sweep slowly, and further with the wheel.
         lamp.rotation.z = [-0.55, 0, 0.5][i] + Math.sin(time * 0.25 + theta * 0.45 + i * 2) * 0.09;

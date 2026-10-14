@@ -3,13 +3,24 @@ import { ball, box, cyl, dust, field, glow, matte, paint, put, rng, shell, type 
 import { poseMatrix } from "../handover";
 import { circle, staticRibbons } from "../ribbons";
 import { PLACES } from "../table";
+import { TILT } from "./peaks";
 
 /**
  * 03 Orbit. Low Earth orbit, which is where Orbital Guardian works: the
  * planet's limb across the foot of the frame, a field of debris, the
  * satellite, its camera picking out a target, and the net going out to it
  * on a tether. `p` lets the net go; at rest it fires again every few seconds.
+ *
+ * Then his other four projects, each a thing standing in the same orbit,
+ * lit in its own colour, in a row off to the right. `r` is how far along the
+ * row the camera has gone (0 at the satellite, 1 to 4 at each project): it
+ * tracks along it, one project to a stage, each brought up close.
  */
+
+/** Where a project stands when it is the one being looked at, how far apart they stand, and how large. */
+const FOCUS = new THREE.Vector3(2.1, -0.15, 3.2);
+const SPACING = 9;
+const SIZE = 1.25;
 
 const EARTH_FRAGMENT = /* glsl */ `
   precision highp sampler3D;
@@ -17,11 +28,6 @@ const EARTH_FRAGMENT = /* glsl */ `
   uniform float uTime;
   uniform vec3 uSun;
   uniform vec3 uSite;
-  uniform vec3 uBlue;
-  uniform vec3 uEast;
-  uniform vec3 uNorth;
-  uniform float uPerUnit;
-  uniform float uShow;
   uniform float uClose;
   varying vec3 vSun;
   varying vec3 vNormal;
@@ -55,26 +61,11 @@ const EARTH_FRAGMENT = /* glsl */ `
   void main() {
     vec3 n = normalize(vNormal);
     vec3 p = normalize(vLocal);
-    // Where the camera is going to come down the sea brightens into the blue of a drawing, squared off like
-    // one: the sheet's own grid, coarser, runs out over the water, so on the way down there is always a
-    // line going by. The sheet the camera lands on lies in the middle of it.
+    // Where the camera is going to come down there is land, and mountains on it: the patch the next place is
+    // a piece of, at its own scale. (Near the end of the fall the real ones stand on it.)
     float site = distance(p, uSite);
-    vec2 q = vec2(dot(p - uSite, uEast), dot(p - uSite, uNorth)) * uPerUnit - vec2(0.0, 4.0);
-    vec2 cell = abs(fract(q / 256.0 - 0.5) - 0.5) / (fwidth(q / 256.0) * 1.5);
-    float line = 1.0 - min(min(cell.x, cell.y), 1.0);
-    // The squares between, once they are wide enough on screen to be drawn cleanly.
-    vec2 fine = abs(fract(q / 64.0 - 0.5) - 0.5) / fwidth(q / 64.0);
-    line += (1.0 - min(min(fine.x, fine.y), 1.0)) * 0.5 * (1.0 - smoothstep(0.03, 0.12, max(fwidth(q.x), fwidth(q.y)) / 64.0));
-    float drawing = (1.0 - smoothstep(0.085, 0.21, site)) * uShow;
-    vec3 sheet = uBlue + vec3(line * 0.26);
-    // Inside it there is nothing else to work out, which matters: on the way down it fills the screen.
-    if (drawing > 0.995) {
-      gl_FragColor = vec4(sheet, 1.0);
-      return;
-    }
-
     float land = smoothstep(0.5, 0.54, fbm(p * 1.7));
-    land *= smoothstep(0.2, 0.36, site);
+    land = max(land, 1.0 - smoothstep(0.1, 0.24, site));
     float ice = smoothstep(0.78, 0.9, abs(p.y));
     // Finer structure for the way down: coasts and the patchwork of the land, and a second scale of
     // cloud. (From orbit it is too small to see, and is left out; nearer still, the camera is over the
@@ -89,14 +80,18 @@ const EARTH_FRAGMENT = /* glsl */ `
     vec3 sea = mix(vec3(0.012, 0.045, 0.16), vec3(0.02, 0.1, 0.26), coast);
     vec3 ground = mix(vec3(0.06, 0.2, 0.06), vec3(0.34, 0.26, 0.12), coast) * (0.72 + 0.56 * coast);
     land = smoothstep(0.42, 0.58, land + (coast - 0.5) * 0.5);
+    land = max(land, 1.0 - smoothstep(0.1, 0.3, site));
     vec3 surface = mix(mix(sea, ground, land), vec3(0.75, 0.8, 0.85), ice);
     float cloud = max(smoothstep(0.6, 0.82, fbm(p * 3.6 + vec3(uTime * 0.012, 0.0, uTime * 0.007))), wisps);
-    cloud *= smoothstep(0.09, 0.17, site);
+    cloud *= smoothstep(0.13, 0.34, site);
     surface = mix(surface, vec3(0.62), cloud * 0.6);
 
     float day = dot(n, normalize(vSun));
     float lit = smoothstep(-0.12, 0.3, day);
     vec3 colour = surface * (0.015 + lit * 0.62);
+    // Where the next place lies, the planet is the colour that place's land is at its edge, as it is lit there,
+    // so that on the way down the land runs out into the planet with no edge to see.
+    colour = mix(colour, vec3(0.105, 0.13, 0.092), 1.0 - smoothstep(0.11, 0.26, site));
     // Cities on the night side.
     if (lit < 0.98) {
       float city = step(0.8, noise(p * 420.0)) * step(0.5, noise(p * 30.0)) * land * (1.0 - cloud) * (1.0 - lit);
@@ -105,7 +100,7 @@ const EARTH_FRAGMENT = /* glsl */ `
     // Air: a thin bright line at the limb, bluer in daylight.
     float rim = pow(1.0 - max(0.0, dot(n, normalize(vView))), 5.0);
     colour += mix(vec3(0.2, 0.16, 0.6), vec3(0.2, 0.4, 1.0), lit) * rim * (0.25 + 0.5 * lit);
-    gl_FragColor = vec4(mix(colour, sheet, drawing), 1.0);
+    gl_FragColor = vec4(colour, 1.0);
   }
 `;
 
@@ -153,15 +148,9 @@ export function orbit(): Place {
   lattice.wrapS = lattice.wrapT = lattice.wrapR = THREE.RepeatWrapping;
   lattice.unpackAlignment = 1;
   lattice.needsUpdate = true;
-  // Where the drawing board of the next place lies on it, which way that sheet's own axes run, and how small it is.
-  const down = PLACES.find((row) => row.key === "bench")!.arrive!.into!;
-  const sheet = poseMatrix(down);
-  const landing = {
-    site: new THREE.Vector3().setFromMatrixColumn(sheet, 2).normalize(),
-    east: new THREE.Vector3().setFromMatrixColumn(sheet, 0).normalize(),
-    north: new THREE.Vector3().setFromMatrixColumn(sheet, 1).normalize(),
-    scale: down.scale ?? 1,
-  };
+  // Where the land of the next place lies on it: the direction of its ground's normal, as that place is turned.
+  const down = PLACES.find((row) => row.key === "peaks")!.arrive!.into!;
+  const landing = { site: new THREE.Vector3(0, Math.cos(TILT), Math.sin(TILT)).applyMatrix4(new THREE.Matrix4().extractRotation(poseMatrix(down))).normalize() };
   const earth = new THREE.Mesh(
     new THREE.SphereGeometry(20, 96, 64),
     new THREE.ShaderMaterial({
@@ -169,11 +158,6 @@ export function orbit(): Place {
         uTime: { value: 0 },
         uSun: { value: sun },
         uSite: { value: landing.site },
-        uBlue: { value: new THREE.Color(0x1444c4) },
-        uEast: { value: landing.east },
-        uNorth: { value: landing.north },
-        uPerUnit: { value: 20 / landing.scale },
-        uShow: { value: 0 },
         uClose: { value: 0 },
         uNoise: { value: lattice },
       },
@@ -336,9 +320,22 @@ export function orbit(): Place {
   // ---- the other projects, each as a thing in the same orbit: they come into the frame for the second stage ----
   const anchors: Record<string, THREE.Object3D> = {};
   const steel = new THREE.MeshStandardMaterial({ color: 0x8b8e96, roughness: 0.3, metalness: 1 });
-  const exhibits: { group: THREE.Group; turn: THREE.Group; rest: THREE.Vector3; from: THREE.Vector3; lag: number }[] = [];
-  const exhibit = (key: string, x: number, y: number, z: number, tint: number, lag: number) => {
+  const exhibits: { group: THREE.Group; turn: THREE.Group }[] = [];
+  // A soft light behind each, in its colour: each project is seen in a pool of its own.
+  const haloMap = paint(128, 128, (ctx, w) => {
+    const g = ctx.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+    g.addColorStop(0, "rgba(255,255,255,0.9)");
+    g.addColorStop(0.35, "rgba(255,255,255,0.28)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.clearRect(0, 0, w, w);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, w);
+  });
+  const exhibit = (key: string, tint: number) => {
     const group = new THREE.Group();
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloMap, color: new THREE.Color(tint).multiplyScalar(0.5), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    halo.scale.setScalar(6.5);
+    group.add(put(halo, 0, 0.1, -2.2));
     // A ring to stand on, in the project's own colour, and a hairline one outside it.
     group.add(put(new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.025, 8, 72), glow(tint, 1.7)), 0, -0.95, 0, Math.PI / 2));
     group.add(put(new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.008, 6, 72), glow(tint, 0.8)), 0, -0.95, 0, Math.PI / 2));
@@ -347,14 +344,25 @@ export function orbit(): Place {
     const anchor = put(new THREE.Object3D(), 1.15, 0.9, 0);
     group.add(anchor);
     anchors[key] = anchor;
+    group.visible = false;
     slide.add(group);
-    exhibits.push({ group, turn, rest: new THREE.Vector3(x, y, z), from: new THREE.Vector3(x + 16 + lag * 9, y + (y > 0 ? 5 : -5), z - 26), lag });
+    exhibits.push({ group, turn });
     return turn;
+  };
+  /** Rings that open out from a point and fade, again and again: a pulse. */
+  const pulses: { rings: THREE.Mesh[]; speed: number }[] = [];
+  const pulse = (parent: THREE.Object3D, tint: number, x: number, y: number, z: number, flat: boolean, speed: number) => {
+    const rings = [0, 1, 2].map(() => {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 6, 64), new THREE.MeshBasicMaterial({ color: new THREE.Color(tint).multiplyScalar(1.6), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+      parent.add(put(ring, x, y, z, flat ? Math.PI / 2 : 0, 0, 0));
+      return ring;
+    });
+    pulses.push({ rings, speed });
   };
 
   // FairBench: random portfolios inside the box their constraints draw, a few of them a manager's, and a qubit beside it.
   {
-    const turn = exhibit("fairbench", 0.9, 1.7, 0.4, 0x9fdcff, 0);
+    const turn = exhibit("fairbench", 0x9fdcff);
     const cage = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.5, 1.05, 1.05)), new THREE.LineBasicMaterial({ color: new THREE.Color(0.9, 1.3, 1.6), transparent: true, opacity: 0.75 }));
     turn.add(put(cage, -0.15, 0, 0));
     const dots: THREE.Vector3[] = [];
@@ -370,7 +378,7 @@ export function orbit(): Place {
   }
   // Engram: the documents, round the question; the ones that answer it lit, and tied to it.
   {
-    const turn = exhibit("engram", 3.9, 1.95, -0.6, 0xa99bff, 0.25);
+    const turn = exhibit("engram", 0xa99bff);
     const sheet = paint(128, 168, (ctx, w, h) => {
       ctx.fillStyle = "#e9e6f4";
       ctx.fillRect(0, 0, w, h);
@@ -400,7 +408,7 @@ export function orbit(): Place {
   }
   // Shravan Doot: glasses that write what is being said on the lens, with their board on the arm.
   {
-    const turn = exhibit("shravan", 1.1, -1.5, 1.0, 0x7dffc0, 0.5);
+    const turn = exhibit("shravan", 0x7dffc0);
     const frame = new THREE.MeshStandardMaterial({ color: 0xc9ccd4, roughness: 0.25, metalness: 0.9 });
     const glassy = new THREE.MeshStandardMaterial({ color: 0x9fd0e8, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide });
     const words = paint(128, 128, (ctx, w) => {
@@ -429,10 +437,12 @@ export function orbit(): Place {
     // The board and its microphone, on the right arm.
     pair.add(put(box(0.03, 0.2, 0.44, matte(0x0f5a3a, 0.5)), 0.79, 0.04, -0.4), put(box(0.035, 0.07, 0.1, steel), 0.81, 0.07, -0.3), put(cyl(0.02, 0.02, 0.05, matte(0x15171c, 0.4), 8), 0.8, -0.06, -0.08, 0, 0, Math.PI / 2));
     turn.add(pair);
+    // What is said comes in from the side as rings, and leaves as words on the lens.
+    pulse(exhibits[2].group, 0x7dffc0, -1.6, 0.05, 0.2, false, 0.55);
   }
   // Terra Mitra: a probe in the soil with its panel and its sensor head, and what it is there to look after.
   {
-    const turn = exhibit("terra", 3.45, -1.4, 0.2, 0xffd84a, 0.75);
+    const turn = exhibit("terra", 0xffd84a);
     const soil = ball(0.8, matte(0x2c1c12, 1), 24);
     soil.scale.set(1, 0.26, 1);
     turn.add(put(soil, 0, -0.62, 0));
@@ -450,6 +460,8 @@ export function orbit(): Place {
     }
   }
 
+  pulse(exhibits[3].group, 0xffd84a, -0.2, -0.5, 0, true, 0.4);
+
   // Stars, and the sun as a single hard light.
   slide.add(dust({ count: 2600, size: [0, 0, 0], color: 0xdfe2ff, gain: 1.2, point: 0.28, drift: 0, seed: 5, place: (r) => { const a = r() * Math.PI * 2; const y = r() * 1.6 - 0.5; const d = 120 + r() * 60; return [Math.cos(a) * d, y * 60, -Math.abs(Math.sin(a) * d) - 20]; } }));
   slide.add(put(ball(1.1, glow(0xfff2d6, 5), 16), 62, 34, -80));
@@ -466,32 +478,38 @@ export function orbit(): Place {
     slide,
     anchors,
     update({ ch, time, theta }) {
-      // The second stage: the satellite goes back and to the left, and the other projects come in round the frame.
-      const also = ch[8] ?? 0;
+      // Along the row: everything near (the satellite, its target, the debris, the projects) goes by to the left as
+      // the camera tracks right; the planet and the stars are far enough off not to.
+      const track = ch[8] ?? 0;
+      const shift = -track * SPACING;
       const gone = Math.min(1, Math.max(0, (ch[7] - 0.02) / 0.2));
-      exhibits.forEach(({ group, turn, rest, from, lag }, i) => {
-        const t = Math.min(1, Math.max(0, (also - lag * 0.3) / 0.7));
-        const e = 1 - Math.pow(1 - t, 3);
-        group.position.lerpVectors(from, rest, e);
-        group.position.y += Math.sin(time * 0.5 + i * 1.7) * 0.07;
-        group.scale.setScalar(Math.max(0.0001, (0.25 + 0.62 * e) * (1 - gone)));
-        group.visible = also > 0.01 && gone < 0.995;
+      exhibits.forEach(({ group, turn }, i) => {
+        const off = track - (i + 1);
+        const near = Math.max(0, 1 - Math.abs(off));
+        const f = near * near * (3 - 2 * near);
+        group.position.set(FOCUS.x + (i + 1) * SPACING + shift, FOCUS.y + Math.sin(time * 0.5 + i * 1.7) * 0.07, FOCUS.z - (1 - f) * 1.4);
+        group.scale.setScalar(Math.max(0.0001, SIZE * (0.8 + 0.2 * f) * (1 - gone)));
+        group.visible = Math.abs(off) < 1.7 && gone < 0.995;
         turn.rotation.y = time * 0.25 + theta * 0.5 + i;
       });
+      for (const { rings, speed } of pulses) {
+        rings.forEach((ring, k) => {
+          const phase = (time * speed + k / rings.length) % 1;
+          ring.scale.setScalar(0.15 + phase * 1.25);
+          (ring.material as THREE.MeshBasicMaterial).opacity = Math.sin(phase * Math.PI) * 0.8;
+        });
+      }
       // (The planet itself does not turn: the drawing board lies on it, a long way down.)
       earth.material.uniforms.uTime.value = time + theta * 5;
-      // The patch of sea turns to drawing only once the camera has tipped over to fall towards it.
-      earth.material.uniforms.uShow.value = Math.min(1, Math.max(0, (ch[7] - 0.02) / 0.2));
       earth.material.uniforms.uClose.value = ch[7];
       // Arriving: the Earth comes up from under the frame and the satellite in from the right, as the camera does.
       const here = Math.min(1, Math.max(0, (ch[6] - 0.3) / 0.7));
       const away = 1 - here * here * (3 - 2 * here);
       globe.position.y = -22.4 - away * 13;
-      const back = also * also * (3 - 2 * also);
       station.rotation.z = 0.12 + Math.sin(time * 0.3) * 0.04 + away * 0.5;
-      station.position.set(4.7 + away * 13 - back * 10.5, 1.9 + Math.sin(time * 0.4) * 0.12 + away * 3 + back * 2.6, -3 - away * 8 - back * 13);
+      station.position.set(4.7 + away * 13 + shift, 1.9 + Math.sin(time * 0.4) * 0.12 + away * 3, -3 - away * 8);
       // What it is hunting goes with it.
-      aim.set(targetAt.x - back * 10.5, targetAt.y + back * 2.6, targetAt.z - back * 13);
+      aim.set(targetAt.x + shift, targetAt.y, targetAt.z);
       target.position.copy(aim);
       lock.position.copy(aim);
 
@@ -500,7 +518,7 @@ export function orbit(): Place {
         for (let i = 0; i < bits.length; i++) {
           const bit = bits[i];
           dummy.position.copy(bit.at);
-          dummy.position.x += Math.sin(theta * 0.1 * bit.drift + i) * 0.8;
+          dummy.position.x += Math.sin(theta * 0.1 * bit.drift + i) * 0.8 + shift;
           dummy.position.y += Math.cos(theta * 0.08 * bit.drift + i * 1.7) * 0.4;
           dummy.quaternion.setFromAxisAngle(bit.axis, (time + theta * 1.5) * bit.spin + i);
           dummy.scale.setScalar(bit.size);
@@ -514,7 +532,7 @@ export function orbit(): Place {
 
       // The net: out along the line of sight, opening as it goes, closing on the target; then again.
       const cycle = (time % 9) / 9;
-      const out = ch[6] * Math.min(1, cycle / 0.34) * (1 - Math.min(1, also * 3));
+      const out = ch[6] * Math.min(1, cycle / 0.34) * (1 - Math.min(1, track * 3));
       const eased = 1 - Math.pow(1 - out, 3);
       const fade = 1 - Math.min(1, Math.max(0, (cycle - 0.86) / 0.12));
       from.set(0, -0.1, 1.5).applyMatrix4(craft.matrixWorld);

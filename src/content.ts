@@ -24,7 +24,9 @@ export type Stage = {
   /** The first is the sign's headline; the rest sit under it, smaller. */
   skills?: Skill[];
   /** Anything that is not a plain skill block. */
-  kind?: "hero" | "economics" | "projects" | "contact";
+  kind?: "hero" | "economics" | "project" | "contact";
+  /** For a `project` stage: which of `projects` it is about. */
+  project?: string;
   /** A caption that points at the scene ("every light is a student"). */
   caption?: string;
 };
@@ -54,7 +56,15 @@ export const person = {
   location: "Helsinki, Finland",
 };
 
-export type Build = { key: string; name: string; sub: string; text: string };
+export type Build = {
+  key: string;
+  name: string;
+  sub: string;
+  text: string;
+  /** For a project with a stage of its own: what else the CV says about it, and the colour it is lit in. */
+  facts?: string[];
+  tint?: string;
+};
 
 /** Finance, in code: the two that sit with Economics. */
 export const models: Build[] = [
@@ -62,12 +72,40 @@ export const models: Build[] = [
   { key: "chain", name: "Blockchain", sub: "Python · 2026", text: "A proof-of-work chain and a visualiser for mining, hash linking, and chain integrity." },
 ];
 
-/** The projects, most recent first, that stand beside Orbital Guardian. */
+/** The projects, most recent first, that come after Orbital Guardian: each has a stage of its own. (From his CV.) */
 export const projects: Build[] = [
-  { key: "fairbench", name: "FairBench", sub: "ESG finance × quantum · 3rd place", text: "A benchmark that separates an ESG fund manager's skill from the cost of the constraints. Third at the Hanken Quantum × Finance Hackathon." },
-  { key: "engram", name: "Engram", sub: "Enterprise decision search · 2026", text: "Searches 257 unstructured company documents so a manager can ask how any decision was made; challenger agents contest each answer." },
-  { key: "shravan", name: "Shravan Doot", sub: "Assistive tech · Team lead · 2025", text: "Smart glasses for the hearing-impaired on a Raspberry Pi, built for under ₹4,000." },
-  { key: "terra", name: "Terra Mitra", sub: "Sustainability · Designer · 2023", text: "An AI-enabled farming device: Top 24 of 13,000+ projects at the national NEP celebrations." },
+  {
+    key: "fairbench",
+    name: "FairBench",
+    sub: "ESG finance × quantum · Finance & business lead · 2026",
+    text: "A benchmark that separates an ESG fund manager's skill from the cost of ESG/SFDR 2.0 portfolio constraints, using random-portfolio benchmarking with quantum constrained sampling.",
+    facts: ["3rd place, Hanken Quantum × Finance Hackathon (Ultrahack, Helsinki)", "The finance and business side, alongside a quantum-tech teammate"],
+    tint: "#9fdcff",
+  },
+  {
+    key: "engram",
+    name: "Engram",
+    sub: "Enterprise decision search · Hackathon project · 2026",
+    text: "Ingests 257 unstructured company documents, organises them with vector embeddings and BM25 retrieval, and lets a CEO or manager ask how any decision was made and where it stands.",
+    facts: ["Challenger agents contest each answer and check it against the source logs", "Accuracy checks to keep hallucinations out"],
+    tint: "#b9adff",
+  },
+  {
+    key: "shravan",
+    name: "Shravan Doot",
+    sub: "Assistive tech · Co-founder, team lead · 2025",
+    text: "Low-cost smart glasses for the hearing-impaired, built on a Raspberry Pi for under ₹4,000.",
+    facts: ["Led a six-member team to the semifinals"],
+    tint: "#7dffc0",
+  },
+  {
+    key: "terra",
+    name: "Terra Mitra",
+    sub: "Sustainability · Co-founder, designer · 2023",
+    text: "An AI-enabled farming device.",
+    facts: ["Top 24 among 13,000+ projects at the NEP celebrations, Pragati Maidan", "Presented to Mr. Chintan Vaishnav, Mission Director, AIM"],
+    tint: "#ffd84a",
+  },
 ];
 
 /**
@@ -163,8 +201,32 @@ export const chapters: Chapter[] = [
         ],
         caption: "Detect · align · capture",
       },
-      // The others, each as a thing standing in the same orbit.
-      { kind: "projects", kicker: "Also built", caption: "Novamorph Fellowship · Yuvkriti · Featured on the Global Climate Clock with NITI Aayog" },
+      // The others, each a thing in the same orbit, each with a stage of its own: the camera goes along them.
+      { kind: "project", project: "fairbench", kicker: "Also built · 1 of 4" },
+      { kind: "project", project: "engram", kicker: "Also built · 2 of 4" },
+      { kind: "project", project: "shravan", kicker: "Also built · 3 of 4" },
+      { kind: "project", project: "terra", kicker: "Also built · 4 of 4", caption: "Also: Novamorph Fellowship · Yuvkriti · Featured on the Global Climate Clock with NITI Aayog" },
+    ],
+  },
+  {
+    // Down from orbit: mountains at first light, from the air.
+    id: "travel",
+    name: "Travel",
+    accent: "#ffb39a",
+    ground: "#120f24",
+    look: "dark",
+    stages: [
+      {
+        kicker: "Beyond academics",
+        skills: [
+          {
+            name: "Travel",
+            badge: "Traveler",
+            // His own words for this side of him, from his profile. (No places are named until he names them.)
+            done: "Beyond academics: reader, writer, traveler.",
+          },
+        ],
+      },
     ],
   },
   {
@@ -318,26 +380,13 @@ export const chapters: Chapter[] = [
     ],
   },
   {
-    // Outside, at night, under the aurora: mountains first, then Helsinki across the water, and where to find him.
+    // Out of the window: Helsinki across the water at night, under the aurora, and where to find him.
     id: "beyond",
-    name: "Beyond",
+    name: "Contact",
     accent: "#7dffc0",
     ground: "#041320",
     look: "dark",
-    stages: [
-      {
-        kicker: "Beyond academics",
-        skills: [
-          {
-            name: "Travel",
-            badge: "Traveler",
-            // His own words for this side of him, from his profile. (No places are named until he names them.)
-            done: "Beyond academics: reader, writer, traveler.",
-          },
-        ],
-      },
-      { kind: "contact", kicker: "Get in touch" },
-    ],
+    stages: [{ kind: "contact", kicker: "Get in touch" }],
   },
 ];
 

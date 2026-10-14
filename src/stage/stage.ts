@@ -309,6 +309,13 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
   // What the hand is still pushing after the page has stopped at a stage (screens of scroll): the scene gives a little.
   let impulse = 0;
   let push = 0;
+  // Motion blur: the point at the middle of the frame, held in the coordinates of the place the camera is in, so
+  // that next frame it can be seen how far across the screen the world has moved; and the streak that makes.
+  const probe = { anchor: -1, at: new THREE.Vector3(), inverse: new THREE.Matrix4() };
+  const streak = new THREE.Vector2();
+  // Frames left in which the camera goes straight to where scroll says, with no weight: after a cut (a jump
+  // from the menu, made behind the doors), so it does not sweep across the whole journey to get there.
+  let cut = 0;
   const pointer = { x: 0, y: 0 };
 
   // ---- copy that stands in the scene ---------------------------------------------------
@@ -473,8 +480,11 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     time += dt;
     shared.uTime.value = time;
 
+    // Just after a cut the page has jumped, not moved: nothing should streak or spin for it.
+    const instant = cut > 0;
+    if (cut > 0) cut--;
     const scroll = options.scroll();
-    const moved = (scroll - lastScroll) / vh;
+    const moved = instant ? 0 : (scroll - lastScroll) / vh;
     lastScroll = scroll;
     speed = damp(speed, Math.abs(moved) / dt, 8, dt);
     // What is left of a push against a stage dies away; while it lasts the camera leans in on it.
@@ -489,7 +499,7 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
 
     // With reduced motion there is no travel: the page shows the nearest stage, at rest, wherever it is scrolled to.
     sample(frames, options.reduced ? frames[near].y : scroll, vh, target);
-    follow(current, target, options.reduced || raw ? 1e6 : 7.5, dt);
+    follow(current, target, options.reduced || raw || instant ? 1e6 : 7.5, dt);
     if (near !== nearest) {
       nearest = near;
       options.onStage?.(near, stages[near].place);
@@ -544,7 +554,7 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     else carry(routes[wantFrom].pose(wantThrough, goal), wantFrom + 1, rig.anchor);
     goal.decompose(goalAt, goalFacing, goalSize);
     // And it goes there as a thing with weight does: the same damping for where it is, which way it faces and its scale.
-    const pull = options.reduced || raw ? 1 : 1 - Math.exp(-7 * dt);
+    const pull = options.reduced || raw || instant ? 1 : 1 - Math.exp(-7 * dt);
     rig.at.lerp(goalAt, pull);
     rig.facing.slerp(goalFacing, pull);
     rig.size += (Math.log(goalSize.x) - rig.size) * pull;
@@ -608,6 +618,32 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     for (const place of places) place.root.matrixWorldNeedsUpdate = true;
     world.updateMatrixWorld(true);
     camera.updateMatrixWorld();
+
+    // ---- motion blur ----
+    // Where the point that was in the middle of the frame last time has got to now, per sixtieth of a second: the
+    // frame is smeared along that, as a film camera's shutter would. A pan, a fall or a rise streaks; a camera
+    // at rest (or only leaning to the pointer) does not.
+    const held = places[rig.anchor].slide.matrixWorld;
+    let sx = 0;
+    let sy = 0;
+    if (probe.anchor === rig.anchor && !options.reduced && !raw && !instant) {
+      point.copy(probe.at).applyMatrix4(held).project(camera);
+      const per = 1 / 60 / dt;
+      const mx = point.x * 0.5 * per;
+      const my = point.y * 0.5 * per;
+      const length = Math.hypot(mx, my);
+      // Small drifts (the pointer, the easing still creeping) leave the picture sharp.
+      const over = Math.max(0, length - 0.0025);
+      if (over > 0 && point.z < 1) {
+        const k = Math.min(0.022, over * 0.6) / length;
+        sx = mx * k;
+        sy = my * k;
+      }
+    }
+    probe.anchor = rig.anchor;
+    probe.at.set(0, 0, 0).applyMatrix4(probe.inverse.copy(held).invert());
+    streak.x = damp(streak.x, sx, 18, dt);
+    streak.y = damp(streak.y, sy, 18, dt);
     if (outlook >= 0 && places[outlook].portal && frameOf(places[outlook].portal!, places[outlook].slide)) {
       showing.list.unshift({ index: outlook + 1, clip: true });
       showing.pane = pane;
@@ -621,6 +657,8 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     u.uTint.value.copy(mixed.accent);
     u.uTime.value = time;
     u.uGrain.value = 0.022 + 0.01 * mixed.light;
+    if (Math.hypot(streak.x, streak.y) > 0.0006) u.uSmear.value.copy(streak);
+    else u.uSmear.value.set(0, 0);
     // The blocks at the frame's edge reach further in while the page is moving.
     u.uPixel.value = options.reduced ? mixed.pixel * 0.7 : mixed.pixel * (0.7 + Math.min(0.5, speed * 0.3));
     composer.render(dt);
@@ -740,6 +778,13 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
       impulse = Math.max(-0.6, Math.min(0.6, impulse + screens * 0.7));
       // Whatever turns with the wheel goes on turning with it: the page is holding, the hand is not.
       if (!options.reduced) theta += screens * 2.4;
+    },
+    /** The page has been moved under cover (behind the doors): show where it is now, without travelling there. */
+    snap() {
+      cut = 3;
+      streak.set(0, 0);
+      impulse = 0;
+      speed = 0;
     },
     /** Scroll position of every resting stage, top to bottom. */
     stops: () => frames.map((f) => f.y),

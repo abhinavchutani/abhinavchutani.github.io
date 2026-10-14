@@ -44,7 +44,7 @@ export type StageRow = {
   deep?: number;
 };
 
-export type PlaceKey = "thread" | "violin" | "editor" | "orbit" | "bench" | "chart" | "forum" | "library" | "aurora";
+export type PlaceKey = "thread" | "violin" | "editor" | "orbit" | "peaks" | "bench" | "chart" | "forum" | "library" | "aurora";
 
 export type Look = {
   /** Ground and accent come from the chapter (content.ts), so page and canvas agree. */
@@ -127,9 +127,10 @@ export const PLACES: PlaceRow[] = [
       into: { at: [0, -0.35, -44] },
       pace: PACE.forum,
     },
-    enter: c(0, 0, 0, 0, 0, 0, 1),
-    exit: c(0, 0, 0, 0, 0, 0, 1),
-    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1), dist: DIST, side: "L" }],
+    // (`q` is leaving: the doors over the opening in the ceiling swing open.)
+    enter: c(0, 0, 0, 0, 0, 0, 1, 0),
+    exit: c(0, 0, 0, 0, 0, 0, 1, 1),
+    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1, 0), dist: DIST, side: "L" }],
   },
   {
     // 03 Projects. Indigo. The Earth's limb, a belt of debris, the satellite and its net.
@@ -146,24 +147,46 @@ export const PLACES: PlaceRow[] = [
     // The whole sky is still swinging round into place as the camera comes out through the roof.
     // (A third parameter brings the other projects into the frame for the second stage, and sends the satellite back.)
     enter: c(-5, 1.5, 0, 0.05, 0.3, 0, 0, 0, 0),
-    exit: c(0, 0, 0, 0, 0, 0, 1, 1, 1),
+    exit: c(0, 0, 0, 0, 0, 0, 1, 1, 4),
     stages: [
       { ch: c(0, 0, 0, 0, 0, 0, 1, 0, 0), dist: DIST, side: "L" },
-      // The camera swings a little way round the orbit for the second stage, so the limb and the debris turn under it.
-      { ch: c(0, 0, 0, -0.03, 0.24, 0, 1, 0, 1), dist: DIST, side: "L" },
+      // His other four projects, one to a stage: the camera tracks along the row of them.
+      { ch: c(0, 0, 0, 0, 0, 0, 1, 0, 1), dist: DIST, side: "L" },
+      { ch: c(0, 0, 0, 0, 0, 0, 1, 0, 2), dist: DIST, side: "L" },
+      { ch: c(0, 0, 0, 0, 0, 0, 1, 0, 3), dist: DIST, side: "L" },
+      { ch: c(0, 0, 0, 0, 0, 0, 1, 0, 4), dist: DIST, side: "L" },
     ],
   },
   {
-    // 04 Machine. A drawing board: the competition table and its robot on a blueprint.
-    key: "bench",
-    look: tone(4, { top: 0x1444c4, glow: 0.0, haze: 0.0, at: [0.3, 0.5], vignette: 0.22, grid: 0, fog: 0.004, bloom: 0.22, env: 0.42, key: 1.35, rim: 0.5 }),
+    // 04 Travel. Mountains at first light, from the air: the camera has come down from orbit.
+    key: "peaks",
+    look: tone(4, { top: 0x0c1838, glow: 0.3, haze: 0.22, at: [0.8, 0.7], vignette: 0.4, grid: 0, fog: 0.0032, bloom: 0.45, env: 0.3, key: 1.15, rim: 1.6 }),
     arrive: {
-      // The sheet lies on the sea far below, on the lit side of the Earth; everything here is 1/166 the size.
-      into: { at: [13.12, -7.14, -0.8], turn: [0.5748, -0.8618, 0], scale: 0.006 },
+      // The land is a patch of the planet's lit side, 1/166 the size. It faces the way the camera is falling, so
+      // the fall is one move: down towards it, levelling off as it comes, with no swing to either side.
+      into: { at: [13.1285, -7.1218, -0.7869], turn: [-0.9439, -0.2199, -0.7254], scale: 0.006 },
+      pivot: [0, 0, 0],
+      turning: [0, 0.62],
+      sliding: [0, 0.5],
+      rush: 0.16,
+      pace: PACE.peaks,
+    },
+    enter: c(0, 0, 0, 0, 0, 0, 0, 0),
+    exit: c(0, 0, 0, 0, 0, 0, 1, 1),
+    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1, 0), dist: DIST, side: "L" }],
+  },
+  {
+    // 05 Machine. A drawing board: the competition table and its robot on a blueprint.
+    key: "bench",
+    look: tone(5, { top: 0x1444c4, glow: 0.0, haze: 0.0, at: [0.3, 0.5], vignette: 0.22, grid: 0, fog: 0.004, bloom: 0.22, env: 0.42, key: 1.35, rim: 0.5 }),
+    arrive: {
+      // The sheet lies just under the water of the lake in the valley, 1/20 the size of the mountains: the camera
+      // tips over and goes on down into the water, which turns into the sheet's blue and then gives way to it.
+      into: { at: [2.8, -2.1153, -8.5915], turn: [0, -1.3708, 0], scale: 0.05 },
       pivot: [0, 0, -9.4],
       turning: [0, 0.62],
       sliding: [0, 0.5],
-      rush: 0.2,
+      rush: 0.16,
       pace: PACE.bench,
     },
     enter: c(0, 0, 0, 0, 0, 0, 1),
@@ -173,7 +196,7 @@ export const PLACES: PlaceRow[] = [
   {
     // 05 Code. A desk at night: screens of source, a browser, an artboard.
     key: "editor",
-    look: tone(5, { top: 0x020a0e, glow: 0.06, haze: 0.05, at: [0.3, 0.5], vignette: 0.6, grid: 0, fog: 0.014, bloom: 0.5, env: 0.3, key: 1.0, rim: 1.4, pixel: 1 }),
+    look: tone(6, { top: 0x020a0e, glow: 0.06, haze: 0.05, at: [0.3, 0.5], vignette: 0.6, grid: 0, fog: 0.014, bloom: 0.5, env: 0.3, key: 1.0, rim: 1.4, pixel: 1 }),
     arrive: {
       // The blueprint is a drawing open on the main monitor, half the size. The camera backs out of the screen.
       inScreen: { scale: 0.5, back: 4.6 },
@@ -186,7 +209,7 @@ export const PLACES: PlaceRow[] = [
   {
     // 06 Sound. A museum gallery: damask, paintings of musicians, a violin in a case, a drum kit behind a rope.
     key: "violin",
-    look: tone(6, { top: 0x080303, glow: 0.04, haze: 0.03, at: [0.6, 0.4], vignette: 0.5, grid: 0, fog: 0.006, bloom: 0.3, env: 0.4, key: 1.35, rim: 0.7 }),
+    look: tone(7, { top: 0x080303, glow: 0.04, haze: 0.03, at: [0.6, 0.4], vignette: 0.5, grid: 0, fog: 0.006, bloom: 0.3, env: 0.4, key: 1.35, rim: 0.7 }),
     arrive: {
       // The gallery is the room to the right of the study, seen from the side with its near wall away.
       // The camera does not turn: it slides, and the room opens up.
@@ -203,7 +226,7 @@ export const PLACES: PlaceRow[] = [
     key: "library",
     // From the desk, the harbour can be seen through the window: draw it whenever the camera is within this of the desk.
     outlook: 21,
-    look: tone(7, { top: 0xf3eee2, glow: 0, haze: 0, at: [0.5, 0.5], vignette: 0.15, grid: -0.035, fog: 0.022, bloom: 0, env: 0.36, key: 1.15, rim: 0.2, light: true }),
+    look: tone(8, { top: 0xf3eee2, glow: 0, haze: 0, at: [0.5, 0.5], vignette: 0.15, grid: -0.035, fog: 0.022, bloom: 0, env: 0.36, key: 1.15, rim: 0.2, light: true }),
     // By the desk it is night: the room is dark, and what light there is comes from a candle. (Outside the
     // window it is night too, so the way out matches.)
     look2: { ground: "#0c0806", accent: "#ffb070", top: 0x060404, glow: 0.05, haze: 0.04, at: [0.42, 0.5], vignette: 0.75, grid: 0, fog: 0.016, bloom: 0.3, env: 0.08, key: 0.08, rim: 0.2, lamp: 42 },
@@ -225,20 +248,17 @@ export const PLACES: PlaceRow[] = [
   {
     // 08 Contact. Outside the window: Helsinki across the water under the aurora, every discipline one constellation.
     key: "aurora",
-    look: tone(8, { top: 0x01040d, glow: 0.05, haze: 0.1, at: [0.5, 0.78], vignette: 0.45, grid: 0, fog: 0.006, bloom: 0.8, env: 0.5, key: 1.2, rim: 1.6 }),
+    look: tone(9, { top: 0x01040d, glow: 0.05, haze: 0.1, at: [0.5, 0.78], vignette: 0.45, grid: 0, fog: 0.006, bloom: 0.8, env: 0.5, key: 1.2, rim: 1.6 }),
     arrive: {
       into: { at: [3, 1.6, -42] },
       via: [{ at: [0, -0.5, 26.3], when: 0.42 }], // through the open window
       pace: PACE.aurora,
     },
-    // Out of the window the camera is looking at the mountains, a long way round to the right of the town;
-    // then the whole night turns, and Helsinki comes round across the water.
-    enter: c(4.5, 0.8, -9, -0.02, 0.86, 0, 0),
+    // Out of the window: Helsinki across the water, a little off to the left as the camera comes out, which the
+    // night turns round to face.
+    enter: c(3, 0.5, -6, -0.03, 0.22, 0, 0),
     exit: c(0, -1.5, 0, -0.07, 0, 0, 1),
-    stages: [
-      { ch: c(0, -1.2, 0, -0.05, 1.0, 0, 0.5), dist: DIST, side: "L" },
-      { ch: c(0, -1.5, 0, -0.07, 0, 0, 1), dist: DIST, side: "L" },
-    ],
+    stages: [{ ch: c(0, -1.5, 0, -0.07, 0, 0, 1), dist: DIST, side: "L" }],
   },
 ];
 

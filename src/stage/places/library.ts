@@ -102,7 +102,11 @@ export function library(): Place {
   const walled = new THREE.Shape();
   [[-100, -70], [-13, -70], [-13, 16.2], [-100, 16.2]].forEach(([x, y], i) => (i ? walled.lineTo(x, y) : walled.moveTo(x, y)));
   // (A shape is drawn in x and y; laid flat, its y runs towards the viewer, so depths are written negated.)
-  for (const shape of [open, walled]) slide.add(put(new THREE.Mesh(new THREE.ShapeGeometry(shape, 48), paving), 0, -6.5, 0, -Math.PI / 2, 0, 0));
+  const [openFloor] = [open, walled].map((shape) => {
+    const floor = put(new THREE.Mesh(new THREE.ShapeGeometry(shape, 48), paving), 0, -6.5, 0, -Math.PI / 2, 0, 0);
+    slide.add(floor);
+    return floor;
+  });
   // The thickness of the floor, seen on the way through, and a kerb round the opening.
   slide.add(put(new THREE.Mesh(new THREE.CylinderGeometry(WELL.r, WELL.r, 0.6, 64, 1, true), new THREE.MeshStandardMaterial({ color: 0xcfc6b2, roughness: 0.9, side: THREE.BackSide })), WELL.x, -6.8, WELL.z));
   slide.add(put(new THREE.Mesh(new THREE.TorusGeometry(WELL.r + 0.2, 0.2, 8, 64), stone), WELL.x, -6.42, WELL.z, Math.PI / 2));
@@ -115,8 +119,10 @@ export function library(): Place {
     group.add(put(cyl(0.9, 0.64, 0.4, stone, 24), 0, 12.96, 0), put(box(2.0, 0.34, 2.0, stone), 0, 13.33, 0));
     return group;
   };
-  for (let i = 0; i < 6; i++) slide.add(column(-12.5, 0 - i * 8.5), column(9.5, -12 - i * 8.5));
-  slide.add(put(box(2.4, 1.3, 52, stone), -12.5, 7.65, -21), put(box(2.4, 1.3, 52, stone), 9.5, 7.65, -33));
+  const stoa = new THREE.Group();
+  slide.add(stoa);
+  for (let i = 0; i < 6; i++) stoa.add(column(-12.5, 0 - i * 8.5), column(9.5, -12 - i * 8.5));
+  stoa.add(put(box(2.4, 1.3, 52, stone), -12.5, 7.65, -21), put(box(2.4, 1.3, 52, stone), 9.5, 7.65, -33));
 
   // Loose leaves in the air.
   const leaves = new THREE.Group();
@@ -128,7 +134,8 @@ export function library(): Place {
     }),
   );
   slide.add(leaves);
-  slide.add(dust({ count: 500, size: [70, 24, 50], centre: [-8, 0, -14], color: 0x4a4038, gain: 1, point: 0.035, seed: 71, ink: true }));
+  const motes = dust({ count: 500, size: [70, 24, 50], centre: [-8, 0, -14], color: 0x4a4038, gain: 1, point: 0.035, seed: 71, ink: true });
+  slide.add(motes);
 
   // ---- the desk ----
   const desk = put(new THREE.Group(), -21.2, -2.3, -3.5, 0.72, -0.34, 0);
@@ -339,6 +346,11 @@ export function library(): Place {
     sash.add(leaf);
   }
   slide.add(sash);
+  // Through the window there is Helsinki and nothing else: a pane that is not seen but stands in the way, so that
+  // the far end of the stoa, which runs on past this wall, is never drawn in it.
+  const pane = new THREE.Mesh(new THREE.PlaneGeometry(PANE.w, PANE.h), new THREE.MeshBasicMaterial({ colorWrite: false }));
+  pane.renderOrder = -10;
+  slide.add(put(pane, PANE.x, PANE.y, -16.2));
 
   // Tally marks on that wall: one stroke a session, a slash through every fifth.
   const marks: [number, number, number][] = [];
@@ -370,6 +382,15 @@ export function library(): Place {
     portal: [-1, 1].flatMap((sx) => [-1, 1].map((sy) => new THREE.Vector3(PANE.x + (sx * PANE.w) / 2, PANE.y + (sy * PANE.h) / 2, -16.2))),
     lamp: wick,
     update({ ch, time, theta }) {
+      // Near the desk the window shows the town (drawn first, inside it); from further off it shows nothing special.
+      pane.visible = ch[0] > 3.2 && (ch[8] ?? 0) < 0.002;
+      // On the way out through the window the stoa, its floor and its loose leaves would be all round the camera,
+      // standing in the harbour: they go as the camera sets off (until then they were behind the wall).
+      const out = (ch[8] ?? 0) < 0.002;
+      stoa.visible = out;
+      openFloor.visible = out;
+      leaves.visible = out;
+      motes.visible = out;
       // Night comes on towards the desk, and the candle with it: it flickers, as a flame does.
       const night = Math.min(1, Math.max(0, ch[7]));
       const flicker = 0.86 + 0.09 * Math.sin(time * 11.3) + 0.05 * Math.sin(time * 23.7 + 1.3);

@@ -68,9 +68,56 @@ async function boot() {
   const glide = (y: number) => {
     if (!scroller) return window.scrollTo({ top: y, behavior: reduced ? "auto" : "smooth" });
     const screens = Math.abs(y - window.scrollY) / window.innerHeight;
-    // Through every chapter on the way, never a jump.
-    scroller.lenis.scrollTo(y, { duration: Math.min(3.4, 1.1 + screens * 0.2), easing: (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) });
+    scroller.lenis.scrollTo(y, { duration: Math.min(2.2, 1.1 + screens * 0.4), easing: (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) });
   };
+
+  // A jump of more than one stage is not scrolled (a whole journey at speed is a blur of other places): two
+  // doors close over the page with the name of where it is going on them, the page is moved behind them, and
+  // they open again on the new place.
+  const doors = $("[data-doors]");
+  const doorsName = $("[data-doors-name]");
+  const doorsIndex = $("[data-doors-index]");
+  const later = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+  const frames = (n: number) => new Promise<void>((resolve) => {
+    const step = () => (--n <= 0 ? resolve() : requestAnimationFrame(step));
+    requestAnimationFrame(step);
+  });
+  let jumping = false;
+  async function go(y: number) {
+    const all = stops();
+    const here = all.reduce((best, stop, i) => (Math.abs(stop - window.scrollY) < Math.abs(all[best] - window.scrollY) ? i : best), 0);
+    const there = all.reduce((best, stop, i) => (Math.abs(stop - y) < Math.abs(all[best] - y) ? i : best), 0);
+    if (!doors || !scroller || reduced || Math.abs(there - here) <= 1) return glide(y);
+    if (jumping) return;
+    jumping = true;
+    const chapter = chapters[chapterOf(there)];
+    doors.style.setProperty("--door", chapter.ground);
+    doors.style.setProperty("--seam", chapter.accent);
+    if (doorsName) doorsName.textContent = chapter.name;
+    if (doorsIndex) doorsIndex.textContent = two(chapters.indexOf(chapter));
+    doors.dataset.state = "open";
+    await frames(2);
+    doors.dataset.state = "shut";
+    sound.dive();
+    const shut = performance.now();
+    await later(660);
+    scroller.lenis.scrollTo(y, { immediate: true, force: true });
+    stage.snap();
+    await frames(4);
+    // Long enough shut for the name on them to be read.
+    await later(Math.max(0, 1150 - (performance.now() - shut)));
+    doors.dataset.state = "opening";
+    await later(800);
+    delete doors.dataset.state;
+    jumping = false;
+  }
+  /** The chapter a stage belongs to, from the stages' own markup. */
+  function chapterOf(stageIndex: number) {
+    const sign = document.querySelector<HTMLElement>(`.sign[data-stage="${stageIndex}"]`);
+    const id = sign?.closest<HTMLElement>("section[data-chapter]")?.dataset.chapter;
+    return Math.max(0, chapters.findIndex((chapter) => chapter.id === id));
+  }
+
   document.addEventListener("click", (event) => {
     const link = (event.target as Element).closest<HTMLAnchorElement>('a[href^="#"]');
     if (!link) return;
@@ -85,7 +132,7 @@ async function boot() {
     if (y === undefined) return;
     event.preventDefault();
     sound.click();
-    glide(y);
+    void go(y);
   });
 
   // ---- chrome ----
@@ -104,7 +151,9 @@ async function boot() {
     if (frame) frame.dataset.vibe = chapters[at].id;
   }
 
+  const hint = $("[data-hint]");
   function arrive(index: number, at: number) {
+    hint?.toggleAttribute("data-away", index !== 0);
     if (readoutStage) readoutStage.textContent = `${two(index + 1)} / ${two(ticks.length)}`;
     ticks.forEach((tick, i) => tick.toggleAttribute("data-live", i === index));
     if (at === place) {
@@ -175,17 +224,24 @@ async function boot() {
 
   // ---- sound: off until asked for ----
   const soundButton = $<HTMLButtonElement>("[data-sound]");
+  const soundHint = $<HTMLButtonElement>("[data-sound-hint]");
   const label = (state: SoundState) => {
+    if (soundHint) {
+      soundHint.setAttribute("aria-pressed", String(state === "on"));
+      soundHint.querySelector("span")!.textContent = state === "on" ? "Sound on" : state === "waiting" ? "Sound: click" : "Turn sound on";
+    }
     if (!soundButton) return;
     soundButton.textContent = state === "on" ? "Sound on" : state === "waiting" ? "Sound: click" : "Sound off";
     soundButton.setAttribute("aria-pressed", String(state !== "off"));
   };
   sound.subscribe(label);
   sound.init();
-  soundButton?.addEventListener("click", () => {
-    sound.toggle();
-    sound.click();
-  });
+  for (const button of [soundButton, soundHint]) {
+    button?.addEventListener("click", () => {
+      sound.toggle();
+      sound.click();
+    });
+  }
   const unlock = () => sound.unlock();
   window.addEventListener("pointerdown", unlock);
   window.addEventListener("keydown", unlock);

@@ -7,8 +7,9 @@ import { editor } from "./editor";
 import { forum } from "./forum";
 import { library } from "./library";
 import { orbit } from "./orbit";
+import { peaks } from "./peaks";
 import { thread } from "./thread";
 import { violin } from "./violin";
 
 /** One builder per place, in the order of the journey. */
-export const build: Record<PlaceKey, () => Place> = { thread, violin, editor, orbit, bench, chart, forum, library, aurora };
+export const build: Record<PlaceKey, () => Place> = { thread, violin, editor, orbit, peaks, bench, chart, forum, library, aurora };

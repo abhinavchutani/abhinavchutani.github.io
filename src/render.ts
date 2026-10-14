@@ -56,9 +56,16 @@ function body(stage: Stage) {
       <a class="cue" href="#${chapters[1].id}"><i></i>One thread, ${count.word} disciplines</a>`;
     case "economics":
       return first(skills[0]) + rows("In code", models);
-    case "projects":
+    case "project": {
+      const build = projects.find((p) => p.key === stage.project)!;
       return `
-      <h2 class="title serif">Four more.</h2>` + rows("Projects", projects);
+      <div class="skill">
+        <h2 class="title">${esc(build.name)}</h2>
+        <p class="badge">${esc(build.sub)}</p>
+        <p class="done">${esc(build.text)}</p>
+        ${build.facts ? `<ul class="facts">${build.facts.map((fact) => `<li>${esc(fact)}</li>`).join("")}</ul>` : ""}
+      </div>`;
+    }
     case "contact":
       return `
       <h2 class="title serif">Let's talk.</h2>
@@ -88,7 +95,7 @@ export function renderPage() {
           const kicker = stage.kind === "hero" ? "" : `<p class="kicker"><span class="idx">${two(c)}</span><span>${esc(stage.kicker ?? chapter.name)}</span><span class="of">${two(k)} / ${two(total - 1)}</span></p>`;
           const caption = stage.caption ? `<p class="caption">${esc(stage.caption)}</p>` : "";
           return `
-    <article class="sign${stage.kind ? ` is-${stage.kind}` : ""}" data-stage="${k}">
+    <article class="sign${stage.kind ? ` is-${stage.kind}` : ""}" data-stage="${k}"${stage.project ? ` style="--accent:${projects.find((p) => p.key === stage.project)?.tint ?? chapter.accent}"` : ""}>
       ${kicker}${body(stage)}
       ${caption}
     </article>`;
@@ -110,7 +117,6 @@ export function renderPage() {
   // Labels that ride on things in the scene: place key, anchor name, and the step of the place they show on.
   const followers =
     disciplines.map((node) => `<span class="follower node" data-follow="aurora:${node.key}" data-step="1" style="--accent:${chapters[node.chapter].accent}">${esc(node.name)}</span>`).join("") +
-    projects.map((p) => `<span class="follower node exhibit" data-follow="orbit:${p.key}" data-step="1">${esc(p.name)}</span>`).join("") +
     models.map((m) => `<span class="follower node exhibit" data-follow="chart:${m.key}" data-step="0" style="--accent:${chapters[1].accent}">${esc(m.name)}</span>`).join("");
 
   return `
@@ -130,7 +136,12 @@ export function renderPage() {
     <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
   </div>
   <button class="gauge" type="button" data-gauge hidden></button>
+  <div class="hint" data-hint>
+    <button class="hint-sound" type="button" data-sound-hint aria-pressed="false"><i class="bars" aria-hidden="true"><b></b><b></b><b></b><b></b></i><span>Turn sound on</span></button>
+    <p class="hint-scroll" aria-hidden="true"><i class="mouse"><b></b></i><span>Scroll</span></p>
+  </div>
 </header>
+<div class="doors" data-doors aria-hidden="true"><i class="leaf l"></i><i class="leaf r"></i><p class="doors-name"><span data-doors-index>00</span><b data-doors-name></b></p></div>
 <div class="opener" data-opener aria-hidden="true">
   <p><span>Loading</span><b data-count>000</b><span>%</span></p>
   <i class="bar"><i data-bar></i></i>

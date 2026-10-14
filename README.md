@@ -13,25 +13,25 @@ npm run preview   # serves dist/ on http://localhost:4173
 
 ## The journey
 
-Nine chapters, twelve resting stages, in the order of what matters most to him now: what he
+Ten chapters, fifteen resting stages, in the order of what matters most to him now: what he
 studies, what he has led, what he has built, the making behind it, and then the person. Scroll is
 the timeline: one screen of scroll per move, and the camera goes as fast as the hand does. Every
 move is a single gesture, and neighbours never share an axis.
 
 | # | Chapter | On the card | Place | How the camera gets there |
 | --- | --- | --- | --- | --- |
-| 00 | Origin | name, one line | a thread of light, one strand per discipline, in a nebula | the opener: a flight down a tunnel of streaks |
-| 01 | Markets | Economics · Monte Carlo Options · Blockchain | the floor of an exchange at night: a quote board the width of the far wall, a ticker, trading posts ringed with screens, the bell on its balcony. Over the middle post, a month of candles and 180 simulated paths with their histogram; beside it a chain of blocks, the newest still being mined | down: the hall is under the nebula, and the camera sinks through its skylit roof, past the board, to the floor |
+| 00 | Origin | name, one line; a cue to scroll and one to turn the sound on | a thread of light, one strand per discipline, in a nebula | the opener: a flight down a tunnel of streaks |
+| 01 | Markets | Economics · Monte Carlo Options · Blockchain | the floor of an exchange at night: a quote board the width of the far wall, a ticker, trading posts ringed with screens, the bell on its balcony. Over the middle post, a month of candles and 180 simulated paths with their histogram; beside it a chain of blocks, the newest still being mined | down: the hall is under the nebula, and the camera sinks to it through a skylight whose two doors swing open into the hall as it comes |
 | 02 | Stage | Leadership · Public Speaking · Symposium | an auditorium from beside the lectern: curtains, a gilded balcony, 3,500 lights | forwards: the bronze doors under the board swing open on the wings of a stage, and the camera walks through to the lectern |
-| 03 | Projects | Orbital Guardian | Earth's limb, debris, the satellite, its detector and its net | up: one tilt of the head, then straight through the oculus in the ceiling to the stars |
-| 03 | Projects | FairBench · Engram · Shravan Doot · Terra Mitra | the same orbit, each project a thing on its own ring: portfolios in the box their constraints draw with a qubit beside it, documents round a question, glasses with their board on the arm, a probe in soil | sideways: the satellite drops back and the four come in round the frame |
-| 04 | Machine | Robotics · Techne | an FLL table and robot on a blueprint | down: the sea turns blueprint blue and its grid closes up into the sheet |
-| 05 | Code | Syntax · Web & App Design · Design | a desk at night: Python on two monitors, MarksMaxxing in a browser window, a brand board. The picture breaks into blocks at the edges of the frame | backwards: the blueprint is a drawing open on the main monitor, and the camera pulls out of the screen |
-| 06 | Sound | Strings · Musicality | a museum gallery: damask, five paintings of musicians, a violin in a glass case, a drum kit behind a rope | sideways to the right, into the room next door, which stands open like a film set |
-| 07 | Mind | Reading · Philosophy | a stair of 50 books past a colonnade, by day | forwards and round to the left: the gallery's double doors open as the camera makes for them |
-| 07 | Mind | Journaling · Fountain Pens · Art & Illustration · Discipline | the same room at night, by one candle: the desk at the window, a journal, a pen that writes, a tray of pens, a sketchbook, iron | sideways to the left along the floor, as the daylight goes down to the candle |
-| 08 | Beyond | Travel | mountains under the aurora, pines, a tent and its fire by the water | forwards over the desk and out through the open window (it is night out there too) |
-| 08 | Beyond | email, LinkedIn, where | Helsinki across the harbour; every discipline as one constellation | a turn of the head along the shore |
+| 03 | Projects | Orbital Guardian | Earth's limb, debris, the satellite, its detector and its net | up: one tilt of the head to the opening in the ceiling, whose doors swing up on the stars, then straight through |
+| 03 | Projects | FairBench · Engram · Shravan Doot · Terra Mitra, one each | the same orbit: each project a thing on its own ring, in a pool of its own colour (portfolios in the box their constraints draw with a qubit beside it; documents round a question; glasses with what is said arriving as rings and leaving as words on the lens; a probe in soil, pinging) | sideways, four times: the camera tracks along the row, one project to a stage, each brought up close |
+| 04 | Travel | Travel | mountains at first light, from the air: a valley, a lake, a tent and its fire on the shore, the high range with the sun coming up behind it | down from orbit: the land is a patch of the planet at 1/166 the size, and the camera falls to it, levelling off as it comes |
+| 05 | Machine | Robotics · Techne | an FLL table and robot on a blueprint | down again: the lake turns into the blue of a drawing, and the camera goes on down into it |
+| 06 | Code | Syntax · Web & App Design · Design | a desk at night: Python on two monitors, MarksMaxxing in a browser window, a brand board. The picture breaks into blocks at the edges of the frame | backwards: the blueprint is a drawing open on the main monitor, and the camera pulls out of the screen |
+| 07 | Sound | Strings · Musicality | a museum gallery: damask, five paintings of musicians, a violin in a glass case, a drum kit behind a rope | sideways to the right, into the room next door, which stands open like a film set |
+| 08 | Mind | Reading · Philosophy | a stair of 50 books past a colonnade, by day | forwards and round to the left: the gallery's double doors open as the camera makes for them |
+| 08 | Mind | Journaling · Fountain Pens · Art & Illustration · Discipline | the same room at night, by one candle: the desk at the window, a journal, a pen that writes, a tray of pens, a sketchbook, iron | sideways to the left along the floor, as the daylight goes down to the candle |
+| 09 | Contact | email, LinkedIn, where | Helsinki across the harbour at night, under the aurora; every discipline as one constellation | forwards over the desk and out through the open window |
 
 Nothing is cut, wiped or cross-faded. While the camera is between two places both are drawn, each
 in its own light, into one depth buffer, so the next place is seen through the door, the screen or
@@ -44,7 +44,7 @@ the window before the camera goes through it.
 | `src/content.ts` | **All copy,** in order of importance. Chapters, stages, skills, projects, contact. Edit text here and nowhere else. |
 | `src/render.ts` | Turns the content into HTML at build time (see `vite.config.ts`), so the shipped page is real markup. |
 | `src/stage/table.ts` | The storyboard as numbers: where each place sits relative to the one before, the camera's waypoints, each place's light. |
-| `src/stage/handover.ts` | Camera routes between places: one smooth line through a few waypoints, or a move across scales (down the thread to a point on the page, the fall to Earth, the look up from the page). |
+| `src/stage/handover.ts` | Camera routes between places: one smooth line through a few waypoints, or a move across scales (the fall from orbit to the mountains, the dive into the lake). |
 | `src/stage/pace.ts` | How each move is timed against scroll. **Measured, not hand-written**: see "Pacing" below. |
 | `src/stage/places/*.ts` | One file per place. Geometry is procedural; textures are drawn on canvas. |
 | `src/stage/stage.ts` | Renderer, passes, the frame loop, cards standing in the scene, labels that follow things. |
@@ -81,6 +81,16 @@ coordinates), then re-measure its pacing. To change a colour world: the chapter'
   the way).
 - **Copy stands in the scene.** Each card is a DOM block placed with a `matrix3d` built from the
   camera every frame, so it is in the room as the camera comes in.
+- **A jump from the menu goes behind doors.** A link more than one stage away is not scrolled (a whole
+  journey at speed is a blur of other places): two panelled doors close over the page in the
+  destination's colours with its name on them, the page is moved behind them, and they open on the
+  new place. A link to the next stage just glides there.
+- **Motion blur.** Each frame, the point that was in the middle of the last one is followed to
+  where it has got to, and the final pass smears the picture along that path (one frame's worth,
+  capped). A fall, a rise or a pan streaks; a camera at rest, or one leaning to the pointer, stays
+  sharp.
+- **The first screen says what to do:** a cue to scroll, and a switch for the sound, both gone once
+  the page moves on.
 - **The frame is dressed for the place.** A fixed edge and four corner pieces change with the
   chapter: an axis with ticks that run with the scroll on the exchange floor, a programme's gold rule
   on the stage, head-up brackets in orbit, registration marks on the blueprint, blocks at the desk, a
@@ -121,45 +131,40 @@ tool on both: an even scrub, a 192 × 120 greyscale frame at each step, copy and
 | Aalto AI (reference) | 475 | 1.5% | 8.6% |
 | This site, round 3 | 324 | 9.0% | 8.8% |
 | This site, round 5 | 600 | 1.4% | 1.0% |
-| This site, now (round 6: twelve stages, three new moves) | 576 | 4.3% | 3.6% |
+| This site, round 6 | 576 | 4.3% | 3.6% |
+| This site, now (round 7: fifteen stages, motion blur on) | 518 | 7.7% | 1.4% |
 
-Inside each move the pacing holds (the busiest step of any move is at most 2.8 times that move's
-own middle). The two percentages are up on the round before because the moves now differ more
-from each other: the walk through the doors and the descent past the board change the picture
-about four times as much per step as the quietest move, where the four projects come in against
-dark space. The flash this round's first measurement found (the camera left the desk straight
-through the candle flame, which whited out the frame for a step) is gone: the candle now stands
-clear of the way out.
+Inside each move the pacing holds: the busiest step of any move is at most 2.4 times that move's
+own middle, except the way out through the window to Helsinki (3.2, as the frame passes the
+window's edge). The "pops" column counts steps against the middle of the whole journey, and it has
+risen because the moves differ more from one another than they did: the descent into the
+exchange, the walk on to the stage and the climb to orbit change the picture three or four times
+as much per step as the track along the projects, which goes by against dark space.
 
 **Frame times.** Production build, headless Chromium on the machine's GPU (Metal), 1440 × 900 at
-device pixel ratio 2, with other applications running (load average about 5). A frame is "late"
+device pixel ratio 2, with other applications running (load average 3 to 6). A frame is "late"
 over 22 ms.
 
 | Scenario | Frames | Late |
 | --- | --- | --- |
-| Opener | 341 | 0 |
-| Scrub down through every move | 2,811 | 8 (0.28%): 133 ms on the very first frame, one of 51 ms, six of 33 ms |
-| Scrub back up, faster | 2,218 | 0 |
+| Opener | 340 | 0 |
+| Scrub down through every move | 3,777 | 15 (0.40%): single frames of 33 to 83 ms, five of them on the way down into the exchange |
+| Scrub back up, faster | 2,789 | 11 (0.39%): one of 133 ms going back from the reading room into the gallery, the rest 33 to 83 ms |
 
-A second run a few minutes later, with the load average at 14 to 28, had 3% of frames late and two
-long stalls; that run measured the machine. **A real-window run was not possible this round**: it
-was made at night with the display asleep, and a window that is not being shown is given no
-frames. The round before, the same build path measured 0 late frames of 3,045 in a real window;
-this round's scene is heavier in the Markets hall, so that number should be taken again with
-`?fps` on a screen that is awake.
+**Not measured this round:** a real window. A run in one needs the display awake; the night this
+was built it was asleep. Open the page with `?fps` to see what your own browser does.
 
 **Gestures**, with wheel events timed inside the page, on this build: flicks from gentle to very
 hard, each with a long tail of momentum, all stopped on the next stage (and one upwards on the
 stage above); letting go 7% into a move fell back, 32% in carried on; nine mouse-wheel notches
 350 ms apart scrubbed a move 100 px at a time and were never pulled back; a slow scrub of 400 px
-moved the page 354 px (the rest is the smoothing still catching up).
+moved the page 352 px.
 
-Also checked from captures: all twelve stages at 1440 × 900, frames along the three new moves and
-the two that were reported (study to gallery, desk to window), four stages in a short window
-(960 × 600) and three in a very wide one (2400 × 900). Reduced motion, no WebGL, no JavaScript and
-phone width (430 × 900) were each rendered and looked at. **Not checked:** the feel on a real
-trackpad, the sound by ear, a real phone, a real window this round. These numbers are this machine
-on one night: open the page with `?fps` to see what your own browser does.
+Also checked from captures: all fifteen stages at 1440 × 900; frames along every new move (the
+skylight, the ceiling doors, the track along the projects, the fall to the mountains, the dive into
+the lake, the way out of the window); a menu jump with the doors at five moments; the descent while
+scrolling, for the motion blur; phone width (430 × 900); reduced motion, no WebGL and no JavaScript.
+**Not checked:** the feel on a real trackpad, the sound by ear, a real phone.
 
 ## Fallbacks
 
@@ -214,5 +219,13 @@ Every round, with what was said and what changed, is in `docs/BRIEF.md`. In shor
    two finance projects on the exchange floor, MarksMaxxing on a screen at the desk; mountains for
    travel. Photographed surfaces, a frame dressed for each place, blocks at the edge of the Code
    frame. The lean-in on a push is halved and the rush blur eased.
-6. No portrait, no phone number. Every fact on the page comes from his previous site, his CV or
+6. Sixth cut: the four projects shared one card; the mountains stood beside Helsinki, which is at
+   sea level; the menu's links scrolled the whole journey at speed; the reading room's colonnade
+   showed through the window and around the camera on the way out. → Each project has its own stage.
+   Travel is its own place, on the way down from orbit, and the fall from there goes on into a lake
+   that turns into the blueprint. Menu jumps go behind doors. Motion blur. The skylight in the
+   exchange and the opening in the auditorium's ceiling have doors that open as the camera comes
+   (he liked the doors). A pane that writes depth and no colour keeps the window to Helsinki alone.
+   The chrome stands clear of the frame; the first screen cues scrolling and sound.
+7. No portrait, no phone number. Every fact on the page comes from his previous site, his CV or
    his own profile.
