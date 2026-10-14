@@ -84,12 +84,12 @@ export const chapters: Chapter[] = [
     stages: [{ kind: "hero" }],
   },
   {
-    // A chart on salmon newsprint.
+    // The floor of an exchange at night.
     id: "markets",
     name: "Markets",
-    accent: "#9b1c2e",
-    ground: "#f1d9c5",
-    look: "light",
+    accent: "#58c7ff",
+    ground: "#060a12",
+    look: "dark",
     stages: [
       {
         kind: "economics",
@@ -151,7 +151,6 @@ export const chapters: Chapter[] = [
     look: "dark",
     stages: [
       {
-        kind: "projects",
         skills: [
           {
             name: "Orbital Guardian",
@@ -164,6 +163,8 @@ export const chapters: Chapter[] = [
         ],
         caption: "Detect · align · capture",
       },
+      // The others, each as a thing standing in the same orbit.
+      { kind: "projects", kicker: "Also built", caption: "Novamorph Fellowship · Yuvkriti · Featured on the Global Climate Clock with NITI Aayog" },
     ],
   },
   {
@@ -179,7 +180,7 @@ export const chapters: Chapter[] = [
           {
             name: "Robotics",
             badge: "FLL World #8 · Detroit 2019",
-            done: "I represented India at the FIRST Lego League World Festival in Detroit: 8th in the world out of 110+ nations, after qualifying #1 in North India. National finalist, International Robotics League 2025.",
+            done: "I represented India at the FIRST Lego League World Festival in Detroit: 8th in the world out of 110+ nations, after qualifying #1 in North India. National finalist at the International Robotics League 2025 and the CBSE Science Exhibition.",
             feel: "It made global competition feel real rather than distant.",
             level: 82,
             levelLabel: "World Top-10 · FLL",
@@ -317,13 +318,26 @@ export const chapters: Chapter[] = [
     ],
   },
   {
-    // Helsinki, at night, under the aurora: where to find him.
-    id: "contact",
-    name: "Contact",
+    // Outside, at night, under the aurora: mountains first, then Helsinki across the water, and where to find him.
+    id: "beyond",
+    name: "Beyond",
     accent: "#7dffc0",
     ground: "#041320",
     look: "dark",
-    stages: [{ kind: "contact", kicker: "Get in touch" }],
+    stages: [
+      {
+        kicker: "Beyond academics",
+        skills: [
+          {
+            name: "Travel",
+            badge: "Traveler",
+            // His own words for this side of him, from his profile. (No places are named until he names them.)
+            done: "Beyond academics: reader, writer, traveler.",
+          },
+        ],
+      },
+      { kind: "contact", kicker: "Get in touch" },
+    ],
   },
 ];
 

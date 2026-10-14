@@ -53,11 +53,12 @@ function body(stage: Stage) {
       <p class="kicker"><span>${esc(person.place)}</span><span>${esc(person.edition)}</span></p>
       <h1 class="name"><span class="first">${esc(person.first)}</span><span class="last">${esc(person.last)}</span></h1>
       <p class="lede">${esc(person.line)}</p>
-      <a class="cue" href="#sound"><i></i>One thread, ${count.word} disciplines</a>`;
+      <a class="cue" href="#${chapters[1].id}"><i></i>One thread, ${count.word} disciplines</a>`;
     case "economics":
       return first(skills[0]) + rows("In code", models);
     case "projects":
-      return first(skills[0], false) + rows("Also built", projects);
+      return `
+      <h2 class="title serif">Four more.</h2>` + rows("Projects", projects);
     case "contact":
       return `
       <h2 class="title serif">Let's talk.</h2>
@@ -108,8 +109,9 @@ export function renderPage() {
 
   // Labels that ride on things in the scene: place key, anchor name, and the step of the place they show on.
   const followers =
-    disciplines.map((node) => `<span class="follower node" data-follow="aurora:${node.key}" data-step="0" style="--accent:${chapters[node.chapter].accent}">${esc(node.name)}</span>`).join("") +
-    `<span class="follower prop" data-follow="chart:quantum" data-step="0">FairBench<em>3rd · Quantum × Finance</em></span>`;
+    disciplines.map((node) => `<span class="follower node" data-follow="aurora:${node.key}" data-step="1" style="--accent:${chapters[node.chapter].accent}">${esc(node.name)}</span>`).join("") +
+    projects.map((p) => `<span class="follower node exhibit" data-follow="orbit:${p.key}" data-step="1">${esc(p.name)}</span>`).join("") +
+    models.map((m) => `<span class="follower node exhibit" data-follow="chart:${m.key}" data-step="0" style="--accent:${chapters[1].accent}">${esc(m.name)}</span>`).join("");
 
   return `
 <canvas class="stage" id="stage" aria-hidden="true"></canvas>
@@ -123,7 +125,10 @@ export function renderPage() {
   <p class="readout" aria-hidden="true"><b data-readout-index>00</b><span data-readout-name>Origin</span><em data-readout-stage>01 / ${two(stageList.length)}</em></p>
   <div class="progress" aria-hidden="true"><i data-progress></i></div>
   <div class="ruler" aria-hidden="true">${stageList.map((_, i) => `<i data-tick="${i}"></i>`).join("")}</div>
-  <i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i>
+  <div class="frame" data-frame data-vibe="top" aria-hidden="true">
+    <i class="edge t"></i><i class="edge b"></i><i class="edge l"></i><i class="edge r"></i>
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+  </div>
   <button class="gauge" type="button" data-gauge hidden></button>
 </header>
 <div class="opener" data-opener aria-hidden="true">

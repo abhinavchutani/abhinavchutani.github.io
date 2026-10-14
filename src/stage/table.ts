@@ -1,10 +1,9 @@
-import * as THREE from "three";
 import { chapters } from "../content";
 import type { Travel } from "./handover";
 import { PACE } from "./pace";
 
 /**
- * The storyboard, as numbers. One row per resting stage; ten in all, in the
+ * The storyboard, as numbers. One row per resting stage; twelve in all, in the
  * order of what matters most to him now: markets, the stage, the projects,
  * the machine, code, sound, mind, and how to reach him.
  *
@@ -19,15 +18,16 @@ import { PACE } from "./pace";
  * through one continuous world (see handover.ts). Each is a single gesture,
  * and neighbours never share an axis:
  *
- *   thread  -> chart     forwards, down the thread to the point it comes from: the last price, where the paths fan out.
- *   chart   -> forum     eyes up from the page: it is on a lectern, and there is the hall.
+ *   thread  -> exchange  straight down, without turning: the roof of the hall comes up past the camera.
+ *   exchange -> forum    forwards across the floor, through the doors under the board, and out on to the stage.
  *   forum   -> orbit     up: one tilt of the head, then straight through the oculus in the ceiling to the stars.
  *   orbit   -> bench     down: the sea below turns out to be blueprint blue.
  *   bench   -> study     backwards: the drawing is on a screen, and the camera pulls out of it to the desk it stands on.
  *   study   -> gallery   sideways to the right, into the room next door, opened up like a film set.
  *   gallery -> library   forwards and round to the left, through the tall doorway at the end of the wall.
  *   books   -> desk      sideways to the left (inside the library; no hand-over).
- *   library -> harbour   forwards, over the desk and out through the open window.
+ *   library -> night     forwards, over the desk and out through the open window, to the mountains.
+ *   mountains -> harbour the whole night turns, and the town comes round (inside the same place; no hand-over).
  */
 
 export const FOV = 32;
@@ -66,11 +66,17 @@ export type Look = {
   rim: number;
   /** A light ground with ink on it. */
   light?: boolean;
+  /** How bright the place's lamp is, if it has one (a candle on a desk). */
+  lamp?: number;
+  /** How far in from the frame the picture breaks into blocks (0 none, 1 a fifth of the way). */
+  pixel?: number;
 };
 
 export type PlaceRow = {
   key: PlaceKey;
   look: Look;
+  /** A second look, for a place that changes within itself: its channel's `q` runs from `look` (0) to this (1). */
+  look2?: Look;
   /** How the camera gets here from the place before. */
   arrive?: Travel;
   /** If the next place can be seen from this one at rest (through a window): how near its last stage the camera must be for that. */
@@ -81,33 +87,13 @@ export type PlaceRow = {
   stages: StageRow[];
 };
 
-const c = (px: number, py: number, pz: number, rx: number, ry: number, rz: number, p = 0, q = 0): Channel => [px, py, pz, rx, ry, rz, p, q];
+/** A channel: where the slide sits, how it is turned, and the place's own parameters (`p`, `q`, and for a few a third). */
+const c = (px: number, py: number, pz: number, rx: number, ry: number, rz: number, p = 0, q = 0, r?: number): Channel => (r === undefined ? [px, py, pz, rx, ry, rz, p, q] : [px, py, pz, rx, ry, rz, p, q, r]);
 const tone = (index: number, rest: Omit<Look, "ground" | "accent">): Look => ({ ground: chapters[index].ground, accent: chapters[index].accent, ...rest });
 const HALF = Math.PI / 2;
 
 /** How strongly a move eases in and out of its two stages (journey.ts). */
 export const EASE = 0.72;
-
-/** Where the newspaper's page is in the chart's own coordinates, and where the same page lies on the lectern in the hall. */
-export const PAGE = { x: 2, y: -16, z: -8, wide: 80, tall: 50 };
-export const LECTERN = { x: 3.1, y: -3.3, z: 1.6, yaw: 0.42, top: [0, 3.211, 0.2] as [number, number, number], tilt: 0.32, pageWide: 1.2 };
-
-/** The chart, as it sits in the hall: its page is the sheet on the lectern, sixty-odd times smaller. */
-function chartOnLectern() {
-  const k = LECTERN.pageWide / PAGE.wide;
-  const m = new THREE.Matrix4().makeTranslation(LECTERN.x, LECTERN.y, LECTERN.z);
-  m.multiply(new THREE.Matrix4().makeRotationY(LECTERN.yaw));
-  // (A hair above the sheet that is modelled on the lectern, so the two never fight for the same depth.)
-  m.multiply(new THREE.Matrix4().makeTranslation(LECTERN.top[0], LECTERN.top[1] + 0.012, LECTERN.top[2]));
-  // The page lies on the sloping top: its width along x, its height running away from the speaker, its face up.
-  m.multiply(new THREE.Matrix4().makeRotationX(LECTERN.tilt - Math.PI / 2));
-  m.multiply(new THREE.Matrix4().makeScale(k, k, k));
-  m.multiply(new THREE.Matrix4().makeTranslation(-PAGE.x, -PAGE.y, -PAGE.z));
-  // The spot on the page the camera was looking at.
-  const pivot = new THREE.Vector3(0, 0, PAGE.z).applyMatrix4(m);
-  return { seat: m, pivot: [pivot.x, pivot.y, pivot.z] as [number, number, number] };
-}
-const onLectern = chartOnLectern();
 
 export const PLACES: PlaceRow[] = [
   {
@@ -119,21 +105,17 @@ export const PLACES: PlaceRow[] = [
     stages: [{ ch: c(0, 0, 0, 0, 0, 0, 0), dist: DIST, side: "L", y: 0.56 }],
   },
   {
-    // 01 Markets. A newspaper page: candles, simulated paths, the podium.
+    // 01 Markets. The floor of an exchange at night: the board, the ticker, trading posts, a price series in the air.
     key: "chart",
-    look: tone(1, { top: 0xf6e4d4, glow: 0, haze: 0, at: [0.5, 0.5], vignette: 0.14, grid: 0, fog: 0.008, bloom: 0, env: 0.36, key: 1.15, rim: 0.25, light: true }),
+    look: tone(1, { top: 0x020409, glow: 0.05, haze: 0.05, at: [0.5, 0.7], vignette: 0.5, grid: 0, fog: 0.008, bloom: 0.5, env: 0.4, key: 0.9, rim: 1.1 }),
     arrive: {
-      // The thread comes out of one point of light. That point is the last price on the chart, where the
-      // simulated paths fan out: the page is there from the start, twenty times too small to see.
-      meet: { anchor: "origin", at: [16.1, 6.6, -74], turn: [-0.1852, 0.0754, 0], scale: 0.05 },
-      turning: [0, 0.55],
-      sliding: [0.1, 0.9],
+      // The hall is straight below. The camera does not turn or zoom: it sinks, and the roof comes up past it.
+      into: { at: [0, -30, 0] },
       keepSky: true,
-      rush: 0.25,
       pace: PACE.chart,
     },
     enter: c(0, 0, 0, 0, 0, 0, 0, 0),
-    exit: c(0, 0, 0, 0, 0, 0, 1, 0),
+    exit: c(0, 0, 0, 0, 0, 0, 1, 1),
     stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1, 0), dist: DIST, side: "L" }],
   },
   {
@@ -141,11 +123,8 @@ export const PLACES: PlaceRow[] = [
     key: "forum",
     look: tone(2, { top: 0x070102, glow: 0.1, haze: 0.07, at: [0.5, 0.3], vignette: 0.6, grid: 0, fog: 0.011, bloom: 0.7, env: 0.34, key: 1.2, rim: 1.2 }),
     arrive: {
-      // The newspaper page is the sheet lying on the lectern. Eyes up first, then step back from it.
-      seat: onLectern.seat,
-      pivot: onLectern.pivot,
-      turning: [0, 0.5],
-      sliding: [0.05, 0.9],
+      // The stage is through the doors under the board: forwards across the floor, through the wings, and out on to it.
+      into: { at: [0, -0.35, -44] },
       pace: PACE.forum,
     },
     enter: c(0, 0, 0, 0, 0, 0, 1),
@@ -161,13 +140,18 @@ export const PLACES: PlaceRow[] = [
       // to face down that line: there is no up out there. So the camera tilts once and then flies straight.
       into: { at: [-5.93, 68.83, -16.82], turn: [0.2031, 1.1668, 0] },
       via: [{ at: [0, 0, 44], when: 0.48 }], // squared up to the opening, about to go through it
-      rush: 0.25,
+      rush: 0.16,
       pace: PACE.orbit,
     },
     // The whole sky is still swinging round into place as the camera comes out through the roof.
-    enter: c(-5, 1.5, 0, 0.05, 0.3, 0, 0, 0),
-    exit: c(0, 0, 0, 0, 0, 0, 1, 1),
-    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1, 0), dist: DIST, side: "L" }],
+    // (A third parameter brings the other projects into the frame for the second stage, and sends the satellite back.)
+    enter: c(-5, 1.5, 0, 0.05, 0.3, 0, 0, 0, 0),
+    exit: c(0, 0, 0, 0, 0, 0, 1, 1, 1),
+    stages: [
+      { ch: c(0, 0, 0, 0, 0, 0, 1, 0, 0), dist: DIST, side: "L" },
+      // The camera swings a little way round the orbit for the second stage, so the limb and the debris turn under it.
+      { ch: c(0, 0, 0, -0.03, 0.24, 0, 1, 0, 1), dist: DIST, side: "L" },
+    ],
   },
   {
     // 04 Machine. A drawing board: the competition table and its robot on a blueprint.
@@ -179,7 +163,7 @@ export const PLACES: PlaceRow[] = [
       pivot: [0, 0, -9.4],
       turning: [0, 0.62],
       sliding: [0, 0.5],
-      rush: 0.3,
+      rush: 0.2,
       pace: PACE.bench,
     },
     enter: c(0, 0, 0, 0, 0, 0, 1),
@@ -189,7 +173,7 @@ export const PLACES: PlaceRow[] = [
   {
     // 05 Code. A desk at night: screens of source, a browser, an artboard.
     key: "editor",
-    look: tone(5, { top: 0x020a0e, glow: 0.06, haze: 0.05, at: [0.3, 0.5], vignette: 0.6, grid: 0, fog: 0.014, bloom: 0.5, env: 0.3, key: 1.0, rim: 1.4 }),
+    look: tone(5, { top: 0x020a0e, glow: 0.06, haze: 0.05, at: [0.3, 0.5], vignette: 0.6, grid: 0, fog: 0.014, bloom: 0.5, env: 0.3, key: 1.0, rim: 1.4, pixel: 1 }),
     arrive: {
       // The blueprint is a drawing open on the main monitor, half the size. The camera backs out of the screen.
       inScreen: { scale: 0.5, back: 4.6 },
@@ -209,9 +193,10 @@ export const PLACES: PlaceRow[] = [
       into: { at: [41, 0, 0] },
       pace: PACE.violin,
     },
-    enter: c(0, 0, 0, 0, 0, 0, 1),
-    exit: c(0, 0, 0, 0, 0, 0, 1),
-    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1), dist: DIST, side: "L", deep: -3 }],
+    // `q` opens the doors to the library as the camera makes for them.
+    enter: c(0, 0, 0, 0, 0, 0, 1, 0),
+    exit: c(0, 0, 0, 0, 0, 0, 1, 1),
+    stages: [{ ch: c(0, 0, 0, 0, 0, 0, 1, 0), dist: DIST, side: "L", deep: -3 }],
   },
   {
     // 07 Mind. Cream paper and ink: a stair of books past a colonnade; then, tracking, the desk by the window.
@@ -219,17 +204,22 @@ export const PLACES: PlaceRow[] = [
     // From the desk, the harbour can be seen through the window: draw it whenever the camera is within this of the desk.
     outlook: 21,
     look: tone(7, { top: 0xf3eee2, glow: 0, haze: 0, at: [0.5, 0.5], vignette: 0.15, grid: -0.035, fog: 0.022, bloom: 0, env: 0.36, key: 1.15, rim: 0.2, light: true }),
+    // By the desk it is night: the room is dark, and what light there is comes from a candle. (Outside the
+    // window it is night too, so the way out matches.)
+    look2: { ground: "#0c0806", accent: "#ffb070", top: 0x060404, glow: 0.05, haze: 0.04, at: [0.42, 0.5], vignette: 0.75, grid: 0, fog: 0.016, bloom: 0.3, env: 0.08, key: 0.08, rim: 0.2, lamp: 42 },
     arrive: {
       // The library is through the tall doorway at the left-hand end of the gallery's far wall, and faces
       // along the line from where the camera stood to that door: one straight walk, turning to it on the way.
-      into: { at: [-41.3, 2.1, -40.2], turn: [0.67, 0, 0] },
+      // (Its floor is a hand's breadth lower than the gallery's, so the two never lie in the same plane.)
+      into: { at: [-41.3, 1.92, -40.2], turn: [0.67, 0, 0] },
       pace: PACE.library,
     },
-    enter: c(0, 0, 0, 0, 0, 0, 0, 0),
-    exit: c(24, 0, 0, 0, 0, 0, 1, 1),
+    // (`r` is leaving by the window: the candle's glow goes down before the camera passes over it.)
+    enter: c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+    exit: c(24, 0, 0, 0, 0, 0, 1, 1, 1),
     stages: [
-      { ch: c(0, 0, 0, 0, 0, 0, 0, 0), dist: DIST, side: "R" },
-      { ch: c(24, 0, 0, 0, 0, 0, 1, 1), dist: DIST, side: "L" },
+      { ch: c(0, 0, 0, 0, 0, 0, 0, 0, 0), dist: DIST, side: "R" },
+      { ch: c(24, 0, 0, 0, 0, 0, 1, 1, 0), dist: DIST, side: "L" },
     ],
   },
   {
@@ -241,10 +231,14 @@ export const PLACES: PlaceRow[] = [
       via: [{ at: [0, -0.5, 26.3], when: 0.42 }], // through the open window
       pace: PACE.aurora,
     },
-    // The town is still coming round and up into place as the camera comes out over the water.
-    enter: c(4.5, 0.8, -9, -0.02, -0.16, 0, 0),
+    // Out of the window the camera is looking at the mountains, a long way round to the right of the town;
+    // then the whole night turns, and Helsinki comes round across the water.
+    enter: c(4.5, 0.8, -9, -0.02, 0.86, 0, 0),
     exit: c(0, -1.5, 0, -0.07, 0, 0, 1),
-    stages: [{ ch: c(0, -1.5, 0, -0.07, 0, 0, 1), dist: DIST, side: "L" }],
+    stages: [
+      { ch: c(0, -1.2, 0, -0.05, 1.0, 0, 0.5), dist: DIST, side: "L" },
+      { ch: c(0, -1.5, 0, -0.07, 0, 0, 1), dist: DIST, side: "L" },
+    ],
   },
 ];
 

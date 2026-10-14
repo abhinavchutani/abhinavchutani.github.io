@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ball, box, cyl, dust, field, matte, paint, put, rng, shell, type Place } from "../kit";
+import { ball, box, cyl, dust, field, matte, paint, put, rng, shell, tiled, type Place } from "../kit";
 import { proceduralRibbons, staticRibbons } from "../ribbons";
 
 /**
@@ -93,7 +93,8 @@ export function library(): Place {
   });
   flags.wrapS = flags.wrapT = THREE.RepeatWrapping;
   flags.repeat.set(1 / 4.4, 1 / 4.4);
-  const paving = new THREE.MeshStandardMaterial({ map: flags, roughness: 1 });
+  // Underfoot: limestone slabs (a photograph), which is what a floor like this is made of.
+  const paving = new THREE.MeshStandardMaterial({ map: tiled("marble", 1 / 10, 1 / 10), color: 0xf2ead8, roughness: 0.85 });
   // Under the books and the colonnade it runs to the horizon; by the desk it stops at the wall with the window.
   const open = new THREE.Shape();
   [[-13, -90], [90, -90], [90, 70], [-13, 70]].forEach(([x, y], i) => (i ? open.lineTo(x, y) : open.moveTo(x, y)));
@@ -133,7 +134,7 @@ export function library(): Place {
   const desk = put(new THREE.Group(), -21.2, -2.3, -3.5, 0.72, -0.34, 0);
   desk.scale.setScalar(0.78);
   slide.add(desk);
-  desk.add(put(box(13, 0.4, 7.4, matte(0x8a6a44, 0.7)), 0, -0.2, 0));
+  desk.add(put(box(13, 0.4, 7.4, new THREE.MeshStandardMaterial({ map: tiled("walnut", 2, 1), color: 0xb98a5c, roughness: 0.55 })), 0, -0.2, 0));
 
   // The journal: indigo cloth, two pages, rules and handwriting.
   const pageOf = (written: number) =>
@@ -170,6 +171,9 @@ export function library(): Place {
   const leftPage = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 3.9), new THREE.MeshStandardMaterial({ map: pageOf(18), roughness: 0.9 }));
   const rightPage = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 3.9), new THREE.MeshStandardMaterial({ map: pageOf(6), roughness: 0.9 }));
   journal.add(put(leftPage, -1.42, 0.2, 0, -Math.PI / 2, -0.07, 0), put(rightPage, 1.42, 0.2, 0, -Math.PI / 2, 0.07, 0));
+  // The grain of the paper, laid over both pages.
+  const grain = new THREE.MeshBasicMaterial({ map: tiled("paper", 1, 1.4), transparent: true, blending: THREE.MultiplyBlending, premultipliedAlpha: true, depthWrite: false });
+  journal.add(put(new THREE.Mesh(new THREE.PlaneGeometry(2.8, 3.9), grain), -1.42, 0.205, 0, -Math.PI / 2, -0.07, 0), put(new THREE.Mesh(new THREE.PlaneGeometry(2.8, 3.9), grain), 1.42, 0.205, 0, -Math.PI / 2, 0.07, 0));
   journal.add(put(box(0.07, 0.01, 5.2, matte(0x9b1c2e, 0.8)), 0.3, 0.24, 0.7)); // ribbon marker
   desk.add(journal);
 
@@ -208,6 +212,35 @@ export function library(): Place {
     tray.add(one);
   });
   desk.add(tray);
+
+  // The candle: a brass stick, a stub of wax, a flame. By the desk it is the light of the place.
+  const candle = put(new THREE.Group(), 2.3, 0, -3.1);
+  candle.add(put(cyl(0.62, 0.7, 0.1, goldTrim, 28), 0, 0.05, 0), put(cyl(0.12, 0.2, 0.5, goldTrim, 16), 0, 0.33, 0), put(cyl(0.32, 0.26, 0.08, goldTrim, 20), 0, 0.6, 0));
+  candle.add(put(cyl(0.2, 0.21, 1.25, matte(0xefe6d0, 0.5), 20), 0, 1.25, 0), put(cyl(0.012, 0.012, 0.16, matte(0x1a1410, 0.8), 6), 0, 1.94, 0));
+  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 14), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.9, 1.35, 0.6), transparent: true, opacity: 0 }));
+  flame.scale.set(1, 2.3, 1);
+  const halo = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: paint(128, 128, (ctx, w) => {
+        const g = ctx.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+        g.addColorStop(0, "rgba(255,214,150,0.9)");
+        g.addColorStop(0.25, "rgba(255,170,90,0.28)");
+        g.addColorStop(1, "rgba(255,150,70,0)");
+        ctx.clearRect(0, 0, w, w);
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, w, w);
+      }),
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      opacity: 0,
+    }),
+  );
+  halo.scale.setScalar(1.5);
+  const wick = put(new THREE.Group(), 0, 2.2, 0);
+  wick.add(flame, halo);
+  candle.add(wick);
+  desk.add(candle);
 
   // Ink, sketchbook, pencil.
   const bottle = put(new THREE.Group(), 4.6, 0, -2.2);
@@ -290,7 +323,7 @@ export function library(): Place {
   const opening = new THREE.Path();
   [[PANE.x - PANE.w / 2, PANE.y - PANE.h / 2], [PANE.x - PANE.w / 2, PANE.y + PANE.h / 2], [PANE.x + PANE.w / 2, PANE.y + PANE.h / 2], [PANE.x + PANE.w / 2, PANE.y - PANE.h / 2]].forEach(([x, y], i) => (i ? opening.lineTo(x, y) : opening.moveTo(x, y)));
   wallShape.holes.push(opening);
-  slide.add(put(new THREE.Mesh(new THREE.ShapeGeometry(wallShape), matte(0xe6dfcf, 1)), 0, 0, -16.2));
+  slide.add(put(new THREE.Mesh(new THREE.ShapeGeometry(wallShape), new THREE.MeshStandardMaterial({ map: tiled("plaster", 1 / 14, 1 / 14), color: 0xf4ebd8, roughness: 1 })), 0, 0, -16.2));
   // The frame: ink-dark timber, a mullion and a transom, a deep sill.
   const timber = matte(0x221c1a, 0.6);
   const sash = put(new THREE.Group(), PANE.x, PANE.y, -16.2);
@@ -335,7 +368,18 @@ export function library(): Place {
     slide,
     // What is outside is drawn only where the window is.
     portal: [-1, 1].flatMap((sx) => [-1, 1].map((sy) => new THREE.Vector3(PANE.x + (sx * PANE.w) / 2, PANE.y + (sy * PANE.h) / 2, -16.2))),
-    update({ time, theta }) {
+    lamp: wick,
+    update({ ch, time, theta }) {
+      // Night comes on towards the desk, and the candle with it: it flickers, as a flame does.
+      const night = Math.min(1, Math.max(0, ch[7]));
+      const flicker = 0.86 + 0.09 * Math.sin(time * 11.3) + 0.05 * Math.sin(time * 23.7 + 1.3);
+      flame.material.opacity = night;
+      flame.scale.set(1 + 0.1 * Math.sin(time * 9.1), 2.3 * flicker, 1);
+      // Leaving by the window the camera passes right over the flame: its glow is down to nothing before then,
+      // or it would white the frame out for a moment.
+      const leaving = Math.min(1, Math.max(0, (ch[8] ?? 0) / 0.14));
+      halo.material.opacity = night * 0.32 * flicker * (1 - leaving * leaving * (3 - 2 * leaving));
+      wick.position.x = Math.sin(time * 7.3) * 0.012;
       leaves.rotation.y = Math.sin(time * 0.05) * 0.1 + theta * 0.02;
       leaves.position.y = Math.sin(time * 0.21) * 0.3;
       // The pen works along three lines and starts the page again.

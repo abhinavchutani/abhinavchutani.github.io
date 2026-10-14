@@ -621,6 +621,8 @@ html.js:not(.no-stage) {
       outline: 1px solid rgb(138 106 42 / 0.55);
       outline-offset: -0.5rem;
       padding: 2rem 2.2rem 2.1rem;
+      background: url("/tex/paper.jpg") 0 0 / 20rem, #efe6d3;
+      background-blend-mode: multiply;
     }
     [data-chapter="sound"] .sign::before {
       display: none;
@@ -699,23 +701,26 @@ html.js:not(.no-stage) {
       letter-spacing: -0.03em;
     }
 
-    /* 05 Markets: a column of the paper. Ink on newsprint, a heavy rule and a light one over the headline. */
+    /* 01 Markets: a terminal on the floor of the exchange. Black glass, the name in amber, an amber bar over it. */
     [data-chapter="markets"] .sign {
-      --card: #f8ecde;
-      --card-ink: #17131a;
-      --card-line: transparent;
-      border-top: 4px solid #17131a;
-      box-shadow: 0 1.6rem 3rem -1.6rem rgb(60 30 10 / 0.45);
+      --card: #04070ef0;
+      --card-ink: #e6edf7;
+      --card-line: #1c2c4a;
+      --tick: #ffb000;
+      border-top: 3px solid #ffb000;
+      box-shadow:
+        0 1.8rem 3.6rem -1.6rem rgb(0 0 0 / 0.85),
+        inset 0 0 0 1px rgb(88 199 255 / 0.06);
     }
-    [data-chapter="markets"] .sign::before {
-      inset: 0.35rem 0 auto 0;
-      height: 1px;
-      background: #17131a;
+    [data-chapter="markets"] .sign .kicker {
+      font-family: var(--mono);
     }
     [data-chapter="markets"] .sign > .skill > .title {
-      font: 900 clamp(2.5rem, 14.5cqi, 4.4rem) / 0.92 var(--serif);
-      letter-spacing: -0.03em;
-      text-transform: none;
+      color: #ffb000;
+      letter-spacing: -0.035em;
+    }
+    [data-chapter="markets"] .sign .cards.rows h3 {
+      color: #ffb000;
     }
 
     /* 06 Stage: the programme. Deep red, a gold line inside the edge. */
@@ -738,7 +743,9 @@ html.js:not(.no-stage) {
       background:
         linear-gradient(#c8463c, #c8463c) 0 3.35rem / 100% 1px no-repeat,
         repeating-linear-gradient(to bottom, transparent 0 1.55rem, rgb(59 51 214 / 0.1) 1.55rem calc(1.55rem + 1px)) 0 3.4rem,
+        url("/tex/paper.jpg") 0 0 / 20rem,
         #f8f3e7;
+      background-blend-mode: normal, normal, multiply, normal;
       box-shadow: 0 1.4rem 3rem -1.4rem rgb(40 30 80 / 0.4);
     }
     [data-chapter="mind"] .sign .kicker {
@@ -751,19 +758,19 @@ html.js:not(.no-stage) {
     }
 
     /* 08 Contact: a wire. Night blue, the address large. */
-    [data-chapter="contact"] .sign {
+    [data-chapter="beyond"] .sign {
       --card: rgb(3 15 26 / 0.86);
       --card-line: rgb(125 255 192 / 0.4);
       padding: 2rem 2.2rem 2.1rem;
     }
-    [data-chapter="contact"] .sign .title.serif {
+    [data-chapter="beyond"] .sign .title.serif {
       font-size: clamp(2.8rem, 15cqi, 5rem);
     }
-    [data-chapter="contact"] .contact .big {
+    [data-chapter="beyond"] .contact .big {
       font-size: clamp(1.5rem, 8cqi, 2.4rem);
       color: var(--accent);
     }
-    [data-chapter="contact"] .contact a:not(.big) {
+    [data-chapter="beyond"] .contact a:not(.big) {
       padding: 0.55rem 0.95rem;
       border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
       border-radius: 99px;
@@ -832,43 +839,212 @@ html.js:not(.no-stage) {
   .rail,
   .readout,
   .progress,
-  .ruler,
-  .corner {
+  .ruler {
     position: fixed;
     z-index: 6;
     color: #fff;
     mix-blend-mode: difference;
     transition: opacity 0.9s linear;
   }
-  &[data-intro="pending"] :is(.brand, .tools, .rail, .readout, .progress, .ruler, .corner) {
+  &[data-intro="pending"] :is(.brand, .tools, .rail, .readout, .progress, .ruler, .frame) {
     opacity: 0;
   }
-  /* The frame: a bracket in each corner of the window, and a ruler with a tick for every stage. */
-  .corner {
-    width: 0.9rem;
-    height: 0.9rem;
-    border: 0 solid rgb(255 255 255 / 0.7);
+  /*
+   * The frame: an edge and a piece in each corner, in the dress of the place the page is in (a gilt
+   * picture frame in the gallery, volutes and a double rule in the library, blocks at the desk, an axis
+   * with its ticks on the exchange floor), and a ruler with a tick for every stage.
+   */
+  .frame {
+    --shape: url("./ui/corner-top.svg");
+    --size: 0.9rem;
+    --gap: 0rem;
+    --line: 0;
+    position: fixed;
+    inset: 0.55rem;
+    z-index: 6;
     pointer-events: none;
+    color: #fff;
+    mix-blend-mode: difference;
+    transition: opacity 0.17s linear;
+  }
+  .frame[data-swap] {
+    opacity: 0;
+  }
+  .corner {
+    position: absolute;
+    width: var(--size);
+    height: var(--size);
+    background: currentColor;
+    mask: var(--shape) 0 0 / 100% 100% no-repeat;
+    opacity: 0.85;
   }
   .corner.tl {
-    top: 0.55rem;
-    left: 0.55rem;
-    border-width: 1px 0 0 1px;
+    top: 0;
+    left: 0;
   }
   .corner.tr {
-    top: 0.55rem;
-    right: 0.55rem;
-    border-width: 1px 1px 0 0;
+    top: 0;
+    right: 0;
+    transform: scaleX(-1);
   }
   .corner.bl {
-    bottom: 0.55rem;
-    left: 0.55rem;
-    border-width: 0 0 1px 1px;
+    bottom: 0;
+    left: 0;
+    transform: scaleY(-1);
   }
   .corner.br {
-    bottom: 0.55rem;
-    right: 0.55rem;
-    border-width: 0 1px 1px 0;
+    bottom: 0;
+    right: 0;
+    transform: scale(-1);
+  }
+  .edge {
+    position: absolute;
+    opacity: var(--line);
+    --rule: linear-gradient(currentColor, currentColor);
+  }
+  .edge.t,
+  .edge.b {
+    left: var(--gap);
+    right: var(--gap);
+    height: 1px;
+    background: var(--across, var(--rule));
+  }
+  .edge.l,
+  .edge.r {
+    top: var(--gap);
+    bottom: var(--gap);
+    width: 1px;
+    background: var(--down, var(--rule));
+  }
+  .edge.t {
+    top: 0;
+  }
+  .edge.b {
+    bottom: 0;
+    transform: scaleY(-1);
+  }
+  .edge.l {
+    left: 0;
+  }
+  .edge.r {
+    right: 0;
+    transform: scaleX(-1);
+  }
+
+  /* Markets: an axis. Ticks down both sides that run with the scroll, the accent of the board. */
+  .frame[data-vibe="markets"] {
+    --shape: url("./ui/corner-markets.svg");
+    --size: 3.6rem;
+    --gap: 3.9rem;
+    --line: 0.7;
+    color: #58c7ff;
+    mix-blend-mode: normal;
+    .edge.l,
+    .edge.r {
+      width: 9px;
+      background:
+        linear-gradient(currentColor 1px, transparent 1px) 0 calc(var(--y, 0) * -0.06px) / 9px 60px repeat-y,
+        linear-gradient(currentColor 1px, transparent 1px) 0 calc(var(--y, 0) * -0.06px) / 5px 12px repeat-y;
+    }
+    .edge.t,
+    .edge.b {
+      opacity: 0.3;
+    }
+  }
+  /* Stage: the rule on a programme, in gold, over and under. */
+  .frame[data-vibe="stage"] {
+    --shape: url("./ui/corner-stage.svg");
+    --size: 3.2rem;
+    --gap: 3.6rem;
+    --line: 0.6;
+    color: #e2b44c;
+    mix-blend-mode: normal;
+    .edge.l,
+    .edge.r {
+      opacity: 0;
+    }
+  }
+  /* Projects: a head-up display. Brackets, and a mark at the middle of each side. */
+  .frame[data-vibe="projects"] {
+    --shape: url("./ui/corner-projects.svg");
+    --size: 3.6rem;
+    --line: 0.7;
+    color: #a99bff;
+    mix-blend-mode: normal;
+    .edge.t,
+    .edge.b {
+      left: calc(50% - 2rem);
+      right: calc(50% - 2rem);
+    }
+    .edge.l,
+    .edge.r {
+      top: calc(50% - 2rem);
+      bottom: calc(50% - 2rem);
+    }
+  }
+  /* Machine: the border of a drawing sheet, with its registration marks. */
+  .frame[data-vibe="machine"] {
+    --shape: url("./ui/corner-machine.svg");
+    --size: 4rem;
+    --gap: 4.3rem;
+    --line: 0.5;
+    mix-blend-mode: normal;
+  }
+  /* Code: blocks. A bracket of pixels in each corner, and a dotted line of them that runs with the scroll. */
+  .frame[data-vibe="code"] {
+    --shape: url("./ui/corner-code.svg");
+    --size: 4rem;
+    --gap: 4.5rem;
+    --line: 0.55;
+    --across: linear-gradient(to right, currentColor 4px, transparent 4px) calc(var(--y, 0) * 0.05px) 0 / 12px 4px repeat-x;
+    --down: linear-gradient(to bottom, currentColor 4px, transparent 4px) 0 calc(var(--y, 0) * 0.05px) / 4px 12px repeat-y;
+    color: #5cf2a0;
+    mix-blend-mode: normal;
+    .corner {
+      image-rendering: pixelated;
+    }
+    .edge.t,
+    .edge.b {
+      height: 4px;
+    }
+    .edge.l,
+    .edge.r {
+      width: 4px;
+    }
+  }
+  /* Sound: the gallery's picture frame. Gilt, thick and thin, a rosette at each mitre. */
+  .frame[data-vibe="sound"] {
+    --shape: url("./ui/corner-sound.svg");
+    --size: 4rem;
+    --line: 0.8;
+    --across: linear-gradient(to bottom, currentColor 2px, transparent 2px 6px, currentColor 6px);
+    --down: linear-gradient(to right, currentColor 2px, transparent 2px 6px, currentColor 6px);
+    color: #d9b25a;
+    mix-blend-mode: normal;
+    .edge.t,
+    .edge.b {
+      height: 7px;
+    }
+    .edge.l,
+    .edge.r {
+      width: 7px;
+    }
+  }
+  /* Mind: a page from a printed book. A double rule, and volutes in the corners. */
+  .frame[data-vibe="mind"] {
+    --shape: url("./ui/corner-mind.svg");
+    --size: 4.4rem;
+    --line: 0.75;
+    --across: linear-gradient(to bottom, currentColor 1px, transparent 1px 4px, currentColor 4px);
+    --down: linear-gradient(to right, currentColor 1px, transparent 1px 4px, currentColor 4px);
+    .edge.t,
+    .edge.b {
+      height: 5px;
+    }
+    .edge.l,
+    .edge.r {
+      width: 5px;
+    }
   }
   .ruler {
     right: max(1.4rem, 3vw);
@@ -1208,7 +1384,9 @@ html.js:not(.no-stage) {
 }
 
 @media (max-height: 760px) and (min-width: 820px) {
+  /* A short window: everything set in rem comes down with it, so a card never runs off the foot. */
   html.js:not(.no-stage) {
+    font-size: clamp(10px, 2.1vh, 16px);
     .meter {
       margin-top: 0.9rem;
     }

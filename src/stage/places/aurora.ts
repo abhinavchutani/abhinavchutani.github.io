@@ -327,6 +327,139 @@ export function aurora(): Place {
   for (const [lx, lz] of [[1.5, -9.4], [-1.5, -23.5], [1.5, -37.6]]) jetty.add(put(cyl(0.05, 0.05, 1.6, iron, 6), lx, 2.2, lz), put(ball(0.19, glow(0xffc88a, 2.8), 10), lx, 3.1, lz));
   slide.add(jetty);
 
+  // ---- the mountains: a long way round to the right of the town, across the same water. A massif with snow
+  // on it, lower ridges in front and behind, pines along the shore, and a tent with a lamp in it ----
+  const hash2 = (x: number, y: number) => {
+    const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+    return s - Math.floor(s);
+  };
+  const noise2 = (x: number, y: number) => {
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    let fx = x - ix;
+    let fy = y - iy;
+    fx = fx * fx * (3 - 2 * fx);
+    fy = fy * fy * (3 - 2 * fy);
+    const a = hash2(ix, iy) + (hash2(ix + 1, iy) - hash2(ix, iy)) * fx;
+    const b = hash2(ix, iy + 1) + (hash2(ix + 1, iy + 1) - hash2(ix, iy + 1)) * fx;
+    return a + (b - a) * fy;
+  };
+  /** Ridged noise: creases where the plain kind has crests, which is what makes rock read as rock. */
+  const ridged = (x: number, y: number) => {
+    let v = 0;
+    let amp = 0.5;
+    for (let i = 0; i < 5; i++) {
+      const n = 1 - Math.abs(noise2(x, y) * 2 - 1);
+      v += amp * n * n;
+      x = x * 2.07 + 13.1;
+      y = y * 2.07 + 7.7;
+      amp *= 0.5;
+    }
+    return v;
+  };
+  const massif = (wide: number, deep: number, high: number, seed: number, snow: number, cols = 180, rows = 90) => {
+    const geometry = new THREE.PlaneGeometry(wide, deep, cols, rows);
+    geometry.rotateX(-Math.PI / 2);
+    const at = geometry.attributes.position as THREE.BufferAttribute;
+    const colours = new Float32Array(at.count * 3);
+    const rock = new THREE.Color(0x1b2230);
+    const scree = new THREE.Color(0x2c3442);
+    const white = new THREE.Color(0xdfe9f4);
+    const forest = new THREE.Color(0x07130f);
+    const tint = new THREE.Color();
+    for (let i = 0; i < at.count; i++) {
+      const x = at.getX(i);
+      const z = at.getZ(i);
+      const u = x / (wide / 2);
+      const v = z / (deep / 2);
+      // The whole thing rises out of the water: nothing at its edges, most in the middle, and uneven along its length.
+      const island = Math.max(0, 1 - Math.pow(Math.abs(u), 2.4)) * Math.max(0, 1 - Math.pow(Math.abs(v), 2.0));
+      const along = 0.55 + 0.45 * noise2(u * 2.3 + seed, 0.5);
+      const h = Math.pow(island, 0.8) * along * (0.25 + 0.95 * ridged(x * 0.022 + seed, z * 0.03 + seed * 0.37)) * high;
+      at.setY(i, h);
+      const level = h / high;
+      const rough = noise2(x * 0.3 + seed, z * 0.3);
+      tint.copy(level < 0.12 ? forest : rock).lerp(scree, rough * 0.6);
+      if (level > snow + (rough - 0.5) * 0.16) tint.lerp(white, Math.min(1, (level - snow) * 6 + 0.35));
+      colours[i * 3] = tint.r;
+      colours[i * 3 + 1] = tint.g;
+      colours[i * 3 + 2] = tint.b;
+    }
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colours, 3));
+    geometry.computeVertexNormals();
+    return new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 }));
+  };
+  // The range stands where the camera looks when the night is turned a radian to the right (see table.ts).
+  const range = put(new THREE.Group(), 0, SEA, 0, 0, -1.0, 0);
+  slide.add(range);
+  const land = new THREE.Group();
+  land.add(put(massif(210, 90, 46, 3.1, 0.42), 6, -0.4, -128));
+  land.add(put(massif(260, 70, 30, 9.4, 0.62, 140, 60), -30, -0.4, -196));
+  land.add(put(massif(120, 50, 17, 5.2, 0.8, 110, 50), 44, -0.4, -84));
+  land.add(put(massif(90, 36, 9, 7.9, 2, 90, 40), -42, -0.4, -70));
+  // Pines along the near shore, and a tent among them with a lamp in it.
+  const pine = new THREE.ConeGeometry(1, 1, 7);
+  const pines: [number, number, number][] = [];
+  for (let i = 0; i < 260; i++) {
+    const x = -84 + random() * 150;
+    const z = -58 - random() * 20;
+    pines.push([x, z, 1.6 + random() * 2.6]);
+  }
+  land.add(
+    field(pine, matte(0x06100d, 1), pines.length, (i, d) => {
+      d.position.set(pines[i][0], pines[i][2] * 0.5 + 0.6, pines[i][1]);
+      d.scale.set(pines[i][2] * 0.32, pines[i][2], pines[i][2] * 0.32);
+    }),
+  );
+  // The tent is lit from inside: its canvas glows a little, its mouth more, and there is a fire in front of it.
+  const tent = put(new THREE.Group(), 4, 0.55, -54, 0, 0.5, 0);
+  const gable = new THREE.Shape();
+  gable.moveTo(-1.1, 0);
+  gable.lineTo(1.1, 0);
+  gable.lineTo(0, 1.35);
+  tent.add(new THREE.Mesh(new THREE.ExtrudeGeometry(gable, { depth: 2.4, bevelEnabled: false }), new THREE.MeshStandardMaterial({ color: 0x3a4a3c, roughness: 0.9, emissive: 0xff9a3c, emissiveIntensity: 0.22, side: THREE.DoubleSide })));
+  const mouth = new THREE.Shape();
+  mouth.moveTo(-0.5, 0);
+  mouth.lineTo(0.5, 0);
+  mouth.lineTo(0, 0.95);
+  tent.add(put(new THREE.Mesh(new THREE.ShapeGeometry(mouth), glow(0xffb45c, 1.5)), 0, 0, 2.42));
+  tent.add(put(ball(0.16, glow(0xff8a3c, 2.6), 8), 1.9, 0.05, 3.6), put(cyl(0.3, 0.36, 0.1, matte(0x15110e, 1), 10), 1.9, -0.05, 3.6));
+  land.add(tent);
+  land.add(put(box(240, 1.2, 26, matte(0x05090c, 1)), -8, 0.1, -66));
+  // Their reflection, as the town has its.
+  const below = land.clone(true);
+  below.scale.y = -1;
+  range.add(land, below);
+  // More aurora over them.
+  range.add(put(curtain(300, 70, 21.4, 0.55, 0x2affb0, 0x6a5cff), 0, 62, -250, 0.06));
+  range.add(put(curtain(240, 52, 33.3, 0.5), -40, 50, -215, 0.1, 0.12));
+
+  // Stars, all the way round.
+  slide.add(dust({ count: 2400, size: [0, 0, 0], color: 0xe6ecff, gain: 1.1, point: 0.5, drift: 0, seed: 77, place: (r) => { const a = r() * Math.PI * 2; const up = Math.pow(r(), 0.7); const d = 520; return [Math.cos(a) * Math.sqrt(1 - up * up) * d, 12 + up * d, Math.sin(a) * Math.sqrt(1 - up * up) * d]; } }));
+
+  // ---- the night itself: a dome of sky, so that it is night wherever this place is seen from (through the
+  // library's window, too), whatever is painted behind the frame ----
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(900, 32, 20),
+    new THREE.ShaderMaterial({
+      vertexShader: /* glsl */ `varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: /* glsl */ `
+        varying vec3 vDir;
+        void main() {
+          float up = clamp(vDir.y, -1.0, 1.0);
+          vec3 night = mix(vec3(0.012, 0.045, 0.085), vec3(0.002, 0.008, 0.03), smoothstep(-0.05, 0.6, up));
+          night += vec3(0.0, 0.05, 0.045) * exp(-abs(up) * 9.0);
+          gl_FragColor = vec4(night, 1.0);
+        }
+      `,
+      side: THREE.BackSide,
+      depthWrite: false,
+    }),
+  );
+  dome.renderOrder = -50;
+  dome.frustumCulled = false;
+  slide.add(dome);
+
   // ---- the aurora: five curtains at five depths, each with its own colours and its own weather ----
   slide.add(put(curtain(340, 80, 15.9, 0.26, 0x1fe0a0, 0x3b2ad0), 0, 52, -190, 0.06));
   slide.add(put(curtain(300, 58, 1.3, 0.75), -10, 39, -150, 0.1));

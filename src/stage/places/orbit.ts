@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ball, box, cyl, dust, glow, matte, paint, put, rng, shell, type Place } from "../kit";
+import { ball, box, cyl, dust, field, glow, matte, paint, put, rng, shell, type Place } from "../kit";
 import { poseMatrix } from "../handover";
 import { circle, staticRibbons } from "../ribbons";
 import { PLACES } from "../table";
@@ -333,6 +333,123 @@ export function orbit(): Place {
   sight.frustumCulled = false;
   slide.add(sight);
 
+  // ---- the other projects, each as a thing in the same orbit: they come into the frame for the second stage ----
+  const anchors: Record<string, THREE.Object3D> = {};
+  const steel = new THREE.MeshStandardMaterial({ color: 0x8b8e96, roughness: 0.3, metalness: 1 });
+  const exhibits: { group: THREE.Group; turn: THREE.Group; rest: THREE.Vector3; from: THREE.Vector3; lag: number }[] = [];
+  const exhibit = (key: string, x: number, y: number, z: number, tint: number, lag: number) => {
+    const group = new THREE.Group();
+    // A ring to stand on, in the project's own colour, and a hairline one outside it.
+    group.add(put(new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.025, 8, 72), glow(tint, 1.7)), 0, -0.95, 0, Math.PI / 2));
+    group.add(put(new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.008, 6, 72), glow(tint, 0.8)), 0, -0.95, 0, Math.PI / 2));
+    const turn = new THREE.Group();
+    group.add(turn);
+    const anchor = put(new THREE.Object3D(), 1.15, 0.9, 0);
+    group.add(anchor);
+    anchors[key] = anchor;
+    slide.add(group);
+    exhibits.push({ group, turn, rest: new THREE.Vector3(x, y, z), from: new THREE.Vector3(x + 16 + lag * 9, y + (y > 0 ? 5 : -5), z - 26), lag });
+    return turn;
+  };
+
+  // FairBench: random portfolios inside the box their constraints draw, a few of them a manager's, and a qubit beside it.
+  {
+    const turn = exhibit("fairbench", 0.9, 1.7, 0.4, 0x9fdcff, 0);
+    const cage = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.5, 1.05, 1.05)), new THREE.LineBasicMaterial({ color: new THREE.Color(0.9, 1.3, 1.6), transparent: true, opacity: 0.75 }));
+    turn.add(put(cage, -0.15, 0, 0));
+    const dots: THREE.Vector3[] = [];
+    for (let i = 0; i < 150; i++) dots.push(new THREE.Vector3((random() - 0.5) * 1.4 - 0.15, (random() + random() - 1) * 0.42, (random() - 0.5) * 0.95));
+    turn.add(field(new THREE.SphereGeometry(0.018, 6, 5), glow(0x5fd0c0, 1.3), dots.length, (i, d) => d.position.copy(dots[i])));
+    turn.add(field(new THREE.SphereGeometry(0.045, 10, 8), glow(0xffb648, 2.2), 6, (i, d) => d.position.copy(dots[i * 7]).multiplyScalar(0.8).add(new THREE.Vector3(-0.03, 0.18, 0))));
+    const qubit = put(new THREE.Group(), 1.0, 0.1, 0);
+    for (const rot of [[0, 0, 0], [Math.PI / 2, 0, 0], [0, 0, Math.PI / 2]]) qubit.add(put(new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.008, 6, 48), glow(0xcfe8ff, 1.2)), 0, 0, 0, rot[0], rot[1], rot[2]));
+    const needle = put(new THREE.Group(), 0, 0, 0, 0.7, 0, 0.5);
+    needle.add(put(cyl(0.012, 0.012, 0.3, glow(0xffb648, 2), 6), 0, 0.15, 0), put(new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.09, 10), glow(0xffb648, 2)), 0, 0.33, 0));
+    qubit.add(needle);
+    turn.add(qubit);
+  }
+  // Engram: the documents, round the question; the ones that answer it lit, and tied to it.
+  {
+    const turn = exhibit("engram", 3.9, 1.95, -0.6, 0xa99bff, 0.25);
+    const sheet = paint(128, 168, (ctx, w, h) => {
+      ctx.fillStyle = "#e9e6f4";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#3a3566";
+      ctx.fillRect(12, 14, 60, 9);
+      ctx.fillStyle = "rgba(40,36,80,0.5)";
+      const r = rng(7);
+      for (let y = 36; y < h - 14; y += 11) ctx.fillRect(12, y, (w - 24) * (0.55 + r() * 0.45), 4);
+    });
+    const page = new THREE.MeshBasicMaterial({ map: sheet, side: THREE.DoubleSide, color: new THREE.Color(0.62, 0.62, 0.7) });
+    const found = new THREE.MeshBasicMaterial({ map: sheet, side: THREE.DoubleSide, color: new THREE.Color(1.5, 1.45, 1.7) });
+    const ties: THREE.Vector3[][] = [];
+    for (let i = 0; i < 16; i++) {
+      // Spread evenly over a sphere, each facing out.
+      const up = 1 - (2 * (i + 0.5)) / 16;
+      const round = i * 2.39996;
+      const at = new THREE.Vector3(Math.cos(round) * Math.sqrt(1 - up * up), up * 0.8, Math.sin(round) * Math.sqrt(1 - up * up)).multiplyScalar(0.92);
+      const hit = i % 5 === 1;
+      const card = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.47), hit ? found : page);
+      card.position.copy(at);
+      card.lookAt(at.clone().multiplyScalar(2));
+      turn.add(card);
+      if (hit) ties.push([new THREE.Vector3(), at.clone()]);
+    }
+    turn.add(staticRibbons(ties, { width: 0.014, minPx: 1.2, color: 0xd9d2ff, gain: 1.3, pulse: 2, pulseN: 2, pulseSpeed: 0.5 }));
+    turn.add(ball(0.12, glow(0xd9d2ff, 2.4), 16));
+  }
+  // Shravan Doot: glasses that write what is being said on the lens, with their board on the arm.
+  {
+    const turn = exhibit("shravan", 1.1, -1.5, 1.0, 0x7dffc0, 0.5);
+    const frame = new THREE.MeshStandardMaterial({ color: 0xc9ccd4, roughness: 0.25, metalness: 0.9 });
+    const glassy = new THREE.MeshStandardMaterial({ color: 0x9fd0e8, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide });
+    const words = paint(128, 128, (ctx, w) => {
+      ctx.clearRect(0, 0, w, w);
+      ctx.fillStyle = "rgba(125,255,192,0.95)";
+      const r = rng(4);
+      for (let line = 0; line < 4; line++) {
+        let x = 30;
+        while (x < w - 34) {
+          const wide = 8 + r() * 18;
+          if (line === 3 && x > 70) break;
+          ctx.fillRect(x, 44 + line * 12, wide, 4);
+          x += wide + 5;
+        }
+      }
+    });
+    const pair = put(new THREE.Group(), 0, 0.05, 0, 0.12, -0.45, 0, 1.25);
+    for (const side of [-1, 1]) {
+      pair.add(put(new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.035, 10, 44), frame), side * 0.4, 0, 0));
+      pair.add(put(new THREE.Mesh(new THREE.CircleGeometry(0.32, 36), glassy), side * 0.4, 0, 0));
+      // The arms, back from the hinges.
+      pair.add(put(box(0.05, 0.05, 1.05, frame), side * 0.75, 0.04, -0.52, 0, side * -0.06, 0), put(box(0.1, 0.07, 0.05, frame), side * 0.74, 0.04, 0));
+    }
+    pair.add(put(new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.03, 8, 20, Math.PI), frame), 0, 0.06, 0));
+    pair.add(put(new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.6), new THREE.MeshBasicMaterial({ map: words, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: new THREE.Color(1.6, 1.6, 1.6) })), 0.4, 0, 0.01));
+    // The board and its microphone, on the right arm.
+    pair.add(put(box(0.03, 0.2, 0.44, matte(0x0f5a3a, 0.5)), 0.79, 0.04, -0.4), put(box(0.035, 0.07, 0.1, steel), 0.81, 0.07, -0.3), put(cyl(0.02, 0.02, 0.05, matte(0x15171c, 0.4), 8), 0.8, -0.06, -0.08, 0, 0, Math.PI / 2));
+    turn.add(pair);
+  }
+  // Terra Mitra: a probe in the soil with its panel and its sensor head, and what it is there to look after.
+  {
+    const turn = exhibit("terra", 3.45, -1.4, 0.2, 0xffd84a, 0.75);
+    const soil = ball(0.8, matte(0x2c1c12, 1), 24);
+    soil.scale.set(1, 0.26, 1);
+    turn.add(put(soil, 0, -0.62, 0));
+    turn.add(put(cyl(0.035, 0.035, 1.35, steel, 10), -0.2, 0.05, 0), put(box(0.34, 0.24, 0.2, matte(0xe6e8ee, 0.4)), -0.2, 0.62, 0), put(ball(0.035, glow(0x7dffc0, 2.6), 8), -0.08, 0.66, 0.1));
+    turn.add(put(cyl(0.01, 0.01, 0.5, steel, 6), -0.3, 0.98, 0));
+    turn.add(put(box(0.72, 0.02, 0.46, new THREE.MeshStandardMaterial({ map: cells, roughness: 0.3, metalness: 0.7 })), -0.2, 0.86, -0.02, 0.55, 0.3, 0));
+    const leaf = new THREE.MeshStandardMaterial({ color: 0x3fae5a, roughness: 0.6, emissive: 0x0f3a1a, emissiveIntensity: 0.6 });
+    for (const [x, z, tallness] of [[0.35, 0.1, 0.42], [0.55, -0.2, 0.3], [0.2, 0.36, 0.26], [0.5, 0.32, 0.36]] as const) {
+      turn.add(put(cyl(0.012, 0.016, tallness, leaf, 6), x, -0.55 + tallness / 2, z));
+      for (const side of [-1, 1]) {
+        const blade = ball(0.1, leaf, 10);
+        blade.scale.set(1, 0.14, 0.5);
+        turn.add(put(blade, x + side * 0.08, -0.55 + tallness, z, 0, 0, side * 0.6));
+      }
+    }
+  }
+
   // Stars, and the sun as a single hard light.
   slide.add(dust({ count: 2600, size: [0, 0, 0], color: 0xdfe2ff, gain: 1.2, point: 0.28, drift: 0, seed: 5, place: (r) => { const a = r() * Math.PI * 2; const y = r() * 1.6 - 0.5; const d = 120 + r() * 60; return [Math.cos(a) * d, y * 60, -Math.abs(Math.sin(a) * d) - 20]; } }));
   slide.add(put(ball(1.1, glow(0xfff2d6, 5), 16), 62, 34, -80));
@@ -343,10 +460,24 @@ export function orbit(): Place {
   const quaternion = new THREE.Quaternion();
   const forward = new THREE.Vector3(0, 0, 1);
 
+  const aim = new THREE.Vector3();
   return {
     root,
     slide,
+    anchors,
     update({ ch, time, theta }) {
+      // The second stage: the satellite goes back and to the left, and the other projects come in round the frame.
+      const also = ch[8] ?? 0;
+      const gone = Math.min(1, Math.max(0, (ch[7] - 0.02) / 0.2));
+      exhibits.forEach(({ group, turn, rest, from, lag }, i) => {
+        const t = Math.min(1, Math.max(0, (also - lag * 0.3) / 0.7));
+        const e = 1 - Math.pow(1 - t, 3);
+        group.position.lerpVectors(from, rest, e);
+        group.position.y += Math.sin(time * 0.5 + i * 1.7) * 0.07;
+        group.scale.setScalar(Math.max(0.0001, (0.25 + 0.62 * e) * (1 - gone)));
+        group.visible = also > 0.01 && gone < 0.995;
+        turn.rotation.y = time * 0.25 + theta * 0.5 + i;
+      });
       // (The planet itself does not turn: the drawing board lies on it, a long way down.)
       earth.material.uniforms.uTime.value = time + theta * 5;
       // The patch of sea turns to drawing only once the camera has tipped over to fall towards it.
@@ -356,8 +487,13 @@ export function orbit(): Place {
       const here = Math.min(1, Math.max(0, (ch[6] - 0.3) / 0.7));
       const away = 1 - here * here * (3 - 2 * here);
       globe.position.y = -22.4 - away * 13;
+      const back = also * also * (3 - 2 * also);
       station.rotation.z = 0.12 + Math.sin(time * 0.3) * 0.04 + away * 0.5;
-      station.position.set(4.7 + away * 13, 1.9 + Math.sin(time * 0.4) * 0.12 + away * 3, -3 - away * 8);
+      station.position.set(4.7 + away * 13 - back * 10.5, 1.9 + Math.sin(time * 0.4) * 0.12 + away * 3 + back * 2.6, -3 - away * 8 - back * 13);
+      // What it is hunting goes with it.
+      aim.set(targetAt.x - back * 10.5, targetAt.y + back * 2.6, targetAt.z - back * 13);
+      target.position.copy(aim);
+      lock.position.copy(aim);
 
       // Debris: each bit tumbles on its own axis and drifts along the lane.
       for (const { mesh, bits } of swarms) {
@@ -378,12 +514,12 @@ export function orbit(): Place {
 
       // The net: out along the line of sight, opening as it goes, closing on the target; then again.
       const cycle = (time % 9) / 9;
-      const out = ch[6] * Math.min(1, cycle / 0.34);
+      const out = ch[6] * Math.min(1, cycle / 0.34) * (1 - Math.min(1, also * 3));
       const eased = 1 - Math.pow(1 - out, 3);
       const fade = 1 - Math.min(1, Math.max(0, (cycle - 0.86) / 0.12));
       from.set(0, -0.1, 1.5).applyMatrix4(craft.matrixWorld);
       slide.worldToLocal(from);
-      to.copy(targetAt);
+      to.copy(aim);
       net.position.lerpVectors(from, to, eased);
       quaternion.setFromUnitVectors(forward, to.clone().sub(from).normalize());
       net.quaternion.copy(quaternion);
@@ -398,7 +534,7 @@ export function orbit(): Place {
       tether.visible = net.visible;
       const ray = sightGeometry.attributes.position as THREE.BufferAttribute;
       ray.setXYZ(0, from.x, from.y, from.z);
-      ray.setXYZ(1, to.x, to.y, to.z);
+      ray.setXYZ(1, aim.x, aim.y, aim.z);
       ray.needsUpdate = true;
 
       target.rotation.set(time * 0.4, time * 0.27, 0);

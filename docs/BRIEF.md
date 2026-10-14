@@ -6,8 +6,8 @@ the site and its brief do not drift apart.
 ## What it is
 
 Abhinav Chutani's portfolio, as one page and one scroll: every discipline from his previous
-site, squeezed into ten resting stages, each a place the camera travels to. No portrait. Every
-fact comes from the previous site or from Abhinav directly; nothing is invented.
+site and his CV, squeezed into twelve resting stages, each a place the camera travels to. No portrait. Every
+fact comes from the previous site, his CV or Abhinav directly; nothing is invented.
 
 ## The reference, studied
 
@@ -37,18 +37,20 @@ place, card and colour here comes from the topic it shows.
 In his order of importance (from his CV and the profile he wrote for LinkedIn): what he studies
 now, what he has led, what he has built, the making behind it, and then the person.
 
-| # | Chapter | Place | The move that gets there (one gesture each) | Card |
-| --- | --- | --- | --- | --- |
-| 00 | Origin | a thread of light, one strand per discipline | opener: a flight down a tunnel of streaks | the name |
-| 01 | Markets | a newspaper page: candles, simulated paths, the podium | forwards down the thread to the point it comes from: the last price, where the paths fan out | newspaper column |
-| 02 | Stage | an auditorium from beside the lectern | eyes up from the page: it is on the lectern | programme |
-| 03 | Projects | Earth's limb, debris, the satellite and its net | up: one tilt, then straight through the oculus to the stars | head-up display |
-| 04 | Machine | an FLL table and robot on a blueprint | down: the sea below turns blueprint blue, its grid closing up | title block |
-| 05 | Code | a desk at night: screens of Python, a browser, a brand board | backwards, out of the drawing open on the main monitor | editor window |
-| 06 | Sound | a museum gallery: violin in a glass case, drum kit, five paintings | sideways to the right, into the room next door, open like a set | museum label |
-| 07 | Mind | a stair of fifty books past a colonnade | forwards and round to the left through a tall doorway | index card |
-| 07 | Mind | the desk by the window: journal, pens, sketchbook | sideways to the left | index card |
-| 08 | Contact | Helsinki across the water under the aurora; every discipline one constellation | forwards, out through the open window | a wire |
+| # | Chapter | Place | The move that gets there (one gesture each) | Card | Frame |
+| --- | --- | --- | --- | --- | --- |
+| 00 | Origin | a thread of light, one strand per discipline | opener: a flight down a tunnel of streaks | the name | brackets |
+| 01 | Markets | the floor of an exchange at night: quote board, ticker, trading posts, the bell; candles and simulated paths over the middle post; a chain of blocks | down, through the skylit roof and past the board | a terminal: black glass, amber | an axis whose ticks run with the scroll |
+| 02 | Stage | an auditorium from beside the lectern | forwards, through the bronze doors under the board, which open on the wings | programme | a programme's gold rule |
+| 03 | Projects | Earth's limb, debris, the satellite and its net | up: one tilt, then straight through the oculus to the stars | head-up display | head-up brackets |
+| 03 | Projects | the same orbit: FairBench, Engram, Shravan Doot and Terra Mitra, each a thing on its ring | sideways: the satellite drops back, the four come in | head-up display | head-up brackets |
+| 04 | Machine | an FLL table and robot on a blueprint | down: the sea below turns blueprint blue, its grid closing up | title block | registration marks |
+| 05 | Code | a desk at night: Python, MarksMaxxing in a browser, a brand board | backwards, out of the drawing open on the main monitor | editor window | blocks; the picture itself breaks into blocks at the edge |
+| 06 | Sound | a museum gallery: violin in a glass case, drum kit, five paintings | sideways to the right, into the room next door, open like a set | museum label on paper | a gilt picture frame |
+| 07 | Mind | a stair of fifty books past a colonnade, by day | forwards and round to the left; the gallery's doors open as the camera comes | index card on paper | a double rule with volutes |
+| 07 | Mind | the same room at night: the desk by the window, one candle | sideways to the left, as the light goes down | index card on paper | a double rule with volutes |
+| 08 | Beyond | mountains under the aurora, a tent and its fire | forwards, out through the open window | a wire | brackets |
+| 08 | Beyond | Helsinki across the water; every discipline one constellation | a turn of the head along the shore | a wire | brackets |
 
 ## Motion rules
 
@@ -66,6 +68,12 @@ now, what he has led, what he has built, the making behind it, and then the pers
 - Things in every place turn with distance scrolled. The world leans to the pointer.
 - One gesture reaches the next stage and no further. What is left of it pushes the camera in a
   little, so the hand never moves without an answer.
+- A place the camera will enter through a door keeps the door shut until the camera makes for it,
+  so nothing of the place behind shows in the frame of the one in front.
+- Where two places meet the light agrees: it is night at the desk because it is night outside its
+  window.
+- No light stands in the camera's way: flying through a flame whites the frame out for a moment,
+  and that reads as a flash.
 - Nothing pops. Both places are drawn for the whole of a move; a place entered through a door is
   drawn only inside that door until the camera is through it; the far plane holds a place a
   hundred times larger than the one beside it.
@@ -84,8 +92,8 @@ a stage, the copy as a block at the foot.
 | 2 | "Remove the Ventures part." "Every transition should be unique." "Sometimes I overscroll." "Make this abhinavchutani.github.io." | Variety of axis; rests that hold; publish. | Ventures removed; one gesture, one stage; a pull request on the site's repository. |
 | 3 | "I want to feel that my scrolling is leading to these animations." "Many are just transitions, not cinematography; the best is reading to journaling, because you are actually moving into that space." | Scrub, do not trigger. Travel, do not wipe. | Scroll scrubs the camera; one continuous world with real camera travel between places. |
 | 4 | "The first animation is horrendous: random carpet angles, the wall suddenly appears." "Going into robotics is choppy: a random blueprint on Earth." "Leadership brings a whole big table." "I'm on the violin too long." "There should not be a single moment where I'm moving and nothing is happening." "Nothing in the last two; the final should just be my information." "Take the smoothness, the scroll-to-animation relation, the camera angles and the finish from the Aalto site; the design and vibe from the topic on screen." | Multi-part moves read as chop; things clipped at the far plane popped; two screens per move with a hold felt dead; the copy looked unfinished. | Every move rebuilt as one gesture at one screen of scroll, with smooth turns and measured pacing. The doorway stands alone in space with the gallery inside it. The fall lands on sea that turns to blueprint. The page is on the lectern from the first frame of looking up. Scroll and pointer move every place; a push at a stage leans the camera in. One contact finale. Cards made of each place's own material; a framed window. |
-
 | 5 | "The transition between reading and leadership is too clanky and big." "Add Engram, Terra Mitra, Shravan Doot, FairBench into the projects." "Have my stuff shown in my priority list." "Add fountain pens: this website is about my personality and not just my CV." "Why can I see the museum door on the hero?" "The camera should be like an object which accelerates and slows down with my scroll: it comes into a section, jolts, and then suddenly goes to the axis of right." "No sudden direction shifts. There must always be something on my screen which reacts with my scroll wheel." | Order by importance; the corkscrew was too much; a stop at every stage followed by a new axis reads as a jolt. | Chapters reordered (Markets, Stage, Projects, Machine, Code, Sound, Mind, Contact) with content from his CV and profile; projects together on one card; fountain pens as a discipline and a tray on the desk. Five new moves for the new neighbours, the door gone from the hero. The camera's pose itself is damped, so it is carried through a stage on one line. A push against a holding stage leans the camera in and keeps things turning. |
+| 6 | "Hero to economics is still jerky, the zooming is too strong." "I don't like the trading graphs and one, two, three; maybe Wall Street." "The zoom out to the podium is too extreme and too sudden." "From Syntax to Strings I can see the code in the doorway, and the floor glitches." "At the journaling desk it is daytime, outside it is night: make it a dark room with a candle." "Add the other topics: more 3D structures." "More of the projects in my CV; this doesn't feel like me enough. A mountain for my travels." "Download more textures: the paper, the desk, everything." "Edges and borders of the places: Renaissance, pixelated on Syntax." A custom pointer per place was asked for, built, and then: "just remove the cursors." | A scale change reads as a zoom, and he wants less of it. A chart is a picture of a market, not a place. Light has to agree across a doorway. He wants to see his projects as things. | Markets rebuilt as the floor of an exchange, entered by sinking through its roof and left on foot through its doors. Doors on the gallery; the two floors no longer share a plane. The desk at night by one candle. Four projects as exhibits in orbit, the blockchain and the Monte Carlo fan labelled on the exchange floor, MarksMaxxing on a screen. Mountains, a tent and a Travel stage. CC0 photographs on floors, walls, desks and pages, and paper grain on the paper cards. A frame dressed per chapter and a block edge at the Code desk. The lean-in on a push halved; the rush blur eased. Remaining CV honours added to the copy. Custom pointers removed. |
 
 ## Measured against the reference
 
@@ -97,4 +105,9 @@ successive frames, 192 × 120 greyscale, copy and chrome hidden), on both sites 
 | Aalto AI (reference) | 475 | 1.5% | 8.6% |
 | This site, round 3 | 324 | 9.0% | 8.8% |
 | This site, round 4 | 656 | 2.1% | 1.7% |
-| This site, now (round 5: new order, new moves) | 600 | 1.4% | 1.0% |
+| This site, round 5 (new order, new moves) | 600 | 1.4% | 1.0% |
+| This site, now (round 6: twelve stages, three new moves) | 576 | 4.3% | 3.6% |
+
+Inside each move the pacing holds; the percentages rose because the moves now differ more from one
+another (see the README). The first measurement of this round found a flash: the camera left the
+desk through the candle flame. The candle was moved clear of the way out.

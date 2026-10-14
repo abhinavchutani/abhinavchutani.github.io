@@ -52,6 +52,8 @@ export type Place = {
   anchors?: Record<string, THREE.Object3D>;
   /** The corners (in the slide's coordinates) of an opening the next place is seen through from here. */
   portal?: THREE.Vector3[];
+  /** A lamp in this place (a candle): the stage keeps its one point light where this is while the place is drawn. */
+  lamp?: THREE.Object3D;
   /**
    * A screen in this place that the place before it is seen in while the camera arrives (by pulling back out
    * of it): its corners in the slide's coordinates (bottom left, bottom right, top right, top left), and where
@@ -210,6 +212,14 @@ export function picture(url: string) {
   const texture = loader.load(url, (loaded) => upload(loaded));
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
+  return texture;
+}
+
+/** A photographed surface from public/tex/, laid over and over: `across` and `up` are how many times it repeats over the UVs. */
+export function tiled(name: string, across: number, up: number) {
+  const texture = picture(`./tex/${name}.jpg`);
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(across, up);
   return texture;
 }
 

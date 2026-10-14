@@ -459,6 +459,17 @@ export function violin(): Place {
   }
   room.add(put(box(wide, 0.1, 0.14, gilt), midX, 7.4, BACK + 0.08));
   room.add(put(doorCase(WAY.wide, FLOOR, WAY.top, 0.8, matte(0x2a140b, 0.5)), WAY.x, 0, BACK + 0.2));
+  // Its two doors: panelled, with a brass pull each. They are shut until the camera makes for them, and
+  // then they swing away into the library.
+  const high = WAY.top - FLOOR;
+  const doors = [-1, 1].map((side) => {
+    const hinge = put(new THREE.Group(), WAY.x + (side * WAY.wide) / 2, 0, BACK);
+    hinge.add(put(box(WAY.wide / 2, high, 0.16, matte(0x24120a, 0.55)), (-side * WAY.wide) / 4, FLOOR + high / 2, 0));
+    for (const y of [0.24, 0.66]) hinge.add(put(box(WAY.wide / 2 - 0.7, high * 0.3, 0.05, matte(0x3a1d10, 0.5)), (-side * WAY.wide) / 4, FLOOR + high * y, 0.1));
+    hinge.add(put(cyl(0.05, 0.05, 0.9, gilt, 10), -side * (WAY.wide / 2 - 0.35), FLOOR + high * 0.45, 0.18));
+    room.add(hinge);
+    return { hinge, side };
+  });
   // Left wall.
   room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(deep, tall), paperOf(deep / 2.1, tall / 1.6)), LEFT, FLOOR + tall / 2, midZ, 0, HALF, 0));
   room.add(put(new THREE.Mesh(new THREE.PlaneGeometry(deep, 2.4), dadoOf(deep / 3)), LEFT + 0.06, FLOOR + 1.2, midZ, 0, HALF, 0));
@@ -560,7 +571,10 @@ export function violin(): Place {
   return {
     root,
     slide,
-    update({ speed, time, theta }) {
+    update({ ch, speed, time, theta }) {
+      const open = Math.min(1, Math.max(0, ch[7] / 0.4));
+      const swing = open * open * (3 - 2 * open) * 1.8;
+      for (const { hinge, side } of doors) hinge.rotation.y = side * swing;
       // Scrolling plays it harder.
       amp.value = 0.45 + Math.min(1.3, speed * 0.6);
       // It turns about its length (and with the wheel), dwelling on the front and on the back and passing quickly edge-on.

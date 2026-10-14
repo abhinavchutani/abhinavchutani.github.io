@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ball, box, cyl, dust, field, glow, matte, paint, put, rng, shell, type Place } from "../kit";
+import { ball, box, cyl, dust, field, glow, matte, paint, put, rng, shell, tiled, type Place } from "../kit";
 import { proceduralRibbons } from "../ribbons";
 
 /**
@@ -119,9 +119,13 @@ function editorScreen(width: number, height: number, file: string, source: strin
   });
 }
 
-/** A browser window with a page half laid out: boxes where the content will go. */
+/**
+ * A browser window with MarksMaxxing in it, the web app he co-founded: past board papers read for what
+ * recurs. (The bars are set dressing: no figure here is a real one.)
+ */
 function browserScreen() {
   return paint(1024, 680, (ctx, w, h) => {
+    const r = rng(52);
     ctx.fillStyle = "#f3f0e8";
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = "#d9d5ca";
@@ -136,38 +140,37 @@ function browserScreen() {
     ctx.fillRect(130, 14, 620, 34);
     ctx.font = `20px "Space Mono", monospace`;
     ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
     ctx.fillStyle = "#6b675e";
     ctx.fillText("localhost:5173", 150, 32);
-    // The page: nav, a headline, a picture, three cards.
+    // The page: its name, what it read, and how often each topic came up.
     ctx.fillStyle = "#17131a";
-    ctx.fillRect(60, 104, 120, 16);
+    ctx.fillRect(60, 104, 16, 16);
     for (let i = 0; i < 4; i++) ctx.fillRect(660 + i * 80, 106, 54, 10);
-    ctx.font = `900 76px "Inter", sans-serif`;
-    ctx.fillText("BUILD IT.", 56, 216);
-    ctx.font = `italic 400 70px "Playfair Display", serif`;
-    ctx.fillText("Ship it.", 60, 300);
+    ctx.font = `900 68px "Inter", sans-serif`;
+    ctx.fillText("MARKSMAXXING", 56, 206);
+    ctx.font = `italic 400 38px "Playfair Display", serif`;
+    ctx.fillStyle = "#3d3a44";
+    ctx.fillText("1,000+ pages of past board papers,", 60, 278);
+    ctx.fillText("read for what recurs.", 60, 326);
+    ctx.font = `700 17px "Space Mono", monospace`;
     ctx.fillStyle = "#8d887c";
-    for (let i = 0; i < 3; i++) ctx.fillRect(60, 362 + i * 22, 340 - i * 50, 9);
-    ctx.fillStyle = "#17131a";
-    ctx.fillRect(60, 446, 170, 50);
+    ctx.fillText("TOPIC FREQUENCY", 60, 398);
+    for (let i = 0; i < 7; i++) {
+      const y = 432 + i * 32;
+      const wide = (0.95 - i * 0.1 - r() * 0.06) * 560;
+      ctx.fillStyle = "#b9b4a8";
+      ctx.fillRect(60, y + 5, 120 + r() * 60, 9);
+      ctx.fillStyle = i < 2 ? "#12a05c" : "#17131a";
+      ctx.fillRect(280, y, wide, 18);
+    }
     ctx.strokeStyle = "#17131a";
     ctx.lineWidth = 3;
-    ctx.strokeRect(540, 160, 424, 300);
-    ctx.beginPath();
-    ctx.moveTo(540, 160);
-    ctx.lineTo(964, 460);
-    ctx.moveTo(964, 160);
-    ctx.lineTo(540, 460);
-    ctx.stroke();
-    for (let i = 0; i < 3; i++) {
-      ctx.strokeRect(60 + i * 310, 540, 282, 110);
-      ctx.fillStyle = ["#5cf2a0", "#ffb45c", "#a99bff"][i];
-      ctx.fillRect(78 + i * 310, 558, 44, 44);
-      ctx.fillStyle = "#17131a";
-      ctx.fillRect(140 + i * 310, 562, 150, 12);
-      ctx.fillStyle = "#8d887c";
-      ctx.fillRect(140 + i * 310, 586, 110, 8);
-    }
+    ctx.strokeRect(880, 398, 96, 250);
+    ctx.fillStyle = "#12a05c";
+    ctx.fillRect(898, 416, 60, 60);
+    ctx.fillStyle = "#8d887c";
+    for (let i = 0; i < 5; i++) ctx.fillRect(898, 500 + i * 26, 60 - (i % 2) * 18, 8);
   });
 }
 
@@ -257,7 +260,7 @@ export function editor(): Place {
   slide.add(set);
 
   // ---- the desk ----
-  const desk = box(34, 0.4, 16, matte(0x060a0c, 0.62, 0.1));
+  const desk = box(34, 0.4, 16, new THREE.MeshStandardMaterial({ map: tiled("walnut", 4, 2), color: 0x4a3626, roughness: 0.5, metalness: 0.05 }));
   set.add(put(desk, 0, -4.05, 1.5));
 
   const MAIN = { w: 10.2, h: 6.1 };
@@ -276,7 +279,7 @@ export function editor(): Place {
 
   // A browser window, hanging in the air above and behind: the page being built.
   const page = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 4.25), new THREE.MeshBasicMaterial({ map: browserScreen(), color: new THREE.Color(0.9, 0.9, 0.9) }));
-  const pageRig = put(new THREE.Group(), 3.4, 5.6, -7.5, 0.06, -0.2, 0.02);
+  const pageRig = put(new THREE.Group(), 2.2, 4.0, -7.5, 0.06, -0.2, 0.02);
   pageRig.add(page);
   set.add(pageRig);
 
@@ -376,7 +379,7 @@ export function editor(): Place {
       const up = ch[6];
       // The windows settle into place as the camera arrives: the browser down from above (clear of the main
       // screen, which is what the camera is looking out of), the tablet up from the desk.
-      pageRig.position.y = 5.6 + (1 - up) * 5;
+      pageRig.position.y = 4.0 + (1 - up) * 6;
       tablet.position.y = -3.76 - (1 - up) * 1.5;
       // The cursor works its way down the file and starts again.
       const row = Math.floor((time * 1.4 + theta * 2.5) % 28);

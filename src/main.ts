@@ -95,7 +95,14 @@ async function boot() {
   const readoutStage = $("[data-readout-stage]");
   const progress = $("[data-progress]");
   const ticks = [...document.querySelectorAll<HTMLElement>("[data-tick]")];
+  const frame = $("[data-frame]");
   let place = -1;
+  let swap = 0;
+
+  /** The frame belongs to the place: its ornament, its colour. */
+  function dress(at: number) {
+    if (frame) frame.dataset.vibe = chapters[at].id;
+  }
 
   function arrive(index: number, at: number) {
     if (readoutStage) readoutStage.textContent = `${two(index + 1)} / ${two(ticks.length)}`;
@@ -104,7 +111,18 @@ async function boot() {
       sound.tick();
       return;
     }
+    const first = place < 0;
     place = at;
+    // The frame blinks out, changes its dress, and comes back.
+    window.clearTimeout(swap);
+    if (first || reduced) dress(at);
+    else {
+      frame?.setAttribute("data-swap", "");
+      swap = window.setTimeout(() => {
+        dress(at);
+        frame?.removeAttribute("data-swap");
+      }, 170);
+    }
     rail.forEach((item, i) => item.toggleAttribute("data-live", i === at));
     if (readoutIndex) readoutIndex.textContent = two(at);
     if (readoutName) readoutName.textContent = chapters[at].name;
@@ -119,6 +137,8 @@ async function boot() {
     if (progress) progress.style.transform = `scaleX(${Math.min(1, y / limit).toFixed(4)})`;
     const moved = y - lastScroll;
     lastScroll = y;
+    // The frame's ticks run with the page.
+    if (moved !== 0) frame?.style.setProperty("--y", String(Math.round(y)));
     sound.motion(Math.abs(moved) / window.innerHeight / Math.max(0.001, deltaMs / 1000));
     sound.travel(moved);
   });

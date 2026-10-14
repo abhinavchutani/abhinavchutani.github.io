@@ -33,7 +33,7 @@ export type StageOptions = {
   onDive?: () => void;
 };
 
-type Tone = { ground: THREE.Color; top: THREE.Color; accent: THREE.Color; glow: number; haze: number; atX: number; atY: number; vignette: number; grid: number; fog: number; bloom: number; env: number; key: number; rim: number; light: number };
+type Tone = { ground: THREE.Color; top: THREE.Color; accent: THREE.Color; glow: number; haze: number; atX: number; atY: number; vignette: number; grid: number; fog: number; bloom: number; env: number; key: number; rim: number; light: number; lamp: number; pixel: number };
 
 /** An accent at a fixed luminance, so a pale one does not blow the scene out and a dark one does not kill it. */
 function level(color: THREE.Color, target = 0.42) {
@@ -57,13 +57,15 @@ const tone = (look: Look): Tone => ({
   key: look.key,
   rim: look.rim,
   light: look.light ? 1 : 0,
+  lamp: look.lamp ?? 0,
+  pixel: look.pixel ?? 0,
 });
 
 function blend(out: Tone, a: Tone, b: Tone, t: number) {
   out.ground.copy(a.ground).lerp(b.ground, t);
   out.top.copy(a.top).lerp(b.top, t);
   out.accent.copy(a.accent).lerp(b.accent, t);
-  for (const key of ["glow", "haze", "atX", "atY", "vignette", "grid", "fog", "bloom", "env", "key", "rim", "light"] as const) out[key] = a[key] + (b[key] - a[key]) * t;
+  for (const key of ["glow", "haze", "atX", "atY", "vignette", "grid", "fog", "bloom", "env", "key", "rim", "light", "lamp", "pixel"] as const) out[key] = a[key] + (b[key] - a[key]) * t;
   return out;
 }
 
@@ -114,7 +116,9 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
   rim.position.set(-6, 3, -9);
   const under = new THREE.DirectionalLight(0xffffff, 0.6);
   under.position.set(1, -7, 3);
-  scene.add(key, rim, under);
+  // And one lamp (a candle), which stands wherever the place being drawn keeps it, and is out everywhere else.
+  const lamp = new THREE.PointLight(0xffb070, 0, 70, 2);
+  scene.add(key, rim, under, lamp);
 
   const backdrop = new THREE.Mesh(
     new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3)),
@@ -153,6 +157,9 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
   }
 
   const tones = PLACES.map((row) => tone(row.look));
+  const tones2 = PLACES.map((row) => (row.look2 ? tone(row.look2) : null));
+  // A place's tone as it is this frame: its own, or part of the way to its second look.
+  const live = PLACES.map((row) => tone(row.look));
   const mixed = tone(PLACES[0].look);
 
   /** The colour behind everything. */
@@ -216,7 +223,9 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
         gl.setRenderTarget(read);
         const place = places[item.index];
         place.root.visible = true;
-        light(tones[item.index]);
+        light(live[item.index]);
+        lamp.intensity = place.lamp ? live[item.index].lamp : 0;
+        if (place.lamp) place.lamp.getWorldPosition(lamp.position);
         gl.autoClear = !cleared;
         gl.render(scene, camera);
         place.root.visible = false;
@@ -497,7 +506,7 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     const want = options.reduced ? Math.round(d) : Math.min(last, Math.max(0, target.depth));
 
     // A push against a stage brings the camera in a little, and tips it the way the wheel is going.
-    camera.position.set(0, push * 0.5, DIST * (compact ? 1.12 : 1) - Math.abs(push) * 1.6);
+    camera.position.set(0, push * 0.35, DIST * (compact ? 1.12 : 1) - Math.abs(push) * 0.8);
     camera.lookAt(0, 0, 0);
 
     // The world leans towards the pointer (less while the camera is travelling: the move is the motion then),
@@ -570,10 +579,14 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     if (screenOf >= 0) {
       for (let j = screenOf - 1; j >= low; j--) showing.list.push({ index: j, clip: true });
       for (let j = high; j >= screenOf; j--) showing.list.push({ index: j, clip: false });
-      showing.back = tones[screenOf];
+      showing.back = live[screenOf];
     } else for (let j = high; j >= low; j--) showing.list.push({ index: j, clip: false });
-    if (between && PLACES[from + 1].arrive!.keepSky) showing.back = tones[from];
-    blend(mixed, tones[from], tones[from + 1], through * through * (3 - 2 * through));
+    for (let j = low; j <= high; j++) {
+      const second = tones2[j];
+      if (second) blend(live[j], tones[j], second, Math.min(1, Math.max(0, (current[`c${j}`] as number[])[7])));
+    }
+    if (between && PLACES[from + 1].arrive!.keepSky) showing.back = live[from];
+    blend(mixed, live[from], live[from + 1], through * through * (3 - 2 * through));
     const rush = between ? routes[from].rush * Math.pow(Math.sin(Math.PI * through), 2) : 0;
 
     // A place with an outlook: the next one can be seen from it at rest (through a window), so it is drawn
@@ -608,6 +621,8 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     u.uTint.value.copy(mixed.accent);
     u.uTime.value = time;
     u.uGrain.value = 0.022 + 0.01 * mixed.light;
+    // The blocks at the frame's edge reach further in while the page is moving.
+    u.uPixel.value = options.reduced ? mixed.pixel * 0.7 : mixed.pixel * (0.7 + Math.min(0.5, speed * 0.3));
     composer.render(dt);
 
     // ---- DOM in the scene ----

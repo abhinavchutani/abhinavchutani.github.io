@@ -15,6 +15,8 @@ import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
  *    in from the edges of the frame
  *  - the hand-overs: a zoom blur for a dive, a directional smear for a pan, a
  *    fall or a rise, and a hot edge along every seam where two places meet
+ *  - a place's own edge: where one asks for it, the picture breaks into
+ *    blocks towards the frame, larger the nearer the edge
  *  - film grain
  */
 
@@ -43,6 +45,7 @@ const FRAGMENT = /* glsl */ `
   uniform float uAspect;
   uniform float uTime;
   uniform float uGrain;
+  uniform float uPixel;
 
   #include <tonemapping_pars_fragment>
   #include <colorspace_pars_fragment>
@@ -68,12 +71,28 @@ const FRAGMENT = /* glsl */ `
   }
 
   void main() {
+    // A place that is made of pixels: towards the frame the picture is sampled in blocks, in three bands
+    // that double in size. The middle of the frame, where the subject and the copy are, is left alone.
+    vec2 at = vUv;
+    float blocks = 0.0;
+    if (uPixel > 0.001) {
+      // Distance in from the nearest edge, in screen heights, so the band is as wide at the sides as at the top.
+      vec2 c = 0.5 - abs(vUv - 0.5);
+      float inFrom = min(c.x * uAspect, c.y);
+      float band = 0.1 * uPixel;
+      if (inFrom < band) {
+        blocks = 3.0 - floor(inFrom / band * 3.0);
+        vec2 cell = uTexel * 5.0 * exp2(blocks);
+        at = (floor(vUv / cell) + 0.5) * cell;
+      }
+    }
+
     // FXAA (after Timothy Lottes), run on tone-mapped colour.
-    vec3 m = grade(vUv);
-    vec3 nw = grade(vUv + vec2(-1.0, -1.0) * uTexel);
-    vec3 ne = grade(vUv + vec2(1.0, -1.0) * uTexel);
-    vec3 sw = grade(vUv + vec2(-1.0, 1.0) * uTexel);
-    vec3 se = grade(vUv + vec2(1.0, 1.0) * uTexel);
+    vec3 m = grade(at);
+    vec3 nw = grade(at + vec2(-1.0, -1.0) * uTexel);
+    vec3 ne = grade(at + vec2(1.0, -1.0) * uTexel);
+    vec3 sw = grade(at + vec2(-1.0, 1.0) * uTexel);
+    vec3 se = grade(at + vec2(1.0, 1.0) * uTexel);
     float lM = luma(m);
     float lNW = luma(nw);
     float lNE = luma(ne);
@@ -87,8 +106,8 @@ const FRAGMENT = /* glsl */ `
       vec2 dir = vec2(-((lNW + lNE) - (lSW + lSE)), (lNW + lSW) - (lNE + lSE));
       float reduce = max((lNW + lNE + lSW + lSE) * 0.03125, 0.0078125);
       dir = clamp(dir / (min(abs(dir.x), abs(dir.y)) + reduce), -8.0, 8.0) * uTexel;
-      vec3 a = 0.5 * (grade(vUv + dir * (1.0 / 3.0 - 0.5)) + grade(vUv + dir * (2.0 / 3.0 - 0.5)));
-      vec3 b = a * 0.5 + 0.25 * (grade(vUv - dir * 0.5) + grade(vUv + dir * 0.5));
+      vec3 a = 0.5 * (grade(at + dir * (1.0 / 3.0 - 0.5)) + grade(at + dir * (2.0 / 3.0 - 0.5)));
+      vec3 b = a * 0.5 + 0.25 * (grade(at - dir * 0.5) + grade(at + dir * 0.5));
       float lB = luma(b);
       colour = (lB < lMin || lB > lMax) ? a : b;
     }
@@ -146,6 +165,16 @@ const FRAGMENT = /* glsl */ `
       colour += uTint * seam(abs(length(max(q, 0.0)) + min(max(q.x, q.y), 0.0)));
     }
 
+    // The blocks at the edge: a hairline between them, and now and then one lit in the accent.
+    if (blocks > 0.0) {
+      vec2 cell = uTexel * 5.0 * exp2(blocks);
+      vec2 inCell = fract(vUv / cell);
+      float line = step(inCell.x, uTexel.x / cell.x * 1.5) + step(inCell.y, uTexel.y / cell.y * 1.5);
+      colour *= 1.0 - 0.22 * min(1.0, line);
+      float lit = step(0.975, hash(floor(vUv / cell) + floor(uTime * 3.0) * 7.0));
+      colour += uTint * lit * 0.07 * blocks;
+    }
+
     // Fine grain, re-seeded 24 times a second, a touch stronger in the shadows.
     float grain = hash(gl_FragCoord.xy + floor(uTime * 24.0) * vec2(37.0, 17.0)) - 0.5;
     colour += grain * uGrain * (1.0 - 0.6 * luma(colour));
@@ -168,6 +197,7 @@ export type FinishPass = ShaderPass & {
     uAspect: { value: number };
     uTime: { value: number };
     uGrain: { value: number };
+    uPixel: { value: number };
   };
 };
 
@@ -188,6 +218,7 @@ export function createFinishPass(exposure: number): FinishPass {
       uAspect: { value: 1.6 },
       uTime: { value: 0 },
       uGrain: { value: 0.022 },
+      uPixel: { value: 0 },
     },
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
