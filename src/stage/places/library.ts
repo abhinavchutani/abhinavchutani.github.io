@@ -5,7 +5,7 @@ import { proceduralRibbons, staticRibbons } from "../ribbons";
 /**
  * 07 Mind. Cream paper and ink.
  *
- * First a stair of fifty books (one per volume read) winding up past a
+ * First a stair of a hundred books (one per volume read) winding up past a
  * colonnade: the Stoics taught in a painted porch, a stoa, and took their
  * name from it. Then, along the paper to the right, the desk where the
  * daily practice happens: an open journal with a fountain pen writing in
@@ -39,8 +39,8 @@ export function library(): Place {
   const random = rng(50);
   const stone = matte(0xd9d0bd, 0.92);
 
-  // ---- the stair: fifty books ----
-  const BOOKS = 50;
+  // ---- the stair: a hundred books ----
+  const BOOKS = 100;
   const stair = put(new THREE.Group(), -3.4, 0, -4.5);
   slide.add(stair);
   type Piece = { book: number; size: [number, number, number]; at: [number, number, number]; color: number };
@@ -53,7 +53,7 @@ export function library(): Place {
     pieces.push({ book: i, size: [1.94, 0.04, 1.32], at: [0, -thick / 2 - 0.02, 0], color: cloth });
     pieces.push({ book: i, size: [0.05, thick + 0.08, 1.32], at: [0.96, 0, 0], color: cloth }); // spine, outward
   }
-  const helix = (i: number) => ({ a: -2.4 + i * 0.37, y: -5.6 + i * 0.27, r: 4.4 });
+  const helix = (i: number) => ({ a: -2.4 + i * 0.37, y: -5.6 + i * 0.235, r: 4.4 });
   const tread = new THREE.Object3D();
   const bookMatrix = new THREE.Matrix4();
   stair.add(

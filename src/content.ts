@@ -135,7 +135,7 @@ export const chapters: Chapter[] = [
           {
             name: "Economics",
             badge: "Aalto BSc · Yale Financial Markets (Honors)",
-            done: "Economics & Business Administration at Aalto University, after Yale's Financial Markets course and a lot of independent reading. Interested in FinTech, capital allocation, and how economic systems interact at scale.",
+            done: "Economics & Business Administration at Aalto University, where I'm part of Aalto AI and Aalto ES, after Yale's Financial Markets course and a lot of independent reading. Interested in FinTech, capital allocation, and how economic systems interact at scale.",
             feel: "Not just whether something is impressive, but whether it is sustainable, efficient, and worth the cost.",
             level: 75,
             levelLabel: "Yale Certified — Deep Interest",
@@ -221,9 +221,10 @@ export const chapters: Chapter[] = [
         skills: [
           {
             name: "Travel",
-            badge: "Hiking · Camping · Mountains",
+            badge: "Trails · Treks · Camping",
             // In his own words (October 2026).
-            done: "I love travelling: hiking, camping, the mountains. I just like to travel.",
+            done: "Espoo is practically a forest, so there are always trails; Nuuksio is next. I've trekked to Tungnath and up into the mountains, and I like each trip to be a bigger challenge than the last.",
+            feel: "It really makes me feel alive.",
           },
         ],
       },
@@ -305,15 +306,15 @@ export const chapters: Chapter[] = [
           {
             name: "Strings",
             badge: "Violin · Grade 6 ISOM",
-            done: "Violin since the age of 8, through the ISOM grades to Grade 6, with performances at Hard Rock Cafe in Connaught Place and The Piano Man in New Delhi.",
+            done: "Violin since July 2025, about a year and a half, through the ISOM grades to Grade 6, with performances at Hard Rock Cafe in Connaught Place and The Piano Man in New Delhi.",
             feel: "It trained my ear, my patience, and my tolerance for repetition.",
             level: 78,
             levelLabel: "Grade 6 · ISOM Certified",
           },
           {
             name: "Musicality",
-            badge: "Drums · Self-taught",
-            done: "Self-taught drummer: YouTube, music theory, and playing along to tracks. Rhythmically strong from the violin.",
+            badge: "Drums · Grade 3",
+            done: "Drums, learned with a teacher up to Grade 3.",
             level: 65,
           },
         ],
@@ -333,7 +334,7 @@ export const chapters: Chapter[] = [
           {
             name: "Reading",
             badge: "Finance · Economics · Philosophy · History",
-            done: "50+ books. A lot of my thinking starts from reading one good idea closely enough to test it against my own life.",
+            done: "100+ books, philosophy among them. A lot of my thinking starts from reading one good idea closely enough to test it against my own life. Reading now: Mikhail Lermontov and Nietzsche.",
             feel: "It gives me better questions, not just more information.",
             level: 85,
             levelLabel: "Cross-Disciplinary Habit",
@@ -341,7 +342,7 @@ export const chapters: Chapter[] = [
           {
             name: "Philosophy",
             badge: "Stoics · Systems thinking",
-            done: "Aurelius, Seneca, Epictetus. Stoicism is the most practical framework I have for pressure and decisions.",
+            done: "Aurelius, Seneca, Epictetus, and now Nietzsche. Stoicism is the most practical framework I have for pressure and decisions.",
             level: 80,
           },
         ],

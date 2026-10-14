@@ -25,11 +25,11 @@ move is a single gesture, and neighbours never share an axis.
 | 02 | Stage | Leadership · Public Speaking · Symposium | an auditorium from beside the lectern: curtains, a gilded balcony, 3,500 lights | forwards: the bronze doors under the board swing open on the wings of a stage, and the camera walks through to the lectern |
 | 03 | Projects | Orbital Guardian | Earth's limb, debris, the satellite, its detector and its net | up: one tilt of the head to the opening in the ceiling, whose doors swing up on the stars, then straight through |
 | 03 | Projects | FairBench · Engram · Shravan Doot · Terra Mitra, one each (each card goes by with its project) | the same orbit: each project a thing on its own ring, in a pool of its own colour (portfolios in the box their constraints draw with a qubit beside it; documents round a question; glasses with what is said arriving as rings and leaving as words on the lens; a probe in soil, pinging) | sideways, four times: the camera tracks along the row, one project to a stage, each brought up close |
-| 04 | Travel | Travel: hiking, camping, the mountains | mountains at first light, from the air: a valley, a lake, a tent and its fire on the shore, the high range with the sun coming up behind it, the light painted on as it falls at dawn | down from orbit: the land is a patch of the planet at 1/166 the size, on the horizon straight ahead, and the camera glides forwards and down to it, the view dipping only a little |
+| 04 | Travel | Travel: trails in Espoo, Nuuksio next, Tungnath | mountains at first light, from the air: a valley thick with firs, a lake, a tent and its fire on the shore, a trail up the valley, a small stone temple on a ridge, the high range with the sun coming up behind it; the light painted on as it falls at dawn, with photographed rock and grass for grain | down from orbit: the land is a patch of the planet at 1/166 the size, on the horizon straight ahead, and the camera glides forwards and down to it, the view dipping only a little |
 | 05 | Machine | Robotics · Techne | an FLL table and robot on a blueprint | down again, gently: the lake turns into the blue of a drawing from its middle out, and the camera tips over and goes down into it |
 | 06 | Code | Syntax · Web & App Design · Design | a desk at night: Python on two monitors, MarksMaxxing in a browser window, a brand board. The picture breaks into blocks at the edges of the frame | backwards: the blueprint is a drawing open on the main monitor, and the camera pulls out of the screen |
 | 07 | Sound | Strings · Musicality | a museum gallery: damask, five paintings of musicians, a violin in a glass case (turning a little either way, always showing its front), a drum kit behind a rope | sideways to the right, into the room next door, which stands open like a film set |
-| 08 | Mind | Reading · Philosophy | a stair of 50 books past a colonnade, by day | forwards and round to the left: the gallery's double doors open as the camera makes for them |
+| 08 | Mind | Reading · Philosophy | a stair of 100 books past a colonnade, by day | forwards and round to the left: the gallery's double doors open as the camera makes for them |
 | 08 | Mind | Journaling · Fountain Pens · Art & Illustration · Discipline | the same room at night, by one candle: the desk at the window, a journal, a pen that writes, a tray of pens, a sketchbook, iron | sideways to the left along the floor, as the daylight goes down to the candle |
 | 09 | Contact | email, LinkedIn, where | Helsinki across the harbour at night, under the aurora; every discipline as one constellation | forwards over the desk and out through the open window |
 
@@ -50,7 +50,7 @@ the window before the camera goes through it.
 | `src/stage/stage.ts` | Renderer, passes, the frame loop, cards standing in the scene, labels that follow things. |
 | `src/scroll.ts` · `src/sound.ts` · `src/main.ts` | Scrolling (Lenis) · synthesised sound · the page controller and opener. |
 | `public/art/` | Five paintings, used on the gallery walls (see Credits). |
-| `public/tex/` | Photographed surfaces (walnut, limestone, plaster, paper grain), recompressed small; `kit.ts` tiles them on to floors, walls, desks, pages. The cards that are paper wear the same grain. |
+| `public/tex/` | Photographed surfaces (walnut, limestone, plaster, paper grain, and rock and grass seen from above for the mountains), recompressed small; `kit.ts` tiles them on to floors, walls, desks, pages. The cards that are paper wear the same grain. |
 | `src/ui/` | The corner pieces of the frame, one small SVG per chapter. |
 | `src/style.css` | Two layouts: plain (no JS / no WebGL) and staged. Each chapter's card is styled from its own place. |
 | `docs/BRIEF.md` | The brief the site is built against: the reference study, the journey, the motion rules, every review round. |
@@ -192,8 +192,9 @@ Access collection (CC0): Caravaggio, *The Musicians* (1597); Valentin de Boulogn
 (c. 1625–26); Laurent de La Hyre, *Allegory of Music* (1649); Johannes Vermeer, *Young Woman with
 a Lute* (c. 1662–63); Frans Hals, *Boy with a Lute* (c. 1625).
 
-The surfaces are CC0 photographs: black walnut veneer, marble slabs and painted plaster from Poly
-Haven (polyhaven.com), and the paper grain from ambientCG (ambientcg.com, Paper005). Each is cropped
+The surfaces are CC0 photographs: black walnut veneer, marble slabs, painted plaster and two aerial
+grounds (aerial_rocks_02, aerial_grass_rock) from Poly Haven (polyhaven.com), and the paper grain
+from ambientCG (ambientcg.com, Paper005). Each is cropped
 and recompressed to between 20 and 35 KB.
 
 The code on the monitors in chapter 05 is set dressing written for the scene. It shows what the
@@ -241,5 +242,10 @@ Every round, with what was said and what changed, is in `docs/BRIEF.md`. In shor
    gentler dive (a twelfth the size, not a twentieth, and a longer turn); cards that travel with their
    projects; the violin turning about its front; a droplet for the menu. Travel now says what he
    loves about it: hiking, camping, the mountains.
-8. No portrait, no phone number. Every fact on the page comes from his previous site, his CV or
+8. Eighth cut: facts corrected by him (violin since July 2025, not since the age of eight; drums
+   with a teacher to Grade 3, not self-taught; 100+ books, reading Lermontov and Nietzsche now;
+   Aalto AI and Aalto ES at Aalto); his travel in his words (Espoo's trails, Nuuksio, Tungnath, "it
+   really makes me feel alive"). The mountains were "empty": a dense forest of firs, photographed
+   rock and grass as grain, boulders, a trail, a small temple on a ridge. Published as the main site.
+9. No portrait, no phone number. Every fact on the page comes from his previous site, his CV or
    his own profile.

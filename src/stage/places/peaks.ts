@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ball, cyl, field, glow, matte, paint, put, rng, shell, type Place } from "../kit";
+import { ball, box, cyl, field, glow, matte, paint, put, rng, shell, tiled, type Place } from "../kit";
 
 /**
  * Travel. Mountains at first light, seen from the air: this is where the
@@ -161,6 +161,7 @@ export function peaks(): Place {
   const albedo = new THREE.Color();
   const lit = new THREE.Color();
   const n = new THREE.Vector3();
+  const detail = new Float32Array(at.count * 2);
   for (let i = 0; i < at.count; i++) {
     const x = at.getX(i);
     const z = at.getZ(i);
@@ -173,7 +174,12 @@ export function peaks(): Place {
     albedo.copy(meadow).lerp(shore, (1 - smooth(LAKE.r * 1.1, LAKE.r * 3, Math.hypot(x - LAKE.x, z - LAKE.z))) * 0.7).lerp(rockC, smooth(0.05, 0.25, level + steep * 0.5 + (rough - 0.5) * 0.15)).lerp(scree, rough * 0.25 * smooth(0.1, 0.3, level));
     // Snow lies on what is high and not too steep.
     const line = 0.4 + (rough - 0.5) * 0.18 + steep * 0.35;
-    if (h > 2.2) albedo.lerp(snow, smooth(line, line + 0.12, level));
+    const snowy = h > 2.2 ? smooth(line, line + 0.12, level) : 0;
+    if (snowy > 0) albedo.lerp(snow, snowy);
+    // Which photograph shows through, and how strongly: rock where it is high or steep, grass and stones below;
+    // the snow keeps a little of the rock's grain.
+    detail[i * 2] = smooth(0.04, 0.22, level + steep * 0.6);
+    detail[i * 2 + 1] = (1 - snowy * 0.65) * (1 - smooth(260, 380, r));
     const sun = Math.max(0, n.dot(toSun));
     lit.copy(sky).multiplyScalar(0.62 + 0.5 * n.y).add(new THREE.Color().copy(sunlight).multiplyScalar(sun * 1.7));
     albedo.multiply(lit);
@@ -186,7 +192,42 @@ export function peaks(): Place {
     colours[i * 3 + 2] = Math.min(1.25, albedo.b);
   }
   geometry.setAttribute("color", new THREE.Float32BufferAttribute(colours, 3));
-  const ground = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false }));
+  geometry.setAttribute("aDetail", new THREE.Float32BufferAttribute(detail, 2));
+  // Photographs of rock and of grass and stones, seen from above (CC0, Poly Haven), laid over the painted light
+  // as grain: at two scales, so that neither repeats where it can be seen. Far off they average out to nothing.
+  const rockMap = tiled("rock", 1, 1);
+  const meadowMap = tiled("meadow", 1, 1);
+  const ground = new THREE.Mesh(
+    geometry,
+    new THREE.ShaderMaterial({
+      uniforms: { tRock: { value: rockMap }, tMeadow: { value: meadowMap } },
+      vertexShader: /* glsl */ `
+        attribute vec3 color;
+        attribute vec2 aDetail;
+        varying vec3 vColor;
+        varying vec2 vDetail;
+        varying vec2 vAt;
+        void main() {
+          vColor = color;
+          vDetail = aDetail;
+          vAt = position.xz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform sampler2D tRock, tMeadow;
+        varying vec3 vColor;
+        varying vec2 vDetail;
+        varying vec2 vAt;
+        void main() {
+          float rock = texture2D(tRock, vAt / 5.5).r * 0.65 + texture2D(tRock, vAt / 31.0 + 0.37).r * 0.35;
+          float grass = texture2D(tMeadow, vAt / 4.0).r * 0.6 + texture2D(tMeadow, vAt / 23.0 + 0.61).r * 0.4;
+          float grain = mix(grass, rock, vDetail.x);
+          gl_FragColor = vec4(vColor * mix(1.0, 0.42 + grain * 1.16, vDetail.y), 1.0);
+        }
+      `,
+    }),
+  );
   land.add(ground);
   const surface = (x: number, z: number) => height(x, z) - (x * x + z * z) / (2 * CURVE);
 
@@ -250,26 +291,117 @@ export function peaks(): Place {
   const lake = put(new THREE.Mesh(new THREE.CircleGeometry(LAKE.r * 1.4, 64), water), LAKE.x, -0.22, LAKE.z, -Math.PI / 2);
   land.add(lake);
 
-  // ---- pines on the valley floor and the low slopes ----
-  const pine = new THREE.ConeGeometry(1, 1, 6);
-  pine.translate(0, 0.5, 0);
-  const pines: [number, number, number, number][] = [];
-  for (let i = 0; pines.length < 900 && i < 6000; i++) {
-    const x = -40 + random() * 80;
-    const z = -70 + random() * 84;
+  // ---- the forest: thick on the valley floor and up the lower slopes, in stands; firs near, plainer cones far ----
+  // A fir: three tiers of branches round a trunk.
+  const fir = new THREE.LatheGeometry(
+    [[0.05, 0], [0.05, 0.16], [0.5, 0.16], [0.12, 0.44], [0.4, 0.44], [0.1, 0.7], [0.27, 0.7], [0, 1]].map(([x, y]) => new THREE.Vector2(x, y)),
+    5,
+  );
+  const cone = new THREE.ConeGeometry(1, 1, 5);
+  cone.translate(0, 0.5, 0);
+  type Tree = { x: number; y: number; z: number; s: number; shade: number };
+  const near: Tree[] = [];
+  const far: Tree[] = [];
+  for (let i = 0; near.length + far.length < 9000 && i < 60000; i++) {
+    const x = -90 + random() * 180;
+    const z = -150 + random() * 160;
     const h = height(x, z);
     const lakeD = Math.hypot(x - LAKE.x, z - LAKE.z);
-    if (h > 3.2 || lakeD < LAKE.r * 1.25) continue;
-    if (noise2(x * 0.18 + 4, z * 0.18) < 0.42) continue;
-    pines.push([x, surface(x, z) - 0.05, z, 0.25 + random() * 0.35]);
+    if (h > 5.2 || h < 0.05 || lakeD < LAKE.r * 1.3) continue;
+    // In stands, thinning out up the slopes; a clearing by the camp and along the trail.
+    const stand = noise2(x * 0.11 + 4, z * 0.11) * 0.7 + noise2(x * 0.5, z * 0.5) * 0.3;
+    if (stand < 0.36 + h * 0.06) continue;
+    if (Math.hypot(x - (LAKE.x - LAKE.r - 1), z - (LAKE.z + 1.6)) < 2.2) continue;
+    const d = Math.hypot(x, z - 10);
+    const tree = { x, y: surface(x, z) - 0.04, z, s: (0.3 + random() * 0.38) * (1 + Math.min(1.2, d / 90)), shade: random() };
+    (d < 46 ? near : far).push(tree);
   }
+  const treeColour = (tree: Tree, c: THREE.Color) => {
+    c.setRGB(0.009 + tree.shade * 0.01, 0.022 + tree.shade * 0.016, 0.026 + tree.shade * 0.012);
+    const away = Math.hypot(tree.x - eye.x, tree.z - eye.z);
+    c.lerp(horizon, 1 - Math.exp(-Math.pow(away / 420, 1.6)));
+  };
+  const bark = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false });
   land.add(
-    field(pine, new THREE.MeshBasicMaterial({ color: new THREE.Color(0.012, 0.03, 0.035), fog: false }), pines.length, (i, d) => {
-      const [x, y, z, s] = pines[i];
-      d.position.set(x, y, z);
-      d.scale.set(s * 0.32, s, s * 0.32);
+    field(fir, bark, near.length, (i, d, c) => {
+      const t = near[i];
+      d.position.set(t.x, t.y, t.z);
+      d.rotation.y = t.shade * 6.28;
+      d.scale.set(t.s * 0.75, t.s * 1.35, t.s * 0.75);
+      treeColour(t, c);
+    }),
+    field(cone, bark, far.length, (i, d, c) => {
+      const t = far[i];
+      d.position.set(t.x, t.y, t.z);
+      d.scale.set(t.s * 0.33, t.s * 1.3, t.s * 0.33);
+      treeColour(t, c);
     }),
   );
+
+  // ---- boulders, by the water and along the valley ----
+  const stones: [number, number, number, number][] = [];
+  for (let i = 0; stones.length < 160 && i < 4000; i++) {
+    const x = -30 + random() * 60;
+    const z = -60 + random() * 66;
+    const h = height(x, z);
+    if (h > 3 || Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE.r * 1.15) continue;
+    stones.push([x, surface(x, z), z, 0.06 + random() * random() * 0.3]);
+  }
+  land.add(
+    field(new THREE.IcosahedronGeometry(1, 0), bark, stones.length, (i, d, c) => {
+      const [x, y, z, s] = stones[i];
+      d.position.set(x, y + s * 0.3, z);
+      d.rotation.set(random() * 3, random() * 3, random() * 3);
+      d.scale.set(s, s * 0.7, s * 0.9);
+      c.setRGB(0.07, 0.07, 0.09).multiplyScalar(0.7 + random() * 0.6);
+    }),
+  );
+
+  // ---- the trail: from the camp, round the lake and on up the valley towards the range ----
+  const trail: THREE.Vector3[] = [];
+  for (let k = 0; k <= 160; k++) {
+    const t = k / 160;
+    const z = LAKE.z + 2.4 - t * 120;
+    const x = LAKE.x - LAKE.r - 1.6 + Math.sin(t * 9) * (1.2 + t * 6) - t * 6;
+    trail.push(new THREE.Vector3(x, surface(x, z) + 0.035, z));
+  }
+  const strip = new THREE.BufferGeometry();
+  const sides: number[] = [];
+  const tints: number[] = [];
+  const across = new THREE.Vector3();
+  trail.forEach((point, k) => {
+    const next = trail[Math.min(trail.length - 1, k + 1)];
+    const prev = trail[Math.max(0, k - 1)];
+    across.set(next.z - prev.z, 0, -(next.x - prev.x)).normalize().multiplyScalar(0.09 + (k / trail.length) * 0.3);
+    sides.push(point.x - across.x, point.y, point.z - across.z, point.x + across.x, point.y, point.z + across.z);
+    const c = new THREE.Color(0.15, 0.12, 0.11).lerp(horizon, 1 - Math.exp(-Math.pow(Math.hypot(point.x - eye.x, point.z - eye.z) / 420, 1.6)));
+    tints.push(c.r, c.g, c.b, c.r, c.g, c.b);
+  });
+  const lane: number[] = [];
+  for (let k = 0; k < trail.length - 1; k++) lane.push(k * 2, k * 2 + 1, k * 2 + 2, k * 2 + 1, k * 2 + 3, k * 2 + 2);
+  strip.setAttribute("position", new THREE.Float32BufferAttribute(sides, 3));
+  strip.setAttribute("color", new THREE.Float32BufferAttribute(tints, 3));
+  strip.setIndex(lane);
+  land.add(new THREE.Mesh(strip, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, side: THREE.DoubleSide })));
+
+  // ---- on a ridge above the valley, a small stone temple with a flag: as at Tungnath ----
+  const ridge = (() => {
+    let best = { x: -14, z: -30, h: 0 };
+    for (let x = -26; x <= -8; x += 0.5) for (let z = -44; z <= -20; z += 0.5) {
+      const h = height(x, z);
+      if (h > best.h) best = { x, z, h };
+    }
+    return best;
+  })();
+  const shrine = put(new THREE.Group(), ridge.x, surface(ridge.x, ridge.z) - 0.05, ridge.z, 0, 0.5, 0, 0.55);
+  const masonry = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.12, 0.1, 0.11), fog: false });
+  shrine.add(put(box(1.2, 0.4, 1.2, masonry), 0, 0.2, 0), put(box(0.8, 0.8, 0.8, masonry), 0, 0.8, 0));
+  const spire = new THREE.Mesh(new THREE.ConeGeometry(0.62, 1.5, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.2, 0.15, 0.14), fog: false }));
+  shrine.add(put(spire, 0, 1.95, 0, 0, Math.PI / 4, 0));
+  shrine.add(put(cyl(0.02, 0.02, 1.1, masonry, 5), 0.5, 1.15, 0.5));
+  const flag = put(new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.26), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.3, 0.45, 0.12), side: THREE.DoubleSide, fog: false })), 0.71, 1.55, 0.5);
+  shrine.add(flag);
+  land.add(shrine);
 
   // ---- the tent on the shore, lit from inside, and its fire ----
   const camp = put(new THREE.Group(), LAKE.x - LAKE.r - 0.9, 0, LAKE.z + 1.6, 0, 0.6, 0, 0.32);
@@ -382,6 +514,7 @@ export function peaks(): Place {
       });
       // The sun's glow turns slowly, and with the wheel; the smoke drifts with it.
       sun.material.rotation = time * 0.02 + theta * 0.05;
+      flag.rotation.y = Math.sin(time * 2.1 + theta) * 0.35;
     },
   };
 }
