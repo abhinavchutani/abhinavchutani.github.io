@@ -75,10 +75,13 @@ coordinates), then re-measure its pacing. To change a colour world: the chapter'
 - **One gesture, one stage.** A swipe with all its momentum reaches the next stage and stops there,
   so the copy can be read. What is left of the swipe is not thrown away: the camera leans in on it
   and springs back. A fresh push, or a steady scroll held for a beat, moves on.
-- **It never rests between two stages, but it is in no hurry.** A move can be scrubbed a notch at a
-  time, with pauses. Only when the wheel has been quiet for half a second does the page finish the
-  move it was making, gently, in the direction of travel (or fall back, if it was under a third of
-  the way).
+- **It never rests between two stages.** The moment the hand lets go (the wheel quiet for 150 ms, or
+  a trackpad's momentum dying away) the page glides on into the next stage in the direction of
+  travel, starting at the speed it already had and easing into the stage: one motion from the push
+  to the stage, with no stop and no fresh start. The rest of that gesture's momentum is taken up by
+  the glide (it used to cut the glide off half-way, so the page stopped between two stages and set off
+  again); a new push takes over at once and carries on past it. Only a nudge of under 4% of a move
+  falls back.
 - **Copy stands in the scene.** Each card is a DOM block placed with a `matrix3d` built from the
   camera every frame, so it is in the room as the camera comes in.
 - **A jump from the menu is a drop.** A link more than one stage away is not scrolled (a whole
@@ -159,7 +162,15 @@ over 22 ms.
 **Not measured this round:** a real window. A run in one needs the display awake; the night this
 was built it was asleep. Open the page with `?fps` to see what your own browser does.
 
-**Gestures**, with wheel events timed inside the page, on this build: flicks from gentle to very
+**Letting go**, with wheel events timed inside the page and the scroll position recorded every frame
+(round 10, against the live build before it): a small, medium and hard trackpad flick, one mouse
+notch, three quick notches, a flick up, a slow drag let go, and a second push mid-glide each landed
+on the stage they were heading for, in 1.2 to 1.5 s from the first input, never sitting still
+between two stages and with no stop-and-start in the speed. Before: 2.2 to 2.9 s, up to 12 frames
+sitting still between stages, 14 to 20 dips in speed per move, and a small flick or a single notch
+fell back to where it started.
+
+**Gestures**, with wheel events timed inside the page, on the round 8 build: flicks from gentle to very
 hard, each with a long tail of momentum, all stopped on the next stage (and one upwards on the
 stage above); letting go 7% into a move fell back, 32% in carried on; nine mouse-wheel notches
 350 ms apart scrubbed a move 100 px at a time and were never pulled back; a slow scrub of 400 px
