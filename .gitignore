@@ -3,6 +3,8 @@
 !/index.html
 !/robots.txt
 !/LICENSE
+# The custom domain, once there is one.
+!/CNAME
 !/.gitignore
 !/assets/
 !/assets/**
