@@ -190,6 +190,25 @@ scrolling, for the motion blur; phone width (430 × 900); reduced motion, no Web
 - **Touch and narrow screens:** native scrolling that snaps near a stage; the same places with the
   subject centred above and the copy as a block at the foot.
 
+## Protection
+
+A page a browser can show can be copied: the HTML, the JavaScript, the shaders and the pictures all
+reach the visitor. What is done here raises the cost of copying and states the terms:
+
+- **The 3D stage runs only at abhinavchutani.github.io** (and on localhost). Served from any other host,
+  opened from a saved copy, or put inside someone else's frame, the page shows its plain version with a
+  notice pointing to the original. To allow another host (a custom domain, a Vercel deploy), build with
+  `VITE_ALLOWED_HOSTS=example.com,www.example.com`.
+- **What ships explains nothing:** no source maps; the build strips every comment, and the comments and
+  layout of every shader; names are minified.
+- **Crawlers:** `robots.txt` turns away AI crawlers, AI agents that fetch for users, and site copiers
+  (search engines may still index the site); `noai`/`noimageai` and a text-and-data-mining reservation
+  (`tdm-reservation` meta and `/.well-known/tdmrep.json`, EU Directive 2019/790 Art. 4(3)).
+- **Terms:** all rights reserved, in `LICENSE` and at the top of the page source.
+
+Rules for crawlers are requests: well-behaved ones honour them, others do not. The source and these notes
+should not be public: keep this repository private (see Deploy).
+
 ## Deploy
 
 `dist/` is a static site with relative asset paths. `.github/workflows/pages.yml` builds and

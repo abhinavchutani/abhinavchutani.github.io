@@ -33,9 +33,43 @@ function creep() {
   requestAnimationFrame(creep);
 }
 
+/**
+ * The 3D stage runs only where the site is published (and on this machine while it is being worked on). Copied
+ * to any other host, saved to disk, or shown inside someone else's frame, the page stays the plain page and says
+ * where the original is. Extra hosts can be allowed at build time: VITE_ALLOWED_HOSTS=example.com,www.example.com.
+ */
+function atHome() {
+  const own = ["YWJoaW5hdmNodXRhbmkuZ2l0aHViLmlv"].map((h) => atob(h));
+  const extra = String(import.meta.env.VITE_ALLOWED_HOSTS ?? "")
+    .split(",")
+    .map((h) => h.trim())
+    .filter(Boolean);
+  const host = window.location.hostname;
+  const local = host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host.endsWith(".localhost");
+  let framed = false;
+  try {
+    framed = window.top !== window.self;
+  } catch {
+    framed = true;
+  }
+  return { home: !framed && (local || own.includes(host) || extra.includes(host)), framed };
+}
+
+function elsewhere(framed: boolean) {
+  html.classList.add("no-stage", "elsewhere");
+  html.dataset.intro = "done";
+  const note = $("[data-elsewhere]");
+  if (!note) return;
+  note.hidden = false;
+  const link = note.querySelector<HTMLAnchorElement>("a");
+  if (link && framed) link.target = "_top";
+}
+
 async function boot() {
   const canvas = $<HTMLCanvasElement>("#stage");
   if (!canvas) return;
+  const { home, framed } = atHome();
+  if (!home) return elsewhere(framed);
   creep();
 
   let scroller: ReturnType<typeof createScroll> | null = null;

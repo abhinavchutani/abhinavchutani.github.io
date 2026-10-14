@@ -1587,6 +1587,30 @@ html.js:not(.no-stage) .drop[data-state="drip"] {
   }
 }
 
+/* Shown only when the page is not where it was published (see main.ts). */
+.elsewhere-note {
+  position: fixed;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: 0;
+  margin: 0;
+  padding: 0.8rem 1.2rem;
+  background: #111;
+  color: #f4f1ea;
+  font: 400 0.8rem/1.4 var(--mono);
+  text-align: center;
+}
+.elsewhere-note[hidden] {
+  display: none;
+}
+.elsewhere-note a {
+  color: #7dffc0;
+}
+html.elsewhere body {
+  padding-top: 3rem;
+}
+
 /* ---- narrow screens: the same places, copy as an ordinary block at the foot ---- */
 @media (max-width: 819px), (max-aspect-ratio: 9 / 10) {
   html.js:not(.no-stage) {

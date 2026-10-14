@@ -149,5 +149,6 @@ export function renderPage() {
 </div>
 <main>${sections}
 </main>
-<div class="followers" aria-hidden="true">${followers}</div>`;
+<div class="followers" aria-hidden="true">${followers}</div>
+<p class="elsewhere-note" data-elsewhere hidden>This is a copy. The original is at <a href="https://abhinavchutani.github.io/">abhinavchutani.github.io</a> — © ${new Date().getFullYear()} ${esc(person.first)} ${esc(person.last)}, all rights reserved.</p>`;
 }
