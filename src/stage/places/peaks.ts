@@ -115,6 +115,8 @@ export function peaks(): Place {
   const RADIUS = 430;
   const positions = new Float32Array((RINGS + 1) * AROUND * 3);
   const colours = new Float32Array((RINGS + 1) * AROUND * 3);
+  // The same land without the dawn haze: how it looks from orbit, where there is no air between it and the eye.
+  const clear = new Float32Array((RINGS + 1) * AROUND * 3);
   const at = { getX: (i: number) => positions[i * 3], getZ: (i: number) => positions[i * 3 + 2], count: (RINGS + 1) * AROUND };
   for (let i = 0; i <= RINGS; i++) {
     const r = RADIUS * Math.pow(i / RINGS, 2.2);
@@ -185,14 +187,19 @@ export function peaks(): Place {
     albedo.multiply(lit);
     // Haze, more of it the further off from where the camera stands.
     const far = Math.hypot(x - eye.x, z - eye.z);
+    const edge = smooth(320, 420, r);
+    clear[i * 3] = Math.min(1.25, albedo.r + (plain.r - albedo.r) * edge);
+    clear[i * 3 + 1] = Math.min(1.25, albedo.g + (plain.g - albedo.g) * edge);
+    clear[i * 3 + 2] = Math.min(1.25, albedo.b + (plain.b - albedo.b) * edge);
     albedo.lerp(horizon, 1 - Math.exp(-Math.pow(far / 420, 1.6)));
-    albedo.lerp(plain, smooth(320, 420, r));
+    albedo.lerp(plain, edge);
     colours[i * 3] = Math.min(1.25, albedo.r);
     colours[i * 3 + 1] = Math.min(1.25, albedo.g);
     colours[i * 3 + 2] = Math.min(1.25, albedo.b);
   }
   geometry.setAttribute("color", new THREE.Float32BufferAttribute(colours, 3));
   geometry.setAttribute("aDetail", new THREE.Float32BufferAttribute(detail, 2));
+  geometry.setAttribute("aClear", new THREE.Float32BufferAttribute(clear, 3));
   // Photographs of rock and of grass and stones, seen from above (CC0, Poly Haven), laid over the painted light
   // as grain: at two scales, so that neither repeats where it can be seen. Far off they average out to nothing.
   const rockMap = tiled("rock", 1, 1);
@@ -200,15 +207,17 @@ export function peaks(): Place {
   const ground = new THREE.Mesh(
     geometry,
     new THREE.ShaderMaterial({
-      uniforms: { tRock: { value: rockMap }, tMeadow: { value: meadowMap } },
+      uniforms: { tRock: { value: rockMap }, tMeadow: { value: meadowMap }, uNear: { value: 1 } },
       vertexShader: /* glsl */ `
         attribute vec3 color;
+        attribute vec3 aClear;
+        uniform float uNear;
         attribute vec2 aDetail;
         varying vec3 vColor;
         varying vec2 vDetail;
         varying vec2 vAt;
         void main() {
-          vColor = color;
+          vColor = mix(aClear, color, uNear);
           vDetail = aDetail;
           vAt = position.xz;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -503,6 +512,8 @@ export function peaks(): Place {
       water.uniforms.uShow.value = Math.min(1, Math.max(0, leaving / 0.55));
       // The sky comes in over the last of the way down.
       dome.material.uniforms.uShow.value = smooth(0.62, 0.96, ch[6] ?? 1);
+      // The air comes in with it: from orbit the land is seen clear, and it hazes over as the camera comes down into it.
+      (ground.material as THREE.ShaderMaterial).uniforms.uNear.value = smooth(0.35, 0.95, ch[6] ?? 1);
       water.uniforms.uTime.value = time;
       // The fire flickers; its smoke goes up and spreads.
       (fire.material as THREE.MeshBasicMaterial).color.setRGB(1, 0.55, 0.24).multiplyScalar(2.6 + Math.sin(time * 9.3) * 0.4 + Math.sin(time * 15.1) * 0.25);

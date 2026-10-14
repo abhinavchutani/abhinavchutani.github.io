@@ -65,8 +65,13 @@ const EARTH_FRAGMENT = /* glsl */ `
     // a piece of, at its own scale. (Near the end of the fall the real ones stand on it.)
     float site = distance(p, uSite);
     float land = smoothstep(0.5, 0.54, fbm(p * 1.7));
-    land = max(land, 1.0 - smoothstep(0.1, 0.24, site));
-    float ice = smoothstep(0.78, 0.9, abs(p.y));
+    // A continent round it, with a coast that wanders.
+    float shore = site + (fbm2(p * 11.0) - 0.5) * 0.16;
+    land = max(land, 1.0 - smoothstep(0.13, 0.2, shore));
+    // Latitude about an axis tipped away from the camera: the poles, and their ice, are out of sight, and the face
+    // in view is temperate. (Taken straight up, the top of the globe, which is what the camera sees, was all ice.)
+    float latitude = dot(p, vec3(0.0, 0.732, -0.681));
+    float ice = smoothstep(0.84, 0.94, abs(latitude));
     // Finer structure for the way down: coasts and the patchwork of the land, and a second scale of
     // cloud. (From orbit it is too small to see, and is left out; nearer still, the camera is over the
     // drawing and none of this is worked out at all.)
@@ -80,21 +85,28 @@ const EARTH_FRAGMENT = /* glsl */ `
     vec3 sea = mix(vec3(0.012, 0.045, 0.16), vec3(0.02, 0.1, 0.26), coast);
     vec3 ground = mix(vec3(0.06, 0.2, 0.06), vec3(0.34, 0.26, 0.12), coast) * (0.72 + 0.56 * coast);
     land = smoothstep(0.42, 0.58, land + (coast - 0.5) * 0.5);
-    land = max(land, 1.0 - smoothstep(0.1, 0.3, site));
+    land = max(land, 1.0 - smoothstep(0.13, 0.2, shore));
+    // Round the site the land is evenly coloured (no mottle), so that the patch of mountains runs out into it.
+    coast = mix(0.5, coast, smoothstep(0.1, 0.2, site));
+    ground = mix(vec3(0.06, 0.2, 0.06), vec3(0.34, 0.26, 0.12), coast) * (0.72 + 0.56 * coast);
     vec3 surface = mix(mix(sea, ground, land), vec3(0.75, 0.8, 0.85), ice);
     float cloud = max(smoothstep(0.6, 0.82, fbm(p * 3.6 + vec3(uTime * 0.012, 0.0, uTime * 0.007))), wisps);
-    cloud *= smoothstep(0.13, 0.34, site);
+    cloud *= smoothstep(0.13, 0.26, site);
     surface = mix(surface, vec3(0.62), cloud * 0.6);
 
     float day = dot(n, normalize(vSun));
     float lit = smoothstep(-0.12, 0.3, day);
-    vec3 colour = surface * (0.015 + lit * 0.62);
+    vec3 colour = surface * (0.02 + lit * 0.78);
+    // The sun's glint on open water.
+    vec3 toEye = normalize(vView);
+    float glint = pow(max(0.0, dot(reflect(-normalize(vSun), n), toEye)), 60.0) * (1.0 - land) * (1.0 - cloud) * lit;
+    colour += vec3(1.0, 0.86, 0.62) * glint * 0.8;
     // Where the next place lies, the planet is the colour that place's land is at its edge, as it is lit there,
     // so that on the way down the land runs out into the planet with no edge to see.
-    colour = mix(colour, vec3(0.105, 0.13, 0.092), 1.0 - smoothstep(0.11, 0.26, site));
+    colour = mix(colour, vec3(0.1, 0.12, 0.09), 1.0 - smoothstep(0.11, 0.17, site));
     // Cities on the night side.
     if (lit < 0.98) {
-      float city = step(0.8, noise(p * 420.0)) * step(0.5, noise(p * 30.0)) * land * (1.0 - cloud) * (1.0 - lit);
+      float city = step(0.8, noise(p * 420.0)) * step(0.5, noise(p * 30.0)) * land * (1.0 - cloud) * (1.0 - smoothstep(0.0, 0.3, lit));
       colour += vec3(1.3, 0.9, 0.45) * city * 0.9;
     }
     // Air: a thin bright line at the limb, bluer in daylight.
@@ -134,7 +146,9 @@ function reticle(color: string, locked: boolean) {
 export function orbit(): Place {
   const { root, slide } = shell();
   const random = rng(77);
-  const sun = new THREE.Vector3(0.9, 0.35, -0.1);
+  // The sun: from the right and a little towards the camera, so that the face of the planet in view is in day,
+  // night comes on down its left-hand side, and the top of the globe (where the camera comes down) is at sunrise.
+  const sun = new THREE.Vector3(0.86, 0.1, 0.5).normalize();
 
   // ---- the planet ----
   // A 64-cube of random numbers, repeating: the lattice its noise is read from.
