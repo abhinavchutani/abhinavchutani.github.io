@@ -61,6 +61,12 @@ export type Place = {
    */
   screen?: THREE.Vector3[];
   mount?: THREE.Matrix4;
+  /**
+   * Where the copy of one of this place's stages stands now, against where it stood at that stage, in the
+   * place's own coordinates: for a place whose stages are things going by (the row of projects), so that each
+   * card goes by with its thing instead of fading where it is.
+   */
+  carry?: (stage: number[], now: number[], out: THREE.Vector3) => THREE.Vector3;
 };
 
 export function shell() {

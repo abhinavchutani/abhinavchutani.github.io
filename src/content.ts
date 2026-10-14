@@ -221,9 +221,9 @@ export const chapters: Chapter[] = [
         skills: [
           {
             name: "Travel",
-            badge: "Traveler",
-            // His own words for this side of him, from his profile. (No places are named until he names them.)
-            done: "Beyond academics: reader, writer, traveler.",
+            badge: "Hiking · Camping · Mountains",
+            // In his own words (October 2026).
+            done: "I love travelling: hiking, camping, the mountains. I just like to travel.",
           },
         ],
       },

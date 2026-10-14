@@ -24,11 +24,11 @@ move is a single gesture, and neighbours never share an axis.
 | 01 | Markets | Economics · Monte Carlo Options · Blockchain | the floor of an exchange at night: a quote board the width of the far wall, a ticker, trading posts ringed with screens, the bell on its balcony. Over the middle post, a month of candles and 180 simulated paths with their histogram; beside it a chain of blocks, the newest still being mined | down: the hall is under the nebula, and the camera sinks to it through a skylight whose two doors swing open into the hall as it comes |
 | 02 | Stage | Leadership · Public Speaking · Symposium | an auditorium from beside the lectern: curtains, a gilded balcony, 3,500 lights | forwards: the bronze doors under the board swing open on the wings of a stage, and the camera walks through to the lectern |
 | 03 | Projects | Orbital Guardian | Earth's limb, debris, the satellite, its detector and its net | up: one tilt of the head to the opening in the ceiling, whose doors swing up on the stars, then straight through |
-| 03 | Projects | FairBench · Engram · Shravan Doot · Terra Mitra, one each | the same orbit: each project a thing on its own ring, in a pool of its own colour (portfolios in the box their constraints draw with a qubit beside it; documents round a question; glasses with what is said arriving as rings and leaving as words on the lens; a probe in soil, pinging) | sideways, four times: the camera tracks along the row, one project to a stage, each brought up close |
-| 04 | Travel | Travel | mountains at first light, from the air: a valley, a lake, a tent and its fire on the shore, the high range with the sun coming up behind it | down from orbit: the land is a patch of the planet at 1/166 the size, and the camera falls to it, levelling off as it comes |
-| 05 | Machine | Robotics · Techne | an FLL table and robot on a blueprint | down again: the lake turns into the blue of a drawing, and the camera goes on down into it |
+| 03 | Projects | FairBench · Engram · Shravan Doot · Terra Mitra, one each (each card goes by with its project) | the same orbit: each project a thing on its own ring, in a pool of its own colour (portfolios in the box their constraints draw with a qubit beside it; documents round a question; glasses with what is said arriving as rings and leaving as words on the lens; a probe in soil, pinging) | sideways, four times: the camera tracks along the row, one project to a stage, each brought up close |
+| 04 | Travel | Travel: hiking, camping, the mountains | mountains at first light, from the air: a valley, a lake, a tent and its fire on the shore, the high range with the sun coming up behind it, the light painted on as it falls at dawn | down from orbit: the land is a patch of the planet at 1/166 the size, on the horizon straight ahead, and the camera glides forwards and down to it, the view dipping only a little |
+| 05 | Machine | Robotics · Techne | an FLL table and robot on a blueprint | down again, gently: the lake turns into the blue of a drawing from its middle out, and the camera tips over and goes down into it |
 | 06 | Code | Syntax · Web & App Design · Design | a desk at night: Python on two monitors, MarksMaxxing in a browser window, a brand board. The picture breaks into blocks at the edges of the frame | backwards: the blueprint is a drawing open on the main monitor, and the camera pulls out of the screen |
-| 07 | Sound | Strings · Musicality | a museum gallery: damask, five paintings of musicians, a violin in a glass case, a drum kit behind a rope | sideways to the right, into the room next door, which stands open like a film set |
+| 07 | Sound | Strings · Musicality | a museum gallery: damask, five paintings of musicians, a violin in a glass case (turning a little either way, always showing its front), a drum kit behind a rope | sideways to the right, into the room next door, which stands open like a film set |
 | 08 | Mind | Reading · Philosophy | a stair of 50 books past a colonnade, by day | forwards and round to the left: the gallery's double doors open as the camera makes for them |
 | 08 | Mind | Journaling · Fountain Pens · Art & Illustration · Discipline | the same room at night, by one candle: the desk at the window, a journal, a pen that writes, a tray of pens, a sketchbook, iron | sideways to the left along the floor, as the daylight goes down to the candle |
 | 09 | Contact | email, LinkedIn, where | Helsinki across the harbour at night, under the aurora; every discipline as one constellation | forwards over the desk and out through the open window |
@@ -81,10 +81,14 @@ coordinates), then re-measure its pacing. To change a colour world: the chapter'
   the way).
 - **Copy stands in the scene.** Each card is a DOM block placed with a `matrix3d` built from the
   camera every frame, so it is in the room as the camera comes in.
-- **A jump from the menu goes behind doors.** A link more than one stage away is not scrolled (a whole
-  journey at speed is a blur of other places): two panelled doors close over the page in the
-  destination's colours with its name on them, the page is moved behind them, and they open on the
-  new place. A link to the next stage just glides there.
+- **A jump from the menu is a drop.** A link more than one stage away is not scrolled (a whole
+  journey at speed is a blur of other places): a drop of the destination's accent falls from what
+  was clicked, lands, and spreads into a pool of the destination's colour that fills the screen,
+  ripples running ahead of it and the name in the middle; the page is moved under the pool; then the
+  pool draws back into a drop, which falls away, and the new place is there. Transforms and opacity
+  only. A link to the next stage just glides there.
+- **In orbit the copy travels.** Each project's card goes by with its project as the camera tracks
+  along the row, in from the right and out at the left, instead of fading where it stands.
 - **Motion blur.** Each frame, the point that was in the middle of the last one is followed to
   where it has got to, and the final pass smears the picture along that path (one frame's worth,
   capped). A fall, a rise or a pan streaks; a camera at rest, or one leaning to the pointer, stays
@@ -132,24 +136,25 @@ tool on both: an even scrub, a 192 × 120 greyscale frame at each step, copy and
 | This site, round 3 | 324 | 9.0% | 8.8% |
 | This site, round 5 | 600 | 1.4% | 1.0% |
 | This site, round 6 | 576 | 4.3% | 3.6% |
-| This site, now (round 7: fifteen stages, motion blur on) | 518 | 7.7% | 1.4% |
+| This site, round 7 (fifteen stages, motion blur on) | 518 | 7.7% | 1.4% |
+| This site, now (round 8: a gentler fall and dive) | 516 | 7.9% | 1.6% |
 
 Inside each move the pacing holds: the busiest step of any move is at most 2.4 times that move's
-own middle, except the way out through the window to Helsinki (3.2, as the frame passes the
-window's edge). The "pops" column counts steps against the middle of the whole journey, and it has
+own middle (the fall from orbit to the mountains 1.7, the dive to the blueprint 1.5), except the
+way out through the window to Helsinki (3.1, as the frame passes the window's edge). The "pops" column counts steps against the middle of the whole journey, and it has
 risen because the moves differ more from one another than they did: the descent into the
 exchange, the walk on to the stage and the climb to orbit change the picture three or four times
 as much per step as the track along the projects, which goes by against dark space.
 
 **Frame times.** Production build, headless Chromium on the machine's GPU (Metal), 1440 × 900 at
-device pixel ratio 2, with other applications running (load average 3 to 6). A frame is "late"
+device pixel ratio 2, with other applications running (load average 5 to 9). A frame is "late"
 over 22 ms.
 
 | Scenario | Frames | Late |
 | --- | --- | --- |
-| Opener | 340 | 0 |
-| Scrub down through every move | 3,777 | 15 (0.40%): single frames of 33 to 83 ms, five of them on the way down into the exchange |
-| Scrub back up, faster | 2,789 | 11 (0.39%): one of 133 ms going back from the reading room into the gallery, the rest 33 to 83 ms |
+| Opener | 342 | 1 (the first frame, 33 ms) |
+| Scrub down through every move | 4,483 | 26 (0.58%): mostly single frames of 33 to 50 ms; three long ones (151, 283 and 133 ms), on the way on to the stage, on the climb to orbit and on the dive to the blueprint, which a second run did not repeat in the same places |
+| Scrub back up, faster | 2,801 | 1 (0.04%) |
 
 **Not measured this round:** a real window. A run in one needs the display awake; the night this
 was built it was asleep. Open the page with `?fps` to see what your own browser does.
@@ -227,5 +232,14 @@ Every round, with what was said and what changed, is in `docs/BRIEF.md`. In shor
    exchange and the opening in the auditorium's ceiling have doors that open as the camera comes
    (he liked the doors). A pane that writes depth and no colour keeps the window to Helsinki alone.
    The chrome stands clear of the frame; the first screen cues scrolling and sound.
-7. No portrait, no phone number. Every fact on the page comes from his previous site, his CV or
+7. Seventh cut: the fall from the last project to the mountains swung the view through nearly fifty
+   degrees and flew through the project; the mountains looked unfinished; the dive to the blueprint
+   was too sudden; the cards in orbit only faded; the violin showed its back; the menu's doors felt
+   rough. → The mountains moved to the planet's horizon straight ahead, so the fall is a glide that
+   dips the view eleven degrees, with the last project going by out of the way; the land's light
+   painted on as at dawn, a sky that comes in at the end of the fall, a high peak and foothills; a
+   gentler dive (a twelfth the size, not a twentieth, and a longer turn); cards that travel with their
+   projects; the violin turning about its front; a droplet for the menu. Travel now says what he
+   loves about it: hiking, camping, the mountains.
+8. No portrait, no phone number. Every fact on the page comes from his previous site, his CV or
    his own profile.

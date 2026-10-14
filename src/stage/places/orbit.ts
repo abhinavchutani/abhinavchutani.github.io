@@ -477,17 +477,23 @@ export function orbit(): Place {
     root,
     slide,
     anchors,
+    // Each project's card goes by with it, as the camera tracks along the row.
+    carry: (stage, now, out) => out.set(((stage[8] ?? 0) - (now[8] ?? 0)) * SPACING, 0, 0),
     update({ ch, time, theta }) {
       // Along the row: everything near (the satellite, its target, the debris, the projects) goes by to the left as
       // the camera tracks right; the planet and the stars are far enough off not to.
       const track = ch[8] ?? 0;
       const shift = -track * SPACING;
-      const gone = Math.min(1, Math.max(0, (ch[7] - 0.02) / 0.2));
+      // Setting off for the planet, the last project goes by: up and away to the right, out of the line of flight,
+      // and only then does it go.
+      const leave = Math.min(1, Math.max(0, ch[7] / 0.14));
+      const aside = 1 - (1 - leave) * (1 - leave);
+      const gone = Math.min(1, Math.max(0, (ch[7] - 0.08) / 0.16));
       exhibits.forEach(({ group, turn }, i) => {
         const off = track - (i + 1);
         const near = Math.max(0, 1 - Math.abs(off));
         const f = near * near * (3 - 2 * near);
-        group.position.set(FOCUS.x + (i + 1) * SPACING + shift, FOCUS.y + Math.sin(time * 0.5 + i * 1.7) * 0.07, FOCUS.z - (1 - f) * 1.4);
+        group.position.set(FOCUS.x + (i + 1) * SPACING + shift + aside * 9, FOCUS.y + Math.sin(time * 0.5 + i * 1.7) * 0.07 + aside * 4, FOCUS.z - (1 - f) * 1.4);
         group.scale.setScalar(Math.max(0.0001, SIZE * (0.8 + 0.2 * f) * (1 - gone)));
         group.visible = Math.abs(off) < 1.7 && gone < 0.995;
         turn.rotation.y = time * 0.25 + theta * 0.5 + i;

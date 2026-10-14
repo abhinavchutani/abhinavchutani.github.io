@@ -71,44 +71,59 @@ async function boot() {
     scroller.lenis.scrollTo(y, { duration: Math.min(2.2, 1.1 + screens * 0.4), easing: (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) });
   };
 
-  // A jump of more than one stage is not scrolled (a whole journey at speed is a blur of other places): two
-  // doors close over the page with the name of where it is going on them, the page is moved behind them, and
-  // they open again on the new place.
-  const doors = $("[data-doors]");
-  const doorsName = $("[data-doors-name]");
-  const doorsIndex = $("[data-doors-index]");
+  // A jump of more than one stage is not scrolled (a whole journey at speed is a blur of other places). A drop
+  // falls from what was clicked, lands, and spreads into a pool of the destination's colour that fills the
+  // screen, with its name in it; the page is moved under the pool; then the pool draws back into a drop, which
+  // falls away, and the new place is there.
+  const drop = $("[data-drop]");
+  const dropName = $("[data-drop-name]");
+  const dropIndex = $("[data-drop-index]");
   const later = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
   const frames = (n: number) => new Promise<void>((resolve) => {
     const step = () => (--n <= 0 ? resolve() : requestAnimationFrame(step));
     requestAnimationFrame(step);
   });
   let jumping = false;
-  async function go(y: number) {
+  async function go(y: number, from: Element | null) {
     const all = stops();
     const here = all.reduce((best, stop, i) => (Math.abs(stop - window.scrollY) < Math.abs(all[best] - window.scrollY) ? i : best), 0);
     const there = all.reduce((best, stop, i) => (Math.abs(stop - y) < Math.abs(all[best] - y) ? i : best), 0);
-    if (!doors || !scroller || reduced || Math.abs(there - here) <= 1) return glide(y);
+    if (!drop || !scroller || reduced || Math.abs(there - here) <= 1) {
+      sound.click();
+      return glide(y);
+    }
     if (jumping) return;
     jumping = true;
     const chapter = chapters[chapterOf(there)];
-    doors.style.setProperty("--door", chapter.ground);
-    doors.style.setProperty("--seam", chapter.accent);
-    if (doorsName) doorsName.textContent = chapter.name;
-    if (doorsIndex) doorsIndex.textContent = two(chapters.indexOf(chapter));
-    doors.dataset.state = "open";
-    await frames(2);
-    doors.dataset.state = "shut";
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // Where the drop starts (what was clicked) and where it lands (straight below, well down the screen).
+    const box = from?.getBoundingClientRect();
+    const x = box ? box.left + box.width / 2 : vw / 2;
+    const y0 = box ? box.top + box.height / 2 : vh * 0.3;
+    const y1 = Math.min(vh * 0.86, Math.max(y0 + vh * 0.24, vh * 0.56));
+    // The pool must reach the furthest corner from where it lands.
+    const reach = 2 * Math.hypot(Math.max(x, vw - x), Math.max(y1, vh - y1)) * 1.06;
+    drop.style.cssText = `--ground:${chapter.ground};--tint:${chapter.accent};--x:${x}px;--y0:${y0}px;--y1:${y1}px;--reach:${reach}px`;
+    if (dropName) dropName.textContent = chapter.name;
+    if (dropIndex) dropIndex.textContent = two(chapters.indexOf(chapter));
+    drop.dataset.state = "fall";
+    sound.click();
+    await later(430);
+    drop.dataset.state = "spread";
     sound.dive();
-    const shut = performance.now();
-    await later(660);
+    await later(640);
+    drop.dataset.state = "full";
     scroller.lenis.scrollTo(y, { immediate: true, force: true });
     stage.snap();
     await frames(4);
-    // Long enough shut for the name on them to be read.
-    await later(Math.max(0, 1150 - (performance.now() - shut)));
-    doors.dataset.state = "opening";
-    await later(800);
-    delete doors.dataset.state;
+    await later(260);
+    drop.dataset.state = "drain";
+    await later(600);
+    drop.dataset.state = "drip";
+    await later(420);
+    delete drop.dataset.state;
+    drop.style.cssText = "";
     jumping = false;
   }
   /** The chapter a stage belongs to, from the stages' own markup. */
@@ -131,8 +146,7 @@ async function boot() {
     }
     if (y === undefined) return;
     event.preventDefault();
-    sound.click();
-    void go(y);
+    void go(y, link);
   });
 
   // ---- chrome ----

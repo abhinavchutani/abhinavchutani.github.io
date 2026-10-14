@@ -389,9 +389,8 @@ export function forum(): Place {
   }
   // The doors: two halves of a disc, painted like the ceiling underneath, hinged at the rim. As the camera looks up
   // and makes for the opening they swing up and apart, and the stars are behind them.
-  const shutterFace = new THREE.MeshStandardMaterial({ map: soffit.clone(), color: 0xc9a3a0, roughness: 0.8, side: THREE.DoubleSide });
-  shutterFace.map!.repeat.set(1.4, 1.4);
-  shutterFace.map!.wrapS = shutterFace.map!.wrapT = THREE.RepeatWrapping;
+  // (A plain colour: a copy of the ceiling's texture would be uploaded on the frame the doors first show.)
+  const shutterFace = new THREE.MeshStandardMaterial({ color: 0x3a0e10, roughness: 0.7, side: THREE.DoubleSide });
   const shutters = [-1, 1].map((side) => {
     const hinge = put(new THREE.Group(), OCULUS.x + side * OCULUS.r, OCULUS.y - 0.08, OCULUS.z);
     const half = new THREE.Mesh(new THREE.CircleGeometry(OCULUS.r, 40, side < 0 ? Math.PI / 2 : -Math.PI / 2, Math.PI), shutterFace);

@@ -162,12 +162,12 @@ export const PLACES: PlaceRow[] = [
     key: "peaks",
     look: tone(4, { top: 0x0c1838, glow: 0.3, haze: 0.22, at: [0.8, 0.7], vignette: 0.4, grid: 0, fog: 0.0032, bloom: 0.45, env: 0.3, key: 1.15, rim: 1.6 }),
     arrive: {
-      // The land is a patch of the planet's lit side, 1/166 the size. It faces the way the camera is falling, so
-      // the fall is one move: down towards it, levelling off as it comes, with no swing to either side.
-      into: { at: [13.1285, -7.1218, -0.7869], turn: [-0.9439, -0.2199, -0.7254], scale: 0.006 },
+      // The land is a patch of the planet, 1/166 the size, at the top of the globe: straight ahead of the camera on
+      // the horizon. So the fall is a glide forwards and down to it, the view dipping only a little on the way.
+      into: { at: [6, -2.376, -12], turn: [0, -0.2, 0], scale: 0.006 },
       pivot: [0, 0, 0],
-      turning: [0, 0.62],
-      sliding: [0, 0.5],
+      turning: [0, 0.85],
+      sliding: [0, 0.6],
       rush: 0.16,
       pace: PACE.peaks,
     },
@@ -180,12 +180,12 @@ export const PLACES: PlaceRow[] = [
     key: "bench",
     look: tone(5, { top: 0x1444c4, glow: 0.0, haze: 0.0, at: [0.3, 0.5], vignette: 0.22, grid: 0, fog: 0.004, bloom: 0.22, env: 0.42, key: 1.35, rim: 0.5 }),
     arrive: {
-      // The sheet lies just under the water of the lake in the valley, 1/20 the size of the mountains: the camera
+      // The sheet lies just under the water of the lake in the valley, 1/12 the size of the mountains: the camera
       // tips over and goes on down into the water, which turns into the sheet's blue and then gives way to it.
-      into: { at: [2.8, -2.1153, -8.5915], turn: [0, -1.3708, 0], scale: 0.05 },
+      into: { at: [2.8, -1.8389, -8.5355], turn: [0, -1.3708, 0], scale: 0.08 },
       pivot: [0, 0, -9.4],
-      turning: [0, 0.62],
-      sliding: [0, 0.5],
+      turning: [0, 0.8],
+      sliding: [0, 0.62],
       rush: 0.16,
       pace: PACE.bench,
     },

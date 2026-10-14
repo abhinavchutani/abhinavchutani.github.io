@@ -141,7 +141,7 @@ export function renderPage() {
     <p class="hint-scroll" aria-hidden="true"><i class="mouse"><b></b></i><span>Scroll</span></p>
   </div>
 </header>
-<div class="doors" data-doors aria-hidden="true"><i class="leaf l"></i><i class="leaf r"></i><p class="doors-name"><span data-doors-index>00</span><b data-doors-name></b></p></div>
+<div class="drop" data-drop aria-hidden="true"><i class="pool"></i><i class="ring"></i><i class="ring late"></i><i class="bead"></i><p class="drop-name"><span data-drop-index>00</span><b data-drop-name></b></p></div>
 <div class="opener" data-opener aria-hidden="true">
   <p><span>Loading</span><b data-count>000</b><span>%</span></p>
   <i class="bar"><i data-bar></i></i>

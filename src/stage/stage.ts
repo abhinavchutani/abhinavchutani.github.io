@@ -339,6 +339,7 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
 
   const matrix = new THREE.Matrix4();
   const viewProjection = new THREE.Matrix4();
+  const carried = new THREE.Matrix4();
   const point = new THREE.Vector3();
   const euler = new THREE.Euler();
   const quaternion = new THREE.Quaternion();
@@ -668,15 +669,25 @@ export async function createStage(canvas: HTMLCanvasElement, options: StageOptio
     const now = performance.now();
     for (const sign of signs) {
       // A sign belongs to its place: it is there as the camera comes in, and goes soon after it sets off again.
+      // In a place whose stages go by (the row of projects), it goes by with its stage instead, while the camera
+      // is in that place: in from one side, out at the other.
       const ahead = sign.k - current.s;
-      const on = state.ready && ahead < 0.44 && ahead > -0.16 && showing.list.some((item) => item.index === sign.place);
+      const place = places[sign.place];
+      const passing = !!place.carry && Math.abs(current.depth - sign.place) < 0.002;
+      const near = passing ? Math.abs(ahead) < 0.92 : ahead < 0.44 && ahead > -0.16;
+      const on = state.ready && near && showing.list.some((item) => item.index === sign.place);
       if (on !== sign.on) {
         sign.on = on;
         sign.el.toggleAttribute("data-on", on);
         if (!on) sign.until = now + 450;
       }
       if (sign.plane && (on || now < sign.until)) {
-        const depth = stand(sign.plane, places[sign.place].slide.matrixWorld, viewProjection, vw, vh);
+        let held = place.slide.matrixWorld;
+        if (place.carry) {
+          place.carry(stages[sign.k].row.ch, current[`c${sign.place}`] as number[], point);
+          held = carried.copy(place.slide.matrixWorld).multiply(spare.makeTranslation(point.x, point.y, point.z));
+        }
+        const depth = stand(sign.plane, held, viewProjection, vw, vh);
         if (depth === null && sign.on) {
           sign.on = false;
           sign.el.removeAttribute("data-on");

@@ -8,7 +8,7 @@ import { proceduralRibbons } from "../ribbons";
  * 01 Sound. A museum gallery. Damask on the walls, a carpet down the
  * boards, five paintings of people making music (1597 to 1663, all from
  * The Met's open-access collection) in gilt frames under picture lights.
- * The violin is in a glass case, turning slowly, its strings shaking; on
+ * The violin is in a glass case, turning a little either way, its strings shaking; on
  * the right, behind a rope, the drum kit that came later. The camera comes
  * in through the door in the front wall and leaves through the one in the
  * right-hand wall, to the study. Scrolling plays the strings harder.
@@ -577,9 +577,8 @@ export function violin(): Place {
       for (const { hinge, side } of doors) hinge.rotation.y = side * swing;
       // Scrolling plays it harder.
       amp.value = 0.45 + Math.min(1.3, speed * 0.6);
-      // It turns about its length (and with the wheel), dwelling on the front and on the back and passing quickly edge-on.
-      const round = time * 0.22 + theta * 0.35 + 0.3;
-      spin.rotation.y = round - 0.45 * Math.sin(2 * round);
+      // It turns a little either way, and with the wheel, but always shows its front: never its back.
+      spin.rotation.y = Math.sin(time * 0.32 + theta * 0.3) * 0.42;
       // The kit keeps time: the kick's head on the beat, the cymbals still ringing.
       const beat = Math.exp(-((time * 1.6) % 1) * 6);
       kick.scale.setScalar(1 + beat * 0.012);

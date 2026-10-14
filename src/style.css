@@ -1429,112 +1429,162 @@ html.js:not(.no-stage) {
 }
 
 /*
- * ---- the doors: a jump from the menu ----
- * Two leaves close over the page with the name of where it is going on them; the page is moved behind them;
- * they open again on the new place. Each leaf is a panelled door in the ground colour of the destination,
- * with its handle and the seam between them in its accent.
+ * ---- a jump from the menu: a drop ----
+ * A drop of the destination's accent falls from what was clicked and lands; it spreads into a pool of the
+ * destination's ground that fills the screen, ripples running out ahead of it, the name in the middle; the page
+ * is moved under it; then the pool draws back into a drop, which falls away. Transforms and opacity only.
  */
-.doors {
+.drop {
   display: none;
 }
-html.js:not(.no-stage) .doors[data-state] {
-  --door: #0b0d12;
-  --seam: #fff;
-  --line: color-mix(in srgb, var(--seam) 30%, transparent);
+html.js:not(.no-stage) .drop[data-state] {
   display: block;
   position: fixed;
   inset: 0;
   z-index: 8;
   pointer-events: none;
-  .leaf {
+  .bead,
+  .pool,
+  .ring {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 50.2%;
-    background-color: color-mix(in srgb, var(--door) 30%, #09080b);
-    transition: transform 0.62s cubic-bezier(0.7, 0, 0.25, 1);
-    will-change: transform;
+    left: var(--x);
+    border-radius: 50%;
+    will-change: transform, opacity;
   }
-  .leaf::before,
-  .leaf::after {
-    content: "";
-    position: absolute;
-    left: 13%;
-    right: 13%;
-    border: 1px solid var(--line);
-    box-shadow:
-      inset 0 0 0 0.45rem color-mix(in srgb, var(--door) 22%, #050406),
-      inset 0 0 0 calc(0.45rem + 1px) var(--line);
+  /* The drop: a bead of the accent, lit from the top left. */
+  .bead {
+    top: var(--y0);
+    width: 1.5rem;
+    height: 1.5rem;
+    margin: -0.75rem 0 0 -0.75rem;
+    background: radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.85) 0 14%, var(--tint) 46%, color-mix(in srgb, var(--tint) 60%, #000) 100%);
+    box-shadow: 0 0 1.2rem color-mix(in srgb, var(--tint) 70%, transparent);
+    transform: scale(0);
   }
-  .leaf::before {
-    top: 7%;
-    bottom: 53%;
+  /* The pool it spreads into, and the ripples ahead of it, all centred where it lands. */
+  .pool,
+  .ring {
+    top: var(--y1);
+    width: var(--reach);
+    height: var(--reach);
+    margin: calc(var(--reach) / -2) 0 0 calc(var(--reach) / -2);
+    transform: scale(0);
   }
-  .leaf::after {
-    top: 51%;
-    bottom: 7%;
+  .pool {
+    background: radial-gradient(circle, var(--ground) 0 66%, color-mix(in srgb, var(--ground) 70%, var(--tint)) 69%, var(--ground) 71%);
   }
-  .leaf.l {
-    left: 0;
-    transform: translateX(-101%);
-    border-right: 1px solid var(--seam);
-    background-image: linear-gradient(var(--seam), var(--seam));
-    background-size: 3px 4.5rem;
-    background-position: right 1.6rem center;
-    background-repeat: no-repeat;
+  .ring {
+    border: 2px solid var(--tint);
+    opacity: 0;
   }
-  .leaf.r {
-    right: 0;
-    transform: translateX(101%);
-    border-left: 1px solid var(--seam);
-    background-image: linear-gradient(var(--seam), var(--seam));
-    background-size: 3px 4.5rem;
-    background-position: left 1.6rem center;
-    background-repeat: no-repeat;
-  }
-  .doors-name {
+  .drop-name {
     position: absolute;
     left: 50%;
     top: 50%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.6rem;
-    padding: 1.1rem 1.6rem;
-    background: color-mix(in srgb, var(--door) 22%, #050406);
-    border: 1px solid var(--seam);
-    color: var(--seam);
-    transform: translate(-50%, -50%) scale(0.96);
+    gap: 0.7rem;
+    color: var(--tint);
+    transform: translate(-50%, -50%) translateY(0.8rem);
     opacity: 0;
     transition:
-      opacity 0.25s linear,
-      transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+      opacity 0.3s linear,
+      transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .doors-name span {
+  .drop-name span {
     font: 400 0.62rem/1 var(--mono);
     letter-spacing: 0.24em;
   }
-  .doors-name b {
-    font: 900 clamp(1.8rem, 4vw, 3.2rem) / 1 var(--sans);
+  .drop-name b {
+    font: 900 clamp(2rem, 5vw, 3.6rem) / 1 var(--sans);
     letter-spacing: -0.02em;
     text-transform: uppercase;
     color: #fff;
   }
 }
-html.js:not(.no-stage) .doors[data-state="shut"] {
-  .leaf.l,
-  .leaf.r {
-    transform: none;
+/* Falling: it swells out of the button, then drops, stretching as it goes. */
+html.js:not(.no-stage) .drop[data-state="fall"] .bead {
+  animation: bead-fall 0.43s cubic-bezier(0.5, 0, 0.9, 0.5) forwards;
+}
+/* Landing: it flattens and goes into the pool, which spreads; the ripples run out ahead of it. */
+html.js:not(.no-stage) .drop[data-state="spread"] {
+  .bead {
+    transform: translateY(calc(var(--y1) - var(--y0))) scale(1.7, 0.35);
+    opacity: 0;
+    transition:
+      transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 0.16s linear;
   }
-  .doors-name {
-    opacity: 1;
-    transform: translate(-50%, -50%);
-    transition-delay: 0.35s;
+  .pool {
+    transform: scale(1);
+    transition: transform 0.64s cubic-bezier(0.35, 0.05, 0.3, 1);
+  }
+  .ring {
+    animation: ripple 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  }
+  .ring.late {
+    animation-delay: 0.12s;
   }
 }
-html.js:not(.no-stage) .doors[data-state="opening"] .leaf {
-  transition-duration: 0.78s;
-  transition-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+html.js:not(.no-stage) .drop[data-state="full"] {
+  .pool {
+    transform: scale(1);
+  }
+  .drop-name {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+/* Draining: the pool draws back to where it landed, the edges first, and is a drop again. */
+html.js:not(.no-stage) .drop[data-state="drain"] {
+  .pool {
+    transform: scale(0.012);
+    transition: transform 0.6s cubic-bezier(0.6, 0, 0.35, 1);
+  }
+  .drop-name {
+    opacity: 0;
+    transition-duration: 0.18s;
+  }
+  .bead {
+    transform: translateY(calc(var(--y1) - var(--y0))) scale(0.9);
+    opacity: 1;
+    transition: transform 0.25s 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s 0.4s linear;
+  }
+}
+/* And falls away. */
+html.js:not(.no-stage) .drop[data-state="drip"] {
+  .pool {
+    transform: scale(0);
+  }
+  .bead {
+    transform: translateY(calc(var(--y1) - var(--y0) + 30vh)) scale(0.6, 1.3);
+    opacity: 0;
+    transition:
+      transform 0.42s cubic-bezier(0.55, 0, 1, 0.45),
+      opacity 0.42s cubic-bezier(0.7, 0, 1, 1);
+  }
+}
+@keyframes bead-fall {
+  0% {
+    transform: translateY(0) scale(0);
+  }
+  22% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(calc(var(--y1) - var(--y0))) scale(0.85, 1.5);
+  }
+}
+@keyframes ripple {
+  0% {
+    transform: scale(0.02);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
 }
 
 /* ---- narrow screens: the same places, copy as an ordinary block at the foot ---- */
