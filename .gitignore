@@ -1,32 +1,19 @@
-# Dependencies
-node_modules/
-dist/
-
-# macOS
-.DS_Store
-.AppleDouble
-**/.DS_Store
-
-# Claude Code — ignore everything except project instructions
-.claude/settings.local.json
-.claude/plans/
-.claude/memory/
-
-# Editor / IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Logs
-npm-debug.log*
-
-# Dev screenshots
-screenshots/
-
-# Temp
-*.tmp
-*.bak
-
-# Vite
-*.local
+# Only the built site is published here. Everything else is ignored.
+*
+!/index.html
+!/robots.txt
+!/LICENSE
+# The custom domain, once there is one.
+!/CNAME
+!/.gitignore
+!/assets/
+!/assets/**
+!/art/
+!/art/**
+!/tex/
+!/tex/**
+!/.well-known/
+!/.well-known/**
+!/.github/
+!/.github/workflows/
+!/.github/workflows/pages.yml
