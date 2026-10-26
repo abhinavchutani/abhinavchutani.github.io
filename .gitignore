@@ -12,6 +12,8 @@
 !/art/**
 !/tex/
 !/tex/**
+!/stills/
+!/stills/**
 !/.well-known/
 !/.well-known/**
 !/.github/
